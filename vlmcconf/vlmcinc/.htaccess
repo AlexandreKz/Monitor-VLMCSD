@@ -1,0 +1,23 @@
+# Отключаем листинг директории
+Options -Indexes
+
+# Устанавливаем индексный файл
+DirectoryIndex vlmcconf.php login.php
+
+# Запрещаем доступ к конфигурационному файлу
+<Files "vlmcconf_config.json">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Запрещаем доступ к .htaccess и .htpasswd
+<FilesMatch "^\.ht">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Разрешаем доступ только к php файлам
+<FilesMatch "\.(php)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
