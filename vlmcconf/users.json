@@ -1,0 +1,22 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "username": "root",
+            "password_hash": "$2y$10$DIVSY1bZcwzUGsQs1.QBHeAqpIdwhW5.iv3p5lEKKnQ\/DxuPAIG0O",
+            "permissions": 511,
+            "must_change_password": false,
+            "created": "2026-03-26 01:05:06",
+            "last_login": "2026-04-03 19:15:01"
+        },
+        {
+            "id": 2,
+            "username": "zfwergwr",
+            "password_hash": "$2y$10$vGsbFnJz1UGDMw1XlqiVY.3ZR8\/uaK3RJ56bjZf72IcdggSqGdS26",
+            "permissions": 469,
+            "must_change_password": false,
+            "created": "2026-04-02 23:45:06",
+            "last_login": "2026-04-02 23:46:45"
+        }
+    ]
+}
