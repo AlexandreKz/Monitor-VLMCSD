@@ -1,14 +1,13 @@
-
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 4.8.0
-// ДАТА: 2026-03-22
+// ВЕРСИЯ: 4.8.1
+// ДАТА: 2026-04-13
 // @description: Главный файл мониторинга KMS сервера
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 4.8.0
+ * Version: 4.8.1
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -131,7 +130,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'geo') {
     header('Content-Type: application/json');
     $ip = $_GET['ip'] ?? '';
     if (empty($ip) || !filter_var($ip, FILTER_VALIDATE_IP)) {
-        echo json_encode(['error' => 'Неверный IP', 'success' => false]);
+        echo json_encode(['error' => __('geo_invalid_ip'), 'success' => false]);
         exit;
     }
     echo json_encode(getDetailedGeoLocation($ip));
@@ -141,6 +140,25 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'geo') {
 // Обработчик для добавления устройства
 if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
     header('Content-Type: application/json');
+    
+    // Запускаем сессию для проверки прав
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Проверка авторизации
+    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
+        exit;
+    }
+    
+    // Проверка права на редактирование устройств (8 = PERM_DEVICES_EDIT)
+    $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+    if (!($userPermissions & 8)) {
+        echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
+        exit;
+    }
+    
     $deviceName = trim($_POST['deviceName'] ?? '');
     $deviceGroup = $_POST['deviceGroup'] ?? '';
     $deviceComment = trim($_POST['deviceComment'] ?? '');
@@ -148,9 +166,9 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
     $response = ['success' => false, 'message' => ''];
     
     if (empty($deviceName) || empty($deviceGroup)) {
-        $response['message'] = 'Имя устройства и группа обязательны';
+        $response['message'] = __('add_device_error_name_group');
     } else if (!isset($config['devices'][$deviceGroup])) {
-        $response['message'] = 'Группа не существует';
+        $response['message'] = __('add_device_error_group_not_exists');
     } else {
         $exists = false;
         foreach ($config['devices'][$deviceGroup] as $existing) {
@@ -161,7 +179,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
         }
         
         if ($exists) {
-            $response['message'] = 'Устройство уже существует';
+            $response['message'] = __('add_device_error_already_exists');
         } else {
             $config['devices'][$deviceGroup][] = [
                 'name' => $deviceName,
@@ -170,7 +188,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
             ];
             file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $response['success'] = true;
-            $response['message'] = 'Устройство добавлено';
+            $response['message'] = __('add_device_success');
         }
     }
     
@@ -386,16 +404,6 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage) {
 
 $stats = analyzeLog($logFile, $devices, $cacheStatus, $cacheMessage);
 
-// Временная отладка
-if (!empty($stats['suspicious_ips'])) {
-    file_put_contents('/tmp/debug_country.log', "=== " . date('Y-m-d H:i:s') . " ===\n", FILE_APPEND);
-    foreach ($stats['suspicious_ips'] as $ip => $data) {
-        file_put_contents('/tmp/debug_country.log', "IP: $ip, Country: " . $data['country'] . "\n", FILE_APPEND);
-        $flag = getCountryFlag($data['country']);
-        file_put_contents('/tmp/debug_country.log', "Flag: $flag\n", FILE_APPEND);
-    }
-}
-
 $deviceStats = array_count_values($devices);
 $uptime = getUptime($logFile);
 
@@ -437,17 +445,6 @@ if (!empty($stats['unknown_devices'])) {
     }
 }
 
-// Отладка - проверим что приходит
-error_log("=== getCountryFlag DEBUG ===");
-if (!empty($stats['suspicious_ips'])) {
-    foreach ($stats['suspicious_ips'] as $ip => $data) {
-        error_log("IP: $ip, Country raw: " . $data['country']);
-        $flag = getCountryFlag($data['country']);
-        error_log("Flag returned: " . $flag);
-    }
-}
-
-
 $suspiciousIpsArray = [];
 if (!empty($stats['suspicious_ips'])) {
     foreach ($stats['suspicious_ips'] as $ip => $data) {
@@ -482,7 +479,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
 <html>
 <head>
     <link rel="shortcut icon" href="/pic/favicon.png" type="image/x-icon">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>KMS Log • <?= __('title_monitor') ?></title>
     <style>
@@ -519,7 +516,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .live-indicator .dot { width: 5px; height: 5px; background: #4ade80; border-radius: 50%; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
         
-        /* Стили для времени */
         .time-display {
             background: <?= $themeCSS['card'] ?>;
             padding: 3px 10px;
@@ -582,73 +578,72 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-header span { transition: color 0.2s; padding: 2px 0; }
         .suspicious-header span:hover { color: <?= $themeCSS['text'] ?>; }
         .suspicious-header .sort-arrow { display: inline-block; margin-left: 3px; font-size: 8px; }
-.suspicious-header {
-    display: grid;
-    grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
-    padding: 3px 8px;
-    margin-bottom: 3px;
-    color: #8aa0bb;
-    font-size: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    border-bottom: 1px solid <?= $themeCSS['border'] ?>;
-    flex-shrink: 0;
-    cursor: pointer;
-    user-select: none;
-    gap: 4px;
-}
-
-.suspicious-item {
-    background: <?= $themeCSS['card'] ?>;
-    border-radius: 12px;
-    padding: 4px 8px;
-    margin-bottom: 4px;
-    font-size: 10px;
-    border: 1px solid <?= $themeCSS['danger'] ?>;
-    display: grid;
-    grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
-    align-items: center;
-    gap: 4px;
-    border-left: 3px solid <?= $themeCSS['danger'] ?>;
-    transition: all 0.2s;
-    min-height: 26px;
-}
+        .suspicious-header {
+            display: grid;
+            grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
+            padding: 3px 8px;
+            margin-bottom: 3px;
+            color: #8aa0bb;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            border-bottom: 1px solid <?= $themeCSS['border'] ?>;
+            flex-shrink: 0;
+            cursor: pointer;
+            user-select: none;
+            gap: 4px;
+        }
+        .suspicious-item {
+            background: <?= $themeCSS['card'] ?>;
+            border-radius: 12px;
+            padding: 4px 8px;
+            margin-bottom: 4px;
+            font-size: 10px;
+            border: 1px solid <?= $themeCSS['danger'] ?>;
+            display: grid;
+            grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
+            align-items: center;
+            gap: 4px;
+            border-left: 3px solid <?= $themeCSS['danger'] ?>;
+            transition: all 0.2s;
+            min-height: 26px;
+        }
         .suspicious-item:hover { background: <?= $themeCSS['hover'] ?>; border-left-width: 5px; }
         .suspicious-ip { color: <?= $themeCSS['danger'] ?>; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline dotted; }
         .suspicious-ip:hover { color: #ff6b6b; }
         .suspicious-count { color: <?= $themeCSS['warning'] ?>; font-weight: 600; font-size: 10px; text-align: center; }
-.suspicious-cidr-container {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    overflow: hidden;
-    width: 100%;
-}
- .suspicious-cidr {
-    color: #b0c4de;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
-}
-.copy-cidr-btn {
-    background: transparent;
-    border: none;
-    color: #8aa0bb;
-    cursor: pointer;
-    padding: 0px 2px;
-    border-radius: 3px;
-    font-size: 11px;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
+        .suspicious-cidr-container {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .suspicious-cidr {
+            color: #b0c4de;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
+        .copy-cidr-btn {
+            background: transparent;
+            border: none;
+            color: #8aa0bb;
+            cursor: pointer;
+            padding: 0px 2px;
+            border-radius: 3px;
+            font-size: 11px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
         .copy-cidr-btn:hover { color: <?= $themeCSS['text'] ?>; background: <?= $themeCSS['hover'] ?>; }
         .copy-cidr-btn:active { transform: scale(0.9); }
         .suspicious-country { color: <?= $themeCSS['text'] ?>; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
@@ -728,11 +723,9 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     <?php endif; ?>
                 </div>
                 
-                <!-- Время клиента прижато к правому краю шапки -->
                 <div class="time-display" id="clientTime">--:--:--</div>
             </div>
             
-            <!-- Кнопка настроек за пределами шапки -->
             <a href="vlmcconf/vlmcconf.php" class="settings-button" title="<?= __('tooltip_settings') ?>">⚙️</a>
         </div>
         
@@ -864,7 +857,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         <button class="scroll-bottom-btn" id="scrollBottomBtn">↓</button>
     </div>
     
-    <div class="footer">KMS Log Monitor • <?= __('version') ?> 4.8.0 • <?= __('footer_copyright') ?></div>
+    <div class="footer">KMS Log Monitor • <?= __('version') ?> 4.8.1 • <?= __('footer_copyright') ?></div>
     
     <div id="geoModal" class="modal"><div class="modal-content" id="geoModalContent"><div class="modal-header" id="geoModalHeader"><h2>🌍 <?= __('geo_title') ?></h2><span class="modal-close" onclick="closeGeoModal()">&times;</span></div><div class="modal-body" id="geoModalBody"><div class="modal-loading">⏳ <?= __('geo_loading') ?></div></div></div></div>
     
@@ -1063,8 +1056,28 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     }
     
     function renderUnknownList() {
-        const list = document.getElementById('unknownList');
-        if (!unknownDevices || unknownDevices.length === 0) { list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('unknown_empty') ?></div>'; return; }
+    const list = document.getElementById('unknownList');
+    if (!unknownDevices || unknownDevices.length === 0) { 
+        list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('unknown_empty') ?></div>'; 
+        return; 
+    }
+    
+    // Проверка прав через AJAX
+    fetch('vlmcconf/vlmcinc/ajax.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'ajax=check_permission&permission=PERM_DEVICES_EDIT'
+    })
+    .then(response => response.json())
+    .then(data => {
+        renderUnknownListWithPermission(data.has_permission);
+    })
+    .catch(error => {
+        console.error('Permission check error:', error);
+        renderUnknownListWithPermission(false);
+    });
+    
+    function renderUnknownListWithPermission(canAdd) {
         let sorted = [...unknownDevices];
         sorted.sort((a, b) => {
             let valA, valB;
@@ -1078,89 +1091,94 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             if (valA > valB) return unknownSort.direction === 'asc' ? 1 : -1;
             return 0;
         });
+        
         let html = '';
         sorted.forEach(item => {
             const escapedDevice = escapeHtml(item.device);
             const escapedIp = escapeHtml(item.last_ip);
+            
+            const addButton = canAdd 
+                ? `<button class="add-device-btn" onclick="showAddDeviceModal('${escapedDevice.replace(/'/g, "\\'")}', '${escapedIp}')" title="<?= __('unknown_add_tooltip') ?>">➕</button>`
+                : `<span style="color: #6b8ba4; font-size: 10px;" title="<?= __('add_device_auth_required') ?>">🔒</span>`;
+            
             html += `<div class="unknown-item" title="<?= __('unknown_first_seen') ?> ${new Date(item.first_seen * 1000).toLocaleString()}\n<?= __('unknown_last_seen') ?> ${new Date(item.last_seen * 1000).toLocaleString()}">
                 <span class="unknown-device">${escapedDevice}</span>
                 <span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>
-                <span class="unknown-add"><button class="add-device-btn" onclick="showAddDeviceModal('${escapedDevice.replace(/'/g, "\\'")}', '${escapedIp}')" title="<?= __('unknown_add_tooltip') ?>">➕</button></span>
+                <span class="unknown-add">${addButton}</span>
                 <span class="unknown-count">${item.count}</span>
             </div>`;
         });
         list.innerHTML = html;
     }
-    
-function renderSuspiciousList() {
-    const list = document.getElementById('suspiciousList');
-    if (!suspiciousIps || suspiciousIps.length === 0) { 
-        list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('suspicious_empty') ?></div>'; 
-        return; 
-    }
-    let sorted = [...suspiciousIps];
-    sorted.sort((a, b) => {
-        let valA, valB;
-        switch(suspiciousSort.field) {
-            case 'ip': valA = a.ip; valB = b.ip; break;
-            case 'count': valA = a.count; valB = b.count; break;
-            case 'cidr': valA = a.cidr; valB = b.cidr; break;
-            case 'country': valA = (a.country_name || a.country).toLowerCase(); valB = (b.country_name || b.country).toLowerCase(); break;
-            default: valA = a.ip; valB = b.ip;
-        }
-        if (valA < valB) return suspiciousSort.direction === 'asc' ? -1 : 1;
-        if (valA > valB) return suspiciousSort.direction === 'asc' ? 1 : -1;
-        return 0;
-    });
-    let html = '';
-    sorted.forEach(item => {
-        const escapedIp = escapeHtml(item.ip);
-        const escapedCidr = escapeHtml(item.cidr);
-        const countryCode = item.country_code || '';
-        const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
-        const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
-        
-        html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
-            <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
-            <span class="suspicious-count">${item.count}</span>
-            <div class="suspicious-cidr-container"><span class="suspicious-cidr">${escapedCidr}</span><button class="copy-cidr-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedCidr}')" title="<?= __('suspicious_copy_cidr') ?>">📋</button></div>
-            <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 6px; vertical-align: middle;">` : ''}${countryName}</span>
-        </div>`;
-    });
-    list.innerHTML = html;
 }
+    
+    function renderSuspiciousList() {
+        const list = document.getElementById('suspiciousList');
+        if (!suspiciousIps || suspiciousIps.length === 0) { 
+            list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('suspicious_empty') ?></div>'; 
+            return; 
+        }
+        let sorted = [...suspiciousIps];
+        sorted.sort((a, b) => {
+            let valA, valB;
+            switch(suspiciousSort.field) {
+                case 'ip': valA = a.ip; valB = b.ip; break;
+                case 'count': valA = a.count; valB = b.count; break;
+                case 'cidr': valA = a.cidr; valB = b.cidr; break;
+                case 'country': valA = (a.country_name || a.country).toLowerCase(); valB = (b.country_name || b.country).toLowerCase(); break;
+                default: valA = a.ip; valB = b.ip;
+            }
+            if (valA < valB) return suspiciousSort.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return suspiciousSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        let html = '';
+        sorted.forEach(item => {
+            const escapedIp = escapeHtml(item.ip);
+            const escapedCidr = escapeHtml(item.cidr);
+            const countryCode = item.country_code || '';
+            const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
+            const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
+            
+            html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
+                <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
+                <span class="suspicious-count">${item.count}</span>
+                <div class="suspicious-cidr-container"><span class="suspicious-cidr">${escapedCidr}</span><button class="copy-cidr-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedCidr}')" title="<?= __('suspicious_copy_cidr') ?>">📋</button></div>
+                <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 6px; vertical-align: middle;">` : ''}${countryName}</span>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
     
     function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     function scrollToBottom() { const container = document.getElementById('logContent'); if (container) container.scrollTop = container.scrollHeight; }
     
-    // Функция для обновления времени клиента
     function updateClientTime() {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         document.getElementById('clientTime').innerHTML = timeStr;
     }
     
-    // Запускаем обновление времени
     setInterval(updateClientTime, 1000);
     updateClientTime();
     
-	async function fetchLog() {
-		try {
-			const response = await fetch('?ajax=get_log&filter=' + currentEventFilter + '&group=' + currentGroupFilter + '&t=' + Date.now());
-			const log = await response.text();
-			if (log !== previousLog) {
-				const container = document.getElementById('logContent');
-				const scrollPos = container.scrollTop;
-				const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-				fullLog = log;
-				previousLog = log;
-				if (currentFilter === '') container.innerHTML = fullLog;
-				else applyFilter(currentFilter);
-				if (atBottom) setTimeout(scrollToBottom, 100);
-				else container.scrollTop = scrollPos;
-			}
-		} catch (error) { console.error('Log load error:', error); }
-	}
+    async function fetchLog() {
+        try {
+            const response = await fetch('?ajax=get_log&filter=' + currentEventFilter + '&group=' + currentGroupFilter + '&t=' + Date.now());
+            const log = await response.text();
+            if (log !== previousLog) {
+                const container = document.getElementById('logContent');
+                const scrollPos = container.scrollTop;
+                const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+                fullLog = log;
+                previousLog = log;
+                if (currentFilter === '') container.innerHTML = fullLog;
+                else applyFilter(currentFilter);
+                if (atBottom) setTimeout(scrollToBottom, 100);
+                else container.scrollTop = scrollPos;
+            }
+        } catch (error) { console.error('Log load error:', error); }
+    }
     
     function applyFilter(filter) {
         const container = document.getElementById('logContent');
