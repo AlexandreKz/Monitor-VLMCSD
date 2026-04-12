@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 1.5.0
-// ДАТА: 2026-04-03
+// ВЕРСИЯ: 1.5.1
+// ДАТА: 2026-04-13
 // @description: English translations
 // ============================================
 
@@ -391,4 +391,18 @@ return [
 	'export_config_confirm' => 'Create export with current settings (config + users, no logs)?',
 	'export_full_confirm' => 'Create full backup (including log files)?',
 	'export_error' => 'Export creation error',
+	
+	// Device addition protection
+    'security_require_auth_for_add' => '🔒 Require authentication to add devices',
+    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
+    'add_device_auth_required' => 'Log in to add devices',
+	
+	// Add device errors
+    'add_device_error_name_group' => 'Device name and group are required',
+    'add_device_error_group_not_exists' => 'Group does not exist',
+    'add_device_error_already_exists' => 'Device already exists',
+    'add_device_success' => 'Device added',
+    'add_device_auth_required' => 'Add devices only through control panel',
+    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
+    'geo_invalid_ip' => 'Invalid IP address',
 ];
