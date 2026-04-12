@@ -1,10 +1,16 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 2.4.0
-// ДАТА: 2026-03-27
-// @description: Все AJAX обработчики
+// ВЕРСИЯ: 2.5.0
+// ДАТА: 2026-04-13
+// @description: Все AJAX обработчики с проверкой прав
 // ============================================
+
+// Сессия может быть уже запущена (в vlmcconf.php)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . '/users.php';
 
 // ============================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЭКСПОРТА
@@ -136,16 +142,16 @@ if (isset($_POST['ajax'])) {
     if ($_POST['ajax'] === 'backup_log') {
         $fullLogPath = $GLOBALS['fullLogPath'];
         if (!file_exists($fullLogPath)) {
-            echo json_encode(['success' => false, 'message' => __('msg_log_not_found')]);
+            echo json_encode(['success' => false, 'message' => 'Файл лога не найден']);
             exit;
         }
         $backupDir = dirname(__DIR__) . '/backups';
         if (!file_exists($backupDir)) mkdir($backupDir, 0755, true);
         $backupFile = $backupDir . '/vlmcsd_' . date('Y-m-d_H-i-s') . '.log';
         if (copy($fullLogPath, $backupFile)) {
-            echo json_encode(['success' => true, 'message' => __('msg_backup_created') . ': ' . basename($backupFile)]);
+            echo json_encode(['success' => true, 'message' => 'Резервная копия создана: ' . basename($backupFile)]);
         } else {
-            echo json_encode(['success' => false, 'message' => __('msg_backup_error')]);
+            echo json_encode(['success' => false, 'message' => 'Ошибка создания резервной копии']);
         }
         exit;
     }
@@ -158,7 +164,7 @@ if (isset($_POST['ajax'])) {
         $endDate = $_POST['endDate'] ?? '';
         
         if (!file_exists($fullLogPath)) {
-            echo json_encode(['success' => false, 'message' => __('msg_log_not_found')]);
+            echo json_encode(['success' => false, 'message' => 'Файл лога не найден']);
             exit;
         }
         
@@ -190,7 +196,7 @@ if (isset($_POST['ajax'])) {
             file_put_contents($fullLogPath, implode("\n", $newLines));
         }
         
-        echo json_encode(['success' => true, 'message' => "✅ " . sprintf(__('msg_records_deleted'), $deletedCount), 'deleted' => $deletedCount]);
+        echo json_encode(['success' => true, 'message' => "✅ Удалено $deletedCount записей", 'deleted' => $deletedCount]);
         exit;
     }
     
@@ -270,7 +276,65 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
-	    // Экспорт проекта
+    // ============================================
+    // AJAX: Добавление устройства (с проверкой прав)
+    // ============================================
+    if ($_POST['ajax'] === 'add_device') {
+        header('Content-Type: application/json');
+        
+        // Проверка авторизации
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
+            exit;
+        }
+        
+        // Проверка права на редактирование устройств
+        $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+        if (!($userPermissions & PERM_DEVICES_EDIT)) {
+            echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
+            exit;
+        }
+        
+        $deviceName = trim($_POST['deviceName'] ?? '');
+        $deviceGroup = $_POST['deviceGroup'] ?? '';
+        $deviceComment = trim($_POST['deviceComment'] ?? '');
+        
+        $response = ['success' => false, 'message' => ''];
+        
+        if (empty($deviceName) || empty($deviceGroup)) {
+            $response['message'] = 'Имя устройства и группа обязательны';
+        } else if (!isset($config['devices'][$deviceGroup])) {
+            $response['message'] = 'Группа не существует';
+        } else {
+            $exists = false;
+            foreach ($config['devices'][$deviceGroup] as $existing) {
+                if ($existing['name'] === $deviceName) {
+                    $exists = true;
+                    break;
+                }
+            }
+            
+            if ($exists) {
+                $response['message'] = 'Устройство уже существует';
+            } else {
+                $config['devices'][$deviceGroup][] = [
+                    'name' => $deviceName,
+                    'comment' => $deviceComment,
+                    'added' => date('Y-m-d H:i:s')
+                ];
+                file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                $response['success'] = true;
+                $response['message'] = 'Устройство добавлено';
+            }
+        }
+        
+        echo json_encode($response);
+        exit;
+    }
+    
+    // ============================================
+    // AJAX: Экспорт проекта
+    // ============================================
     if ($_POST['ajax'] === 'export_project') {
         $exportType = $_POST['export_type'] ?? 'clean';
         
@@ -282,7 +346,7 @@ if (isset($_POST['ajax'])) {
         }
         
         // Копируем файлы в зависимости от типа
-        $baseDir = dirname(__DIR__, 2); // /var/www/html
+        $baseDir = dirname(__DIR__, 2);
         
         // Всегда копируем основные файлы проекта
         $filesToCopy = [
@@ -328,7 +392,6 @@ if (isset($_POST['ajax'])) {
             if (file_exists($logFile)) {
                 copy($logFile, $tempDir . '/vlmcsd.log');
             }
-            // Копируем папку с бэкапами логов
             $backupsDir = $baseDir . '/vlmcconf/backups';
             if (is_dir($backupsDir)) {
                 copyDir($backupsDir, $tempDir . '/backups');
@@ -356,6 +419,34 @@ if (isset($_POST['ajax'])) {
         unlink($archivePath);
         exit;
     }
+	
+	// Проверка прав пользователя
+if ($_POST['ajax'] === 'check_permission') {
+    header('Content-Type: application/json');
+    
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Проверяем авторизацию
+    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        echo json_encode(['has_permission' => false]);
+        exit;
+    }
+    
+    $permission = $_POST['permission'] ?? '';
+    
+    // Проверяем право PERM_DEVICES_EDIT (8)
+    if ($permission === 'PERM_DEVICES_EDIT') {
+        $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+        $hasPermission = ($userPermissions & 8) === 8;
+        echo json_encode(['has_permission' => $hasPermission]);
+        exit;
+    }
+    
+    echo json_encode(['has_permission' => false]);
+    exit;
+}
 
     echo json_encode(['success' => false]);
     exit;
