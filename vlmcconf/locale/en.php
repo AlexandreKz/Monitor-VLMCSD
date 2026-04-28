@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 1.5.1
-// ДАТА: 2026-04-13
+// ВЕРСИЯ: 1.6.0
+// ДАТА: 2026-04-27
 // @description: English translations
 // ============================================
 
@@ -17,6 +17,8 @@ return [
     'menu_settings' => 'Settings',
     'menu_logout' => 'Logout',
     'menu_logout_confirm' => 'Are you sure you want to logout?',
+    'menu_tools' => 'Tools',
+    'menu_documentation' => 'Documentation',
     
     // General settings
     'general_title' => 'General Settings',
@@ -41,13 +43,21 @@ return [
     'theme_silver_standard' => '🥈 Silver Standard',
     'theme_dark_quartz' => '🖤 Dark Quartz',
     'theme_cabernet_sauvignon' => '🍷 Cabernet Sauvignon',
-	'theme_spring' => '🌸 Spring',
-	'theme_winter' => '❄️ Winter',
-	'theme_summer' => '☀️ Summer',
-	'theme_autumn' => '🍂 Autumn',
-	'theme_poker' => '🎲 Poker',
-	'theme_corporate_blue' => '🔷 Corporate Blue',
+    'theme_spring' => '🌸 Spring',
+    'theme_winter' => '❄️ Winter',
+    'theme_summer' => '☀️ Summer',
+    'theme_autumn' => '🍂 Autumn',
+    'theme_poker' => '🎲 Poker',
+    'theme_corporate_blue' => '🔷 Corporate Blue',
     
+	// Theme preview
+	'theme_preview' => 'Theme Preview',
+	'theme_preview_button' => 'Button',
+	'theme_preview_success' => 'Success',
+	'theme_preview_error' => 'Error',
+	'theme_preview_card' => 'Example text on card',
+	'theme_preview_muted' => 'Muted text',
+	
     // Group names
     'Домашние' => '🏠 Home',
     'Рабочие' => '💼 Work',
@@ -66,7 +76,7 @@ return [
     'devices_title' => 'Manage Devices',
     'devices_add' => 'Add Device',
     'devices_name' => 'Device name',
-	'devices_name_placeholder' => 'Enter device name',
+    'devices_name_placeholder' => 'Enter device name',
     'devices_group' => 'Group',
     'devices_comment' => 'Comment',
     'devices_list' => 'All Devices',
@@ -76,6 +86,9 @@ return [
     'devices_edit' => 'Edit',
     'devices_delete' => 'Delete',
     'devices_delete_confirm' => 'Delete device?',
+    'devices_sort' => 'Sort:',
+    'devices_sort_name' => 'By name',
+    'devices_sort_group' => 'By group',
     
     // Security
     'security_title' => 'Security',
@@ -134,12 +147,60 @@ return [
     'info_reset' => 'Reset settings',
     'info_reset_confirm' => 'Reset all settings? This will delete all added groups and devices.',
     
+    // Tools
+	'tools_title' => 'Tools',
+	'tools_log_management' => 'Log Management',
+	'tools_geo_cache' => 'GeoIP Cache',
+	'tools_cache_files' => 'Cache files',
+	'tools_cache_size' => 'Cache size',
+	'tools_cache_clear' => 'Clear Cache',
+	'tools_cache_clear_desc' => 'Delete all geo-location cache files',
+	'tools_cache_clear_btn' => 'Clear Cache',
+	'tools_cache_clear_confirm' => 'Delete all geo-location cache files? This may slow down geo-data loading on next requests.',
+	'tools_cache_refresh' => 'Refresh Cache',
+	'tools_cache_refresh_desc' => 'Re-request geo-data for all IPs from the log',
+	'tools_cache_refresh_btn' => 'Refresh Cache',
+	'tools_cache_check' => 'Check Cache',
+	'tools_cache_check_desc' => 'Show current cache statistics',
+	'tools_cache_check_btn' => 'Check',
+	'tools_cache_stats' => 'Cache statistics',
+	'tools_cache_cleared' => 'Cache cleared',
+	'tools_cache_refreshed' => 'Cache refreshed',
+	'tools_cache_updated_count' => 'Cache statistics updated',
+	'tools_cache_no_ips' => 'No IPs to update',
+	'tools_cache_started' => 'Cache refresh started',
+	'tools_cache_starting' => 'Starting cache refresh...',
+	'tools_cache_background' => 'Cache is being updated in background',
+	'tools_cache_ips' => 'IPs',
+	'tools_cache_error' => 'Cache refresh error',
+	'tools_cache_processing' => 'Processing batch',
+	'tools_cache_portion_complete' => '✅ Batch %d: processed %d of %d IPs (%d left)',
+	'tools_cache_complete' => 'Cache update completed',
+	'tools_cache_of' => 'of',
+	'tools_cache_remaining' => 'remaining',
+	'tools_cache_in_progress' => 'Updating cache',
+	'tools_cache_in_progress_title' => 'Updating GeoIP Cache',
+	'tools_cache_already_running' => 'Update already running, please wait',
+	'tools_cache_updated' => 'updated',
+	'tools_cache_wait' => 'Please wait for cache update to complete',
+	'tools_cache_clearing' => 'Clearing...',
+	'tools_cache_backup' => 'Creating backup...',
+	'tools_cache_export' => 'Preparing export...',
+	'tools_cache_clearing_cache' => 'Clearing cache...',
+	'tools_cache_confirm_title' => 'Confirm Operation',
+	'tools_cache_confirm_warning' => 'The cache update process may take a long time depending on the number of IP addresses in the log (approximately 1 minute for 300 IPs).',
+	'tools_cache_estimate' => '⏱️ During the update, all control panel functions will be unavailable. Are you sure you want to continue?',
+	'tools_cache_confirm_yes' => 'Yes, continue',
+	'tools_cache_confirm_no' => 'No, cancel',
+	'tools_cache_result_title' => 'Cache Update Result',
+	'tools_cache_result_ok' => 'Close',
+    
     // Common
     'save' => 'Save',
     'apply' => 'Apply',
     'add' => 'Add',
-    'delete' => 'Delete',
     'edit' => 'Edit',
+    'delete' => 'Delete',
     'close' => 'Close',
     'back' => 'Back',
     'refresh' => 'Refresh',
@@ -158,7 +219,7 @@ return [
     
     // Messages
     'msg_theme_saved' => '✅ Theme applied',
-    'msg_language_saved' => '✅ Language changed to English',
+    'msg_language_saved' => '✅ Language changed',
     'msg_log_path_saved' => '✅ Log path saved',
     'msg_group_added' => '✅ Group added',
     'msg_group_deleted' => '✅ Group deleted',
@@ -240,22 +301,45 @@ return [
     'permissions_edit_short' => '✏️',
     'permissions_save' => '💾 Save',
     
-    // Password error messages
-    'password_too_short' => 'Password must be at least 8 characters',
-    'password_no_uppercase' => 'Password must contain at least one uppercase letter (A-Z)',
-    'password_no_lowercase' => 'Password must contain at least one lowercase letter (a-z)',
-    'password_no_digit' => 'Password must contain at least one digit (0-9)',
-    'password_invalid_chars' => 'Password can only contain Latin letters and digits',
+    // Project export
+    'export_title' => 'Export Project',
+    'export_clean' => 'Clean project',
+    'export_with_config' => 'With settings',
+    'export_full' => 'Full backup',
+    'export_clean_desc' => 'File structure only, no logs and settings',
+    'export_config_desc' => 'With settings (config + users), no logs',
+    'export_full_desc' => 'Full project backup (including log files)',
+    'export_clean_confirm' => 'Create clean export (file structure only, no logs and settings)?',
+    'export_config_confirm' => 'Create export with current settings (config + users, no logs)?',
+    'export_full_confirm' => 'Create full backup (including log files)?',
+    'export_success' => 'Export created',
+    'export_error' => 'Export creation error',
     
-    // Graph
-    'graph_requests' => 'requests',
-    'graph_request' => 'request',
-    'graph_requests_few' => 'requests',
+    // Device addition
+    'add_device_error_name_group' => 'Device name and group are required',
+    'add_device_error_group_not_exists' => 'Group does not exist',
+    'add_device_error_already_exists' => 'Device already exists',
+    'add_device_success' => 'Device added',
+    'add_device_auth_required' => 'Add devices only through control panel',
+    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
     
-    // Structure
-    'structure_stable' => 'stable',
-    'structure_working' => 'working',
-    'structure_development' => 'development',
+    // Geolocation
+    'geo_local' => 'Local',
+    'geo_unknown' => 'Unknown',
+    'geo_cache_warning' => '⚠️ Cache disabled (folder not writable)',
+    'geo_cache_write_error' => '⚠️ Cache disabled (write error)',
+    'geo_invalid_ip' => 'Invalid IP address',
+    
+    // Passwords
+    'password_min_length' => 'Password must be at least 8 characters',
+    'password_need_uppercase' => 'Password must contain at least one uppercase letter (A-Z)',
+    'password_need_lowercase' => 'Password must contain at least one lowercase letter (a-z)',
+    'password_need_digit' => 'Password must contain at least one digit (0-9)',
+    'password_need_special' => 'Password must contain at least one special character (!@#$%^&*()_+ etc.)',
+    
+    // Usernames
+    'username_min_length' => 'Username must be at least 3 characters',
+    'username_invalid_chars' => 'Username can only contain letters, numbers, hyphen (-) and underscore (_)',
     
     // Main monitor
     'title_monitor' => 'Corporate Monitoring',
@@ -293,116 +377,59 @@ return [
     'tooltip_devices' => 'Devices',
     'tooltip_products' => 'Products',
     'none' => 'none',
+    'never' => 'never',
+    
+    // Statuses
     'status_file_not_found' => 'File not found',
     'status_read_error' => 'Read error',
     'status_no_data' => 'No data',
     'status_stable' => '✅ Stable',
     'status_recent' => '🟡 Recently started',
     'status_active' => '🟢 Active',
-    'geo_title' => 'Information',
-    'geo_device_title' => '🌍 Device Information',
-    'geo_suspicious_title' => '🌍 Suspicious IP Information',
-    'geo_loading' => '⏳ Loading data...',
-    'geo_country' => 'Country',
-    'geo_region' => 'Region',
-    'geo_city' => 'City',
-    'geo_isp' => 'ISP',
-    'geo_org' => 'Organization',
-    'geo_timezone' => 'Timezone',
-    'geo_range' => 'Range',
-    'geo_provider_ranges' => 'Provider ranges',
-    'geo_error' => 'Data load error',
-    'add_device_title' => 'Add Device',
-    'add_device_name' => 'Device name',
-    'add_device_group' => 'Group',
-    'add_device_comment' => 'Comment (optional)',
-    'add_device_comment_placeholder' => 'e.g., owner name',
-    'add_device_btn' => 'Add Device',
-    'add_device_error_name' => 'Device name is required',
-    'add_device_loading' => '⏳ Adding...',
-    'add_device_error' => 'Error adding device',
-    'toast_copied' => '📋 Copied!',
-    'toast_copy_error' => '❌ Copy error',
-    'never' => 'never',
-    'theme_preview' => 'Theme Preview',
-    'theme_preview_button' => 'Button',
-    'theme_preview_success' => 'Success',
-    'theme_preview_error' => 'Error',
-    'theme_preview_card' => 'Example text on card',
-    'theme_preview_muted' => 'Muted text',
-	
-	// New translations for labels
-	'label_language' => 'Interface Language',
-	'label_log_path' => 'Log file path',
-	'label_group_name' => 'Group name',
-	'label_group_color' => 'Group color',
-	'label_device_name' => 'Device name',
-	'label_device_group' => 'Group',
-	'label_device_comment' => 'Comment',
-
-	// Device sorting
-	'devices_sort' => 'Sort:',
-	'devices_sort_name' => 'By name',
-	'devices_sort_group' => 'By group',
-	
-	// Login page
-	'login_title' => 'Login',
-	'control_panel' => 'Control Panel',
-	'change_password_title' => 'Change Password',
-	'username_label' => '👤 Username',
-	'password_label' => '🔒 Password',
-	'new_password_label' => '🔐 New Password',
-	'confirm_password_label' => '🔐 Confirm Password',
-	'user_label' => '👤 User',
-	'username_placeholder' => 'Enter username',
-	'password_placeholder' => 'Enter password',
-	'login_button' => 'Login',
-	'set_password_and_login' => 'Set password and login',
-	'back_to_monitor' => 'Back to monitor',
-	'first_login_hint' => 'On first login (root/root) you will be prompted to change password',
-	'password_requirements' => 'Requirements: minimum 8 characters, uppercase and lowercase letters, at least one digit (Latin only)',
-	'invalid_login' => 'Invalid username or password',
-	'user_not_found' => 'User not found',
-	'password_change_error' => 'Error changing password',
-
-	// Username validation
-	'username_min_length' => 'Username must be at least 3 characters',
-	'username_invalid_chars' => 'Username can only contain letters, numbers, hyphen (-) and underscore (_)',
-
-	// Password validation
-	'password_min_length' => 'Password must be at least 8 characters',
-	'password_need_uppercase' => 'Password must contain at least one uppercase letter (A-Z)',
-	'password_need_lowercase' => 'Password must contain at least one lowercase letter (a-z)',
-	'password_need_digit' => 'Password must contain at least one digit (0-9)',
-	'password_need_special' => 'Password must contain at least one special character (!@#$%^&*()_+ etc.)',
-	
-	'menu_documentation' => 'Documentation',
-	'doc_title' => 'Documentation',
-	'doc_download' => 'Download',
-	'doc_web' => 'Web Interface',
+    
+    // Graph
+    'graph_requests' => 'requests',
+    'graph_request' => 'request',
+    'graph_requests_few' => 'requests',
+    
+    // Structure
+    'structure_stable' => 'stable',
+    'structure_working' => 'working',
+    'structure_development' => 'development',
+    
+    // Documentation
+    'doc_title' => 'Documentation',
+    'doc_download' => 'Download',
+    'doc_web' => 'Web Interface',
     'doc_kms' => 'KMS Server',
-	
-	// Project export
-	'export_title' => 'Export Project',
-	'export_clean' => 'Clean project',
-	'export_with_config' => 'With settings',
-	'export_full' => 'Full backup',
-	'export_clean_confirm' => 'Create clean export (file structure only, no logs and settings)?',
-	'export_config_confirm' => 'Create export with current settings (config + users, no logs)?',
-	'export_full_confirm' => 'Create full backup (including log files)?',
-	'export_error' => 'Export creation error',
-	
-	// Device addition protection
-    'security_require_auth_for_add' => '🔒 Require authentication to add devices',
-    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
-    'add_device_auth_required' => 'Log in to add devices',
-	
-	// Add device errors
-    'add_device_error_name_group' => 'Device name and group are required',
-    'add_device_error_group_not_exists' => 'Group does not exist',
-    'add_device_error_already_exists' => 'Device already exists',
-    'add_device_success' => 'Device added',
-    'add_device_auth_required' => 'Add devices only through control panel',
-    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
-    'geo_invalid_ip' => 'Invalid IP address',
+    
+    // Login page
+    'login_title' => 'Login',
+    'control_panel' => 'Control Panel',
+    'change_password_title' => 'Change Password',
+    'username_label' => '👤 Username',
+    'password_label' => '🔒 Password',
+    'new_password_label' => '🔐 New Password',
+    'confirm_password_label' => '🔐 Confirm Password',
+    'user_label' => '👤 User',
+    'username_placeholder' => 'Enter username',
+    'password_placeholder' => 'Enter password',
+    'login_button' => 'Login',
+    'set_password_and_login' => 'Set password and login',
+    'back_to_monitor' => 'Back to monitor',
+    'first_login_hint' => 'On first login (root/root) you will be prompted to change password',
+    'password_requirements' => 'Requirements: minimum 8 characters, uppercase and lowercase letters, at least one digit (Latin only)',
+    'invalid_login' => 'Invalid username or password',
+    'user_not_found' => 'User not found',
+    'password_change_error' => 'Error changing password',
+    
+    // Labels
+    'label_language' => 'Interface Language',
+    'label_log_path' => 'Log file path',
+    'label_group_name' => 'Group name',
+    'label_group_color' => 'Group color',
+    'label_device_name' => 'Device name',
+    'label_device_group' => 'Group',
+    'label_device_comment' => 'Comment',
 ];
+?>

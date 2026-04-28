@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 1.5.1
-// ДАТА: 2026-04-13
+// ВЕРСИЯ: 1.6.0
+// ДАТА: 2026-04-27
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -17,6 +17,8 @@ return [
     'menu_settings' => 'Настройки',
     'menu_logout' => 'Выйти',
     'menu_logout_confirm' => 'Вы уверены, что хотите выйти?',
+    'menu_tools' => 'Инструменты',
+    'menu_documentation' => 'Документация',
     
     // Общие настройки
     'general_title' => 'Общие настройки',
@@ -41,13 +43,21 @@ return [
     'theme_silver_standard' => '🥈 Серебряный стандарт',
     'theme_dark_quartz' => '🖤 Тёмный кварц',
     'theme_cabernet_sauvignon' => '🍷 Каберне Совиньон',
-	'theme_spring' => '🌸 Весенняя',
-	'theme_winter' => '❄️ Зимняя',
-	'theme_summer' => '☀️ Летняя',
-	'theme_autumn' => '🍂 Осенняя',
-	'theme_poker' => '🎲 Покер',
-	'theme_corporate_blue' => '🔷 Корпоративный синий',
+    'theme_spring' => '🌸 Весенняя',
+    'theme_winter' => '❄️ Зимняя',
+    'theme_summer' => '☀️ Летняя',
+    'theme_autumn' => '🍂 Осенняя',
+    'theme_poker' => '🎲 Покер',
+    'theme_corporate_blue' => '🔷 Корпоративный синий',
     
+	// Предпросмотр темы
+	'theme_preview' => 'Предпросмотр темы',
+	'theme_preview_button' => 'Кнопка',
+	'theme_preview_success' => 'Успех',
+	'theme_preview_error' => 'Ошибка',
+	'theme_preview_card' => 'Пример текста на карточке',
+	'theme_preview_muted' => 'Второстепенный текст',
+	
     // Названия групп
     'Домашние' => '🏠 Домашние',
     'Рабочие' => '💼 Рабочие',
@@ -66,7 +76,7 @@ return [
     'devices_title' => 'Управление устройствами',
     'devices_add' => 'Добавить устройство',
     'devices_name' => 'Имя устройства',
-	'devices_name_placeholder' => 'Введите имя устройства',
+    'devices_name_placeholder' => 'Введите имя устройства',
     'devices_group' => 'Группа',
     'devices_comment' => 'Комментарий',
     'devices_list' => 'Список всех устройств',
@@ -76,6 +86,9 @@ return [
     'devices_edit' => 'Редактировать',
     'devices_delete' => 'Удалить',
     'devices_delete_confirm' => 'Удалить устройство?',
+    'devices_sort' => 'Сортировка:',
+    'devices_sort_name' => 'По имени',
+    'devices_sort_group' => 'По группе',
     
     // Безопасность
     'security_title' => 'Безопасность',
@@ -133,6 +146,54 @@ return [
     'info_structure' => 'Структура проекта',
     'info_reset' => 'Сбросить настройки',
     'info_reset_confirm' => 'Сбросить все настройки? Это удалит все добавленные группы и устройства.',
+    
+    // Инструменты
+	'tools_title' => 'Инструменты',
+	'tools_log_management' => 'Управление логом',
+	'tools_geo_cache' => 'Кэш геолокации',
+	'tools_cache_files' => 'Файлов в кэше',
+	'tools_cache_size' => 'Объём кэша',
+	'tools_cache_clear' => 'Очистка кэша',
+	'tools_cache_clear_desc' => 'Удалить все файлы кэша геолокации',
+	'tools_cache_clear_btn' => 'Очистить кэш',
+	'tools_cache_clear_confirm' => 'Удалить все файлы кэша геолокации? Это может замедлить загрузку геоданных при следующем обращении.',
+	'tools_cache_refresh' => 'Обновление кэша',
+	'tools_cache_refresh_desc' => 'Перезапросить геоданные для всех IP из лога',
+	'tools_cache_refresh_btn' => 'Обновить кэш',
+	'tools_cache_check' => 'Проверка кэша',
+	'tools_cache_check_desc' => 'Показать текущую статистику кэша',
+	'tools_cache_check_btn' => 'Проверить',
+	'tools_cache_stats' => 'Статистика кэша',
+	'tools_cache_cleared' => 'Кэш очищен',
+	'tools_cache_refreshed' => 'Кэш обновлён',
+	'tools_cache_updated_count' => 'Статистика обновлена',
+	'tools_cache_no_ips' => 'Нет IP для обновления',
+	'tools_cache_started' => 'Обновление кэша запущено',
+	'tools_cache_starting' => 'Запуск обновления кэша...',
+	'tools_cache_background' => 'Кэш обновляется в фоновом режиме',
+	'tools_cache_ips' => 'IP',
+	'tools_cache_error' => 'Ошибка обновления кэша',
+	'tools_cache_processing' => 'Обработка порции',
+	'tools_cache_portion_complete' => '✅ Порция %d: обработано %d из %d IP (осталось %d)',
+	'tools_cache_complete' => 'Обновление кэша завершено',
+	'tools_cache_of' => 'из',
+	'tools_cache_remaining' => 'осталось',
+	'tools_cache_in_progress' => 'Обновление кэша',
+	'tools_cache_in_progress_title' => 'Обновление кэша геолокации',
+	'tools_cache_already_running' => 'Обновление уже выполняется, подождите',
+	'tools_cache_updated' => 'обновлено',
+	'tools_cache_wait' => 'Дождитесь завершения обновления кэша',
+	'tools_cache_clearing' => 'Выполняется очистка...',
+	'tools_cache_backup' => 'Создание резервной копии...',
+	'tools_cache_export' => 'Подготовка экспорта...',
+	'tools_cache_clearing_cache' => 'Очистка кэша...',
+	'tools_cache_confirm_title' => 'Подтверждение операции',
+	'tools_cache_confirm_warning' => 'Процесс обновления кэша может занять длительное время, в зависимости от количества IP адресов в логе (примерно 1 минута для 300 IP).',
+	'tools_cache_estimate' => '⏱️ На время обновления все функции панели управления будут недоступны. Вы уверены, что хотите продолжить?',
+	'tools_cache_confirm_yes' => 'Да, продолжить',
+	'tools_cache_confirm_no' => 'Нет, отмена',
+	'tools_cache_result_title' => 'Результат обновления кэша',
+	'tools_cache_result_ok' => 'Закрыть',
     
     // Общие
     'save' => 'Сохранить',
@@ -220,7 +281,7 @@ return [
     'new_password' => 'Новый пароль',
     'confirm_password' => 'Подтверждение пароля',
     
-    // Модальное окно прав
+    // Права доступа
     'permissions_title_add' => '➕ Добавление пользователя',
     'permissions_title_edit' => '✎ Редактирование пользователя',
     'permissions_title_password' => '🔑 Смена пароля',
@@ -240,22 +301,45 @@ return [
     'permissions_edit_short' => '✏️',
     'permissions_save' => '💾 Сохранить',
     
-    // Сообщения об ошибках пароля
-    'password_too_short' => 'Пароль должен быть не менее 8 символов',
-    'password_no_uppercase' => 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)',
-    'password_no_lowercase' => 'Пароль должен содержать хотя бы одну строчную букву (a-z)',
-    'password_no_digit' => 'Пароль должен содержать хотя бы одну цифру (0-9)',
-    'password_invalid_chars' => 'Пароль может содержать только латинские буквы и цифры',
+    // Экспорт проекта
+    'export_title' => 'Экспорт проекта',
+    'export_clean' => 'Чистый проект',
+    'export_with_config' => 'С настройками',
+    'export_full' => 'Полный бэкап',
+    'export_clean_desc' => 'Только структура файлов, без логов и настроек',
+    'export_config_desc' => 'С настройками (конфиг + пользователи), без логов',
+    'export_full_desc' => 'Полный бэкап проекта (включая лог-файлы)',
+    'export_clean_confirm' => 'Создать чистый экспорт (только структура файлов, без логов и настроек)?',
+    'export_config_confirm' => 'Создать экспорт с текущими настройками (конфиг + пользователи, без логов)?',
+    'export_full_confirm' => 'Создать полный бэкап (включая лог-файлы)?',
+    'export_success' => 'Экспорт создан',
+    'export_error' => 'Ошибка при создании экспорта',
     
-    // График
-    'graph_requests' => 'запросов',
-    'graph_request' => 'запрос',
-    'graph_requests_few' => 'запроса',
+    // Добавление устройств
+    'add_device_error_name_group' => 'Имя устройства и группа обязательны',
+    'add_device_error_group_not_exists' => 'Группа не существует',
+    'add_device_error_already_exists' => 'Устройство уже существует',
+    'add_device_success' => 'Устройство добавлено',
+    'add_device_auth_required' => 'Добавление устройств только через панель управления',
+    'error_no_permission_to_add' => '❌ У вас нет прав на добавление устройств',
     
-    // Структура
-    'structure_stable' => 'стабильно',
-    'structure_working' => 'работает',
-    'structure_development' => 'в разработке',
+    // Геолокация
+    'geo_local' => 'Локальный',
+    'geo_unknown' => 'Неизвестно',
+    'geo_cache_warning' => '⚠️ Кеш отключен (папка недоступна для записи)',
+    'geo_cache_write_error' => '⚠️ Кеш отключен (ошибка записи)',
+    'geo_invalid_ip' => 'Неверный IP адрес',
+    
+    // Пароли
+    'password_min_length' => 'Пароль должен быть не менее 8 символов',
+    'password_need_uppercase' => 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)',
+    'password_need_lowercase' => 'Пароль должен содержать хотя бы одну строчную букву (a-z)',
+    'password_need_digit' => 'Пароль должен содержать хотя бы одну цифру (0-9)',
+    'password_need_special' => 'Пароль должен содержать хотя бы один спецсимвол (!@#$%^&*()_+ и т.д.)',
+    
+    // Логины
+    'username_min_length' => 'Логин должен быть не менее 3 символов',
+    'username_invalid_chars' => 'Логин может содержать только буквы, цифры, дефис (-) и подчеркивание (_)',
     
     // Главный монитор
     'title_monitor' => 'Корпоративный мониторинг',
@@ -293,116 +377,59 @@ return [
     'tooltip_devices' => 'Устройств',
     'tooltip_products' => 'Продукты',
     'none' => 'нет',
+    'never' => 'никогда',
+    
+    // Статусы
     'status_file_not_found' => 'Файл не найден',
     'status_read_error' => 'Ошибка чтения',
     'status_no_data' => 'Нет данных',
     'status_stable' => '✅ Стабильно',
     'status_recent' => '🟡 Недавно запущен',
     'status_active' => '🟢 Активен',
-    'geo_title' => 'Информация',
-    'geo_device_title' => '🌍 Информация об устройстве',
-    'geo_suspicious_title' => '🌍 Информация о подозрительном IP',
-    'geo_loading' => '⏳ Загрузка данных...',
-    'geo_country' => 'Страна',
-    'geo_region' => 'Регион',
-    'geo_city' => 'Город',
-    'geo_isp' => 'Провайдер',
-    'geo_org' => 'Организация',
-    'geo_timezone' => 'Часовой пояс',
-    'geo_range' => 'Диапазон',
-    'geo_provider_ranges' => 'Диапазоны',
-    'geo_error' => 'Ошибка загрузки данных',
-    'add_device_title' => 'Добавить устройство',
-    'add_device_name' => 'Имя устройства',
-    'add_device_group' => 'Группа',
-    'add_device_comment' => 'Комментарий (необязательно)',
-    'add_device_comment_placeholder' => 'Например, кому принадлежит',
-    'add_device_btn' => 'Добавить устройство',
-    'add_device_error_name' => 'Имя устройства обязательно',
-    'add_device_loading' => '⏳ Добавление...',
-    'add_device_error' => 'Ошибка при добавлении устройства',
-    'toast_copied' => '📋 Скопировано!',
-    'toast_copy_error' => '❌ Ошибка копирования',
-    'never' => 'никогда',
-    'theme_preview' => 'Предпросмотр темы',
-    'theme_preview_button' => 'Кнопка',
-    'theme_preview_success' => 'Успех',
-    'theme_preview_error' => 'Ошибка',
-    'theme_preview_card' => 'Пример текста на карточке',
-    'theme_preview_muted' => 'Второстепенный текст',
-	
-	// Новые переводы для label
-	'label_language' => 'Язык интерфейса',
-	'label_log_path' => 'Путь к файлу лога',
-	'label_group_name' => 'Название группы',
-	'label_group_color' => 'Цвет группы',
-	'label_device_name' => 'Имя устройства',
-	'label_device_group' => 'Группа',
-	'label_device_comment' => 'Комментарий',
-
-	// Сортировка устройств
-	'devices_sort' => 'Сортировка:',
-	'devices_sort_name' => 'По имени',
-	'devices_sort_group' => 'По группе',
-	
-	// Страница входа
-	'login_title' => 'Вход',
-	'control_panel' => 'Панель управления',
-	'change_password_title' => 'Смена пароля',
-	'username_label' => '👤 Логин',
-	'password_label' => '🔒 Пароль',
-	'new_password_label' => '🔐 Новый пароль',
-	'confirm_password_label' => '🔐 Подтверждение пароля',
-	'user_label' => '👤 Пользователь',
-	'username_placeholder' => 'Введите логин',
-	'password_placeholder' => 'Введите пароль',
-	'login_button' => 'Войти',
-	'set_password_and_login' => 'Установить пароль и войти',
-	'back_to_monitor' => 'Вернуться к монитору',
-	'first_login_hint' => 'При первом входе (root/root) будет предложено сменить пароль',
-	'password_requirements' => 'Требования: минимум 8 символов, заглавные и строчные буквы, хотя бы одна цифра (только латиница)',
-	'invalid_login' => 'Неверный логин или пароль',
-	'user_not_found' => 'Пользователь не найден',
-	'password_change_error' => 'Ошибка при смене пароля',
-	
-	// Валидация логина
-	'username_min_length' => 'Логин должен быть не менее 3 символов',
-	'username_invalid_chars' => 'Логин может содержать только буквы, цифры, дефис (-) и подчеркивание (_)',
-
-	// Валидация пароля
-	'password_min_length' => 'Пароль должен быть не менее 8 символов',
-	'password_need_uppercase' => 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)',
-	'password_need_lowercase' => 'Пароль должен содержать хотя бы одну строчную букву (a-z)',
-	'password_need_digit' => 'Пароль должен содержать хотя бы одну цифру (0-9)',
-	'password_need_special' => 'Пароль должен содержать хотя бы один спецсимвол (!@#$%^&*()_+ и т.д.)',
-	
-	'menu_documentation' => 'Документация',
-	'doc_title' => 'Документация',
-	'doc_download' => 'Скачать',
-	'doc_web' => 'Веб-оболочка',
+    
+    // График
+    'graph_requests' => 'запросов',
+    'graph_request' => 'запрос',
+    'graph_requests_few' => 'запроса',
+    
+    // Структура
+    'structure_stable' => 'стабильно',
+    'structure_working' => 'работает',
+    'structure_development' => 'в разработке',
+    
+    // Документация
+    'doc_title' => 'Документация',
+    'doc_download' => 'Скачать',
+    'doc_web' => 'Веб-оболочка',
     'doc_kms' => 'KMS Сервер',
-	
-	// Экспорт проекта
-	'export_title' => 'Экспорт проекта',
-	'export_clean' => 'Чистый проект',
-	'export_with_config' => 'С настройками',
-	'export_full' => 'Полный бэкап',
-	'export_clean_confirm' => 'Создать чистый экспорт (только структура файлов, без логов и настроек)?',
-	'export_config_confirm' => 'Создать экспорт с текущими настройками (конфиг + пользователи, без логов)?',
-	'export_full_confirm' => 'Создать полный бэкап (включая лог-файлы)?',
-	'export_error' => 'Ошибка при создании экспорта',
-	
-	// Защита добавления устройств
-    'security_require_auth_for_add' => '🔒 Требовать авторизацию для добавления устройств',
-    'error_no_permission_to_add' => '❌ У вас нет прав на добавление устройств',
-    'add_device_auth_required' => 'Авторизуйтесь для добавления устройств',
-	
-	// Добавление устройств (ошибки)
-    'add_device_error_name_group' => 'Имя устройства и группа обязательны',
-    'add_device_error_group_not_exists' => 'Группа не существует',
-    'add_device_error_already_exists' => 'Устройство уже существует',
-    'add_device_success' => 'Устройство добавлено',
-    'add_device_auth_required' => 'Добавление устройств только через панель управления',
-    'error_no_permission_to_add' => '❌ У вас нет прав на добавление устройств',
-    'geo_invalid_ip' => 'Неверный IP адрес',
+    
+    // Страница входа
+    'login_title' => 'Вход',
+    'control_panel' => 'Панель управления',
+    'change_password_title' => 'Смена пароля',
+    'username_label' => '👤 Логин',
+    'password_label' => '🔒 Пароль',
+    'new_password_label' => '🔐 Новый пароль',
+    'confirm_password_label' => '🔐 Подтверждение пароля',
+    'user_label' => '👤 Пользователь',
+    'username_placeholder' => 'Введите логин',
+    'password_placeholder' => 'Введите пароль',
+    'login_button' => 'Войти',
+    'set_password_and_login' => 'Установить пароль и войти',
+    'back_to_monitor' => 'Вернуться к монитору',
+    'first_login_hint' => 'При первом входе (root/root) будет предложено сменить пароль',
+    'password_requirements' => 'Требования: минимум 8 символов, заглавные и строчные буквы, хотя бы одна цифра (только латиница)',
+    'invalid_login' => 'Неверный логин или пароль',
+    'user_not_found' => 'Пользователь не найден',
+    'password_change_error' => 'Ошибка при смене пароля',
+    
+    // Подсказки
+    'label_language' => 'Язык интерфейса',
+    'label_log_path' => 'Путь к файлу лога',
+    'label_group_name' => 'Название группы',
+    'label_group_color' => 'Цвет группы',
+    'label_device_name' => 'Имя устройства',
+    'label_device_group' => 'Группа',
+    'label_device_comment' => 'Комментарий',
 ];
+?>
