@@ -6,8 +6,6 @@
 // @description: Панель управления настройками монитора
 // ============================================
 
-session_start();
-
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
 // ============================================
@@ -21,6 +19,8 @@ foreach ($protectedExtensions as $ext) {
         die('Access denied');
     }
 }
+
+session_start();
 
 // Проверка авторизации
 if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
@@ -47,6 +47,7 @@ require_once __DIR__ . '/vlmcinc/structure.php';
 require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcinc/users.php';
+require_once __DIR__ . '/vlmcinc/geo_cache.php';
 
 // ============================================
 // ПРОВЕРКА ПРАВ
@@ -1509,6 +1510,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 </div>
                 <?php endif; ?>
                 
+				<!-- Инструменты -->
+				<div class="menu-item <?= $activeSection === 'tools' ? 'active' : '' ?>" onclick="showSection('tools', this)">
+					<span class="menu-item-icon">🛠️</span>
+					<span><?= __('menu_tools') ?></span>
+				</div>
+				
                 <!-- Безопасность - только если есть права на просмотр логов или пользователей -->
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)): ?>
                 <div class="menu-item <?= $activeSection === 'security' ? 'active' : '' ?>" onclick="showSection('security', this)">
@@ -1554,6 +1561,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)) include __DIR__ . '/sections/security.php'; ?>
                 <?php include __DIR__ . '/sections/stats.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)) include __DIR__ . '/sections/info.php'; ?>
+				<?php include __DIR__ . '/sections/tools.php'; ?>
 		    </div>
         </div>
         

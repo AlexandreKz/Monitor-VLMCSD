@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcgeoip.php
-// ВЕРСИЯ: 1.2.0
-// ДАТА: 2026-03-28
-// @description: Геолокация IP-адресов + флаги стран
+// ВЕРСИЯ: 1.6.0
+// ДАТА: 2026-04-27
+// @description: Геолокация IP-адресов + флаги стран (только .txt кэш)
 // ============================================
 
 /**
@@ -115,7 +115,18 @@ function getProviderRanges($isp) {
 }
 
 /**
- * Прямой запрос к API (без кеша)
+ * Получить директорию кэша геолокации (постоянная)
+ */
+function getGeoCacheDir() {
+    $cacheDir = dirname(__DIR__) . '/vlmcconf/cache/geo_cache';
+    if (!file_exists($cacheDir)) {
+        mkdir($cacheDir, 0755, true);
+    }
+    return $cacheDir;
+}
+
+/**
+ * Прямой запрос к API (только страна)
  */
 function getGeoLocationDirect($ip) {
     $apis = [
@@ -150,30 +161,23 @@ function getGeoLocationDirect($ip) {
         }
     }
     
-    return 'Неизвестно';
+    return __('geo_unknown');
 }
 
 /**
- * Получение геолокации по IP с кешированием
+ * Получение геолокации по IP с кэшированием (только страна)
+ * Используется на главной странице для отображения флагов
  */
 function getGeoLocation($ip, &$cacheStatus, &$cacheMessage) {
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        return 'Локальный';
+        return __('geo_local');
     }
     
-    $cacheDir = '/tmp/kms_cache';
-    
-    if (!file_exists($cacheDir)) {
-        if (!@mkdir($cacheDir, 0777, true)) {
-            $cacheStatus = false;
-            $cacheMessage = '⚠️ Кеш отключен (нет прав на запись)';
-            return getGeoLocationDirect($ip);
-        }
-    }
+    $cacheDir = getGeoCacheDir();
     
     if (!is_writable($cacheDir)) {
         $cacheStatus = false;
-        $cacheMessage = '⚠️ Кеш отключен (папка недоступна для записи)';
+        $cacheMessage = __('geo_cache_warning');
         return getGeoLocationDirect($ip);
     }
     
@@ -190,19 +194,20 @@ function getGeoLocation($ip, &$cacheStatus, &$cacheMessage) {
     
     if (!@file_put_contents($cacheFile, $country)) {
         $cacheStatus = false;
-        $cacheMessage = '⚠️ Кеш отключен (ошибка записи)';
+        $cacheMessage = __('geo_cache_write_error');
     }
     
     return $country;
 }
 
 /**
- * Получение подробной геолокации с несколькими API
+ * Получение подробной геолокации (для модального окна)
+ * НЕ сохраняет в кэш, запрашивает API напрямую
  */
 function getDetailedGeoLocation($ip) {
     if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
         return [
-            'country' => '🏠 Локальный',
+            'country' => '🏠 ' . __('geo_local'),
             'city' => '—',
             'region' => '—',
             'isp' => '—',
@@ -219,6 +224,20 @@ function getDetailedGeoLocation($ip) {
         ['url' => "http://ip-api.com/json/{$ip}?fields=status,country,regionName,city,isp,org,timezone,query,as", 'type' => 'ip-api'],
         ['url' => "https://ipapi.co/{$ip}/json/", 'type' => 'ipapi'],
         ['url' => "http://ipwho.is/{$ip}", 'type' => 'ipwhois']
+    ];
+    
+    $result = [
+        'country' => '🌍 ' . __('geo_unknown'),
+        'city' => '—',
+        'region' => '—',
+        'isp' => '—',
+        'org' => '—',
+        'timezone' => '—',
+        'asn' => '—',
+        'cidr' => ipToCidr($ip),
+        'ip_range' => getIpRange($ip, ipToCidr($ip)),
+        'provider_ranges' => [],
+        'success' => false
     ];
     
     foreach ($apis as $api) {
@@ -241,8 +260,8 @@ function getDetailedGeoLocation($ip) {
             
             if ($api['type'] === 'ip-api' && isset($data['status']) && $data['status'] === 'success') {
                 $cidr = ipToCidr($ip);
-                return [
-                    'country' => $data['country'] ?? 'Неизвестно',
+                $result = [
+                    'country' => $data['country'] ?? __('geo_unknown'),
                     'city' => $data['city'] ?? '—',
                     'region' => $data['regionName'] ?? '—',
                     'isp' => $data['isp'] ?? '—',
@@ -254,12 +273,13 @@ function getDetailedGeoLocation($ip) {
                     'provider_ranges' => getProviderRanges($data['isp'] ?? ''),
                     'success' => true
                 ];
+                break;
             }
             
             if ($api['type'] === 'ipapi' && isset($data['country_name'])) {
                 $cidr = ipToCidr($ip);
-                return [
-                    'country' => $data['country_name'] ?? 'Неизвестно',
+                $result = [
+                    'country' => $data['country_name'] ?? __('geo_unknown'),
                     'city' => $data['city'] ?? '—',
                     'region' => $data['region'] ?? '—',
                     'isp' => $data['org'] ?? '—',
@@ -271,12 +291,13 @@ function getDetailedGeoLocation($ip) {
                     'provider_ranges' => getProviderRanges($data['org'] ?? ''),
                     'success' => true
                 ];
+                break;
             }
             
             if ($api['type'] === 'ipwhois' && isset($data['country'])) {
                 $cidr = ipToCidr($ip);
-                return [
-                    'country' => $data['country'] ?? 'Неизвестно',
+                $result = [
+                    'country' => $data['country'] ?? __('geo_unknown'),
                     'city' => $data['city'] ?? '—',
                     'region' => $data['region'] ?? '—',
                     'isp' => $data['connection']['isp'] ?? '—',
@@ -288,25 +309,12 @@ function getDetailedGeoLocation($ip) {
                     'provider_ranges' => getProviderRanges($data['connection']['isp'] ?? ''),
                     'success' => true
                 ];
+                break;
             }
         }
     }
     
-    $cidr = ipToCidr($ip);
-    return [
-        'country' => '🌍 Неизвестно',
-        'city' => '—',
-        'region' => '—',
-        'isp' => '—',
-        'org' => '—',
-        'timezone' => '—',
-        'asn' => '—',
-        'cidr' => $cidr,
-        'ip_range' => getIpRange($ip, $cidr),
-        'provider_ranges' => [],
-        'success' => false,
-        'error' => 'API недоступны'
-    ];
+    return $result;
 }
 
 /**
@@ -319,7 +327,6 @@ function getCountryFlag($country) {
     
     if ($flags === null) {
         $flags = [
-            // Двухбуквенные коды стран
             'RU' => '🇷🇺', 'US' => '🇺🇸', 'GB' => '🇬🇧', 'DE' => '🇩🇪',
             'FR' => '🇫🇷', 'PL' => '🇵🇱', 'UA' => '🇺🇦', 'NL' => '🇳🇱',
             'BE' => '🇧🇪', 'IT' => '🇮🇹', 'ES' => '🇪🇸', 'SE' => '🇸🇪',
@@ -334,10 +341,10 @@ function getCountryFlag($country) {
             'PH' => '🇵🇭', 'VN' => '🇻🇳', 'TH' => '🇹🇭', 'HK' => '🇭🇰',
             'AU' => '🇦🇺', 'NZ' => '🇳🇿', 'ZA' => '🇿🇦', 'EG' => '🇪🇬',
             'NG' => '🇳🇬', 'KZ' => '🇰🇿', 'BY' => '🇧🇾',
-            
-            // Специальные
-            'Локальный' => '🏠', 'Local' => '🏠',
-            'Неизвестно' => '🌍', 'Unknown' => '🌍',
+            __('geo_local') => '🏠',
+            'Local' => '🏠',
+            __('geo_unknown') => '🌍',
+            'Unknown' => '🌍',
         ];
     }
     
@@ -345,7 +352,6 @@ function getCountryFlag($country) {
         return $flags[$country];
     }
     
-    // Поиск по частичному совпадению
     foreach ($flags as $key => $flag) {
         if (stripos($country, $key) !== false) {
             return $flag;
