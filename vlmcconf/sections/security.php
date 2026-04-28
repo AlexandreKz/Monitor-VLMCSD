@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 3.8.0
-// ДАТА: 2026-04-02
-// @description: Секция "Безопасность" с управлением пользователями и экспортом
+// ВЕРСИЯ: 4.0.0
+// ДАТА: 2026-04-27
+// @description: Секция "Безопасность" — управление пользователями
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -12,11 +12,14 @@ if (basename($_SERVER['PHP_SELF']) === 'security.php') {
 }
 
 // Проверяем права доступа к секциям
-$canViewLogs = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_LOGS_VIEW);
-$canEditLogs = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_LOGS_EDIT);
 $canViewUsers = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_USERS_VIEW);
 $canEditUsers = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_USERS_EDIT);
-$canManageUsers = $canEditUsers;
+
+// Если нет прав на просмотр — не показываем секцию
+if (!$canViewUsers) {
+    echo '<div class="settings-section" id="section-security"><div class="section-title"><span>🔒 ' . __('security_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
+    return;
+}
 ?>
 
 <script>
@@ -40,105 +43,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
         <?php endif; ?>
     </div>
     
-    <!-- Блок: Логи (доступен при наличии прав на просмотр) -->
-    <?php if ($canViewLogs): ?>
-    <div class="log-info-card">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
-            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                <span><strong><?= __('security_log_file') ?>:</strong> <?= htmlspecialchars(basename($fullLogPath)) ?></span>
-                <span><strong><?= __('security_size') ?>:</strong> <?= formatSize($logSize) ?></span>
-                <span><strong><?= __('security_status') ?>:</strong> 
-                    <?php if ($logFileExists): ?>
-                        <span style="color: <?= $themeCSS['success'] ?>;">✓ <?= __('log_status_found') ?></span>
-                    <?php else: ?>
-                        <span style="color: <?= $themeCSS['danger'] ?>;">✗ <?= __('log_status_not_found') ?></span>
-                    <?php endif; ?>
-                </span>
-            </div>
-            <?php if ($isAdmin): ?>
-            <div style="flex-shrink: 0;">
-                <button class="btn btn-danger btn-small" onclick="resetConfig()" style="white-space: nowrap;">
-                    🔄 <?= __('info_reset') ?>
-                </button>
-            </div>
-            <?php endif; ?>
-        </div>
-        <div style="padding: 8px 0; border-top: 1px dashed <?= $themeCSS['border'] ?>; margin-top: 8px;">
-            <strong><?= __('security_first_event') ?>:</strong>
-            <span style="font-family: monospace;"><?= htmlspecialchars($firstEvent['event']) ?></span>
-        </div>
-    </div>
-    
-<!-- Три колонки: Очистка по датам | Полная очистка | Экспорт проекта -->
-<div class="security-layout">
-    <!-- Левая колонка: Очистка по датам (2/4) -->
-    <?php if ($canEditLogs): ?>
-    <div class="security-left" style="flex: 2;">
-        <div class="settings-card" style="margin-bottom: 0; height: 100%; display: flex; flex-direction: column; padding: 10px;">
-            <div class="settings-card-title" style="margin-bottom: 8px;">📅 <?= __('security_clear_by_date') ?></div>
-            <div style="margin-top: auto; margin-bottom: auto;">
-                <div style="display: flex; gap: 8px; align-items: flex-end;">
-                    <div style="flex: 1;">
-                        <label style="display: block; font-size: 10px; margin-bottom: 2px;"><?= __('security_from') ?></label>
-                        <input type="date" id="startDate" class="form-control" style="padding: 4px 8px; font-size: 12px;" value="<?= date('Y-m-d', strtotime('-30 days')) ?>">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="display: block; font-size: 10px; margin-bottom: 2px;"><?= __('security_to') ?></label>
-                        <input type="date" id="endDate" class="form-control" style="padding: 4px 8px; font-size: 12px;" value="<?= date('Y-m-d') ?>">
-                    </div>
-                </div>
-                <div style="margin-top: 8px;">
-                    <button class="btn btn-warning btn-small" onclick="clearLog('date_range')" style="padding: 4px 12px; font-size: 11px;">🗑️ <?= __('security_clear') ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Центральная колонка: Полная очистка (1/4) -->
-    <?php if ($canEditLogs): ?>
-    <div class="security-center" style="flex: 1;">
-        <div class="settings-card" style="margin-bottom: 0; height: 100%; display: flex; flex-direction: column; padding: 10px;">
-            <div class="settings-card-title" style="margin-bottom: 8px;">🗑️ <?= __('security_full_clear') ?></div>
-            <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: auto; margin-bottom: auto;">
-                <button class="btn btn-danger btn-small" onclick="clearLog('all')" style="width: 100%; padding: 4px 8px; font-size: 11px;" <?= !$logFileExists ? 'disabled' : '' ?>>
-                    🗑️ <?= __('security_clear_all') ?>
-                </button>
-                <div style="width: 80%; height: 1px; background: <?= $themeCSS['border'] ?>;"></div>
-                <button class="btn btn-success btn-small" onclick="backupLog()" style="width: 100%; padding: 4px 8px; font-size: 11px;" <?= !$logFileExists ? 'disabled' : '' ?>>
-                    💾 <?= __('security_log_backup') ?>
-                </button>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Правая колонка: Экспорт проекта (1/4) -->
-    <?php if ($isAdmin): ?>
-    <div class="security-right" style="flex: 1;">
-        <div class="settings-card" style="margin-bottom: 0; height: 100%; display: flex; flex-direction: column; padding: 10px;">
-            <div class="settings-card-title" style="margin-bottom: 8px;">💾 <?= __('export_title') ?></div>
-            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: auto; margin-bottom: auto;">
-                <button class="btn btn-primary btn-small" onclick="exportProject('clean')" style="width: 100%; padding: 4px 8px; font-size: 11px;">
-					🧹 <?= __('export_clean') ?>
-				</button>
-				<button class="btn btn-primary btn-small" onclick="exportProject('config')" style="width: 100%; padding: 4px 8px; font-size: 11px;">
-					⚙️ <?= __('export_with_config') ?>
-				</button>
-				<button class="btn btn-primary btn-small" onclick="exportProject('full')" style="width: 100%; padding: 4px 8px; font-size: 11px;">
-					💾 <?= __('export_full') ?>
-				</button>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-</div>
-    
-    <hr style="margin: 15px 0;">
-    <?php endif; ?>
-    
-    <!-- Блок: Управление пользователями (только если есть права на просмотр) -->
-    <?php if ($canViewUsers): ?>
+    <!-- Управление пользователями -->
     <div class="settings-card">
         <div class="settings-card-title">👥 <?= __('users_management') ?></div>
         
@@ -161,7 +66,6 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
             <div id="usersListContainer">⏳ <?= __('loading') ?></div>
         </div>
     </div>
-    <?php endif; ?>
 </div>
 
 <!-- Модальное окно для выбора прав при добавлении/редактировании пользователя -->
@@ -249,18 +153,151 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
 </div>
 
 <style>
-.security-layout {
+.settings-card {
+    background: <?= $themeCSS['input'] ?>;
+    border: 1px solid <?= $themeCSS['border'] ?>;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.settings-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #8aa0bb;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #8aa0bb;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    background: <?= $themeCSS['card'] ?>;
+    border: 1px solid <?= $themeCSS['inputBorder'] ?>;
+    border-radius: 6px;
+    color: <?= $themeCSS['text'] ?>;
+    font-size: 13px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: <?= $themeCSS['primary'] ?>;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: <?= $themeCSS['card'] ?>;
+    padding: 25px;
+    border-radius: 12px;
+    width: 550px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    color: <?= $themeCSS['text'] ?>;
+    animation: modalFadeIn 0.3s;
+    border: 2px solid <?= $themeCSS['primary'] ?>;
+    position: relative;
+    z-index: 100001;
+}
+
+.modal-message {
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 100002;
+}
+
+.modal-message.error {
+    background: <?= $themeCSS['danger'] ?>20;
+    color: <?= $themeCSS['danger'] ?>;
+    border: 1px solid <?= $themeCSS['danger'] ?>;
+}
+
+.modal-message.success {
+    background: <?= $themeCSS['success'] ?>20;
+    color: <?= $themeCSS['success'] ?>;
+    border: 1px solid <?= $themeCSS['success'] ?>;
+}
+
+.modal-header {
     display: flex;
-    gap: 15px;
-    margin-top: 10px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid <?= $themeCSS['border'] ?>;
 }
-.security-left, .security-center, .security-right {
-    flex: 1;
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: <?= $themeCSS['primary'] ?>;
 }
+
+.modal-close {
+    color: #8aa0bb;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: <?= $themeCSS['text'] ?>;
+}
+
 .password-wrapper {
     position: relative;
     width: 100%;
 }
+
 .password-wrapper input {
     width: 100%;
     padding: 8px 35px 8px 12px;
@@ -271,10 +308,12 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
     font-size: 13px;
     box-sizing: border-box;
 }
+
 .password-wrapper input:focus {
     outline: none;
     border-color: <?= $themeCSS['primary'] ?>;
 }
+
 .toggle-password-btn {
     position: absolute;
     right: 8px;
@@ -293,138 +332,11 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
     align-items: center;
     justify-content: center;
 }
+
 .toggle-password-btn:hover {
     color: <?= $themeCSS['primary'] ?>;
 }
-.log-info-card {
-    background: <?= $themeCSS['card'] ?>;
-    border: 1px solid <?= $themeCSS['border'] ?>;
-    border-radius: 8px;
-    padding: 8px 15px;
-    margin-bottom: 15px;
-    font-size: 13px;
-}
-.settings-card {
-    background: <?= $themeCSS['input'] ?>;
-    border: 1px solid <?= $themeCSS['border'] ?>;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-}
-.settings-card-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    color: #8aa0bb;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-.form-group {
-    margin-bottom: 12px;
-}
-.form-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 4px;
-    color: #8aa0bb;
-}
-.form-control {
-    width: 100%;
-    padding: 8px 12px;
-    background: <?= $themeCSS['card'] ?>;
-    border: 1px solid <?= $themeCSS['inputBorder'] ?>;
-    border-radius: 6px;
-    color: <?= $themeCSS['text'] ?>;
-    font-size: 13px;
-}
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-.btn-primary { background: <?= $themeCSS['primary'] ?>; color: white; }
-.btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
-.btn-warning { background: <?= $themeCSS['warning'] ?>; color: white; }
-.btn-danger { background: <?= $themeCSS['danger'] ?>; color: white; }
-.btn-success { background: <?= $themeCSS['success'] ?>; color: white; }
-.btn-small { padding: 4px 8px; font-size: 11px; }
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 100000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
-    align-items: center;
-    justify-content: center;
-}
-.modal-content {
-    background: <?= $themeCSS['card'] ?>;
-    padding: 25px;
-    border-radius: 12px;
-    width: 550px;
-    max-width: 90%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    color: <?= $themeCSS['text'] ?>;
-    animation: modalFadeIn 0.3s;
-    border: 2px solid <?= $themeCSS['primary'] ?>;
-    position: relative;
-    z-index: 100001;
-}
-.modal-message {
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    text-align: center;
-    margin-bottom: 15px;
-    position: relative;
-    z-index: 100002;
-}
-.modal-message.error {
-    background: <?= $themeCSS['danger'] ?>20;
-    color: <?= $themeCSS['danger'] ?>;
-    border: 1px solid <?= $themeCSS['danger'] ?>;
-}
-.modal-message.success {
-    background: <?= $themeCSS['success'] ?>20;
-    color: <?= $themeCSS['success'] ?>;
-    border: 1px solid <?= $themeCSS['success'] ?>;
-}
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid <?= $themeCSS['border'] ?>;
-}
-.modal-header h2 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    color: <?= $themeCSS['primary'] ?>;
-}
-.modal-close {
-    color: #8aa0bb;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-.modal-close:hover {
-    color: <?= $themeCSS['text'] ?>;
-}
+
 @keyframes modalFadeIn {
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -454,7 +366,7 @@ function showModalMessage(message, type) {
         msgDiv.style.display = 'block';
         setTimeout(() => {
             msgDiv.style.display = 'none';
-        }, 8000);
+        }, 5000);
     }
 }
 
@@ -719,106 +631,13 @@ function escapeHtml(text) {
 }
 
 // ============================================
-// ОЧИСТКА ЛОГА И БЭКАП
-// ============================================
-
-function clearLog(type) {
-    const sd = document.getElementById('startDate')?.value;
-    const ed = document.getElementById('endDate')?.value;
-    if (type === 'date_range' && (!sd || !ed)) { alert('<?= __('date_range_required') ?>'); return; }
-    if (type === 'date_range' && sd > ed) { alert('<?= __('date_range_invalid') ?>'); return; }
-    if (!confirm(type === 'all' ? '<?= __('security_clear_all_confirm') ?>' : `<?= __('security_clear_date_confirm') ?> ${sd} ${ed}?`)) return;
-    
-    const fd = new FormData();
-    fd.append('ajax', 'clear_log');
-    fd.append('clearType', type);
-    if (type === 'date_range') { fd.append('startDate', sd); fd.append('endDate', ed); }
-    
-    fetch('', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(d => { 
-            if (d.success) { 
-                alert(d.message); 
-                location.reload(); 
-            } else { 
-                alert(d.message); 
-            } 
-        })
-        .catch(e => { alert('<?= __('msg_save_error') ?>'); });
-}
-
-function backupLog() {
-    if (!confirm('<?= __('security_backup_confirm') ?>')) return;
-    const fd = new FormData();
-    fd.append('ajax', 'backup_log');
-    fetch('', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(d => alert(d.message))
-        .catch(e => alert('<?= __('msg_backup_error') ?>'));
-}
-
-// ============================================
-// СБРОС НАСТРОЕК
-// ============================================
-
-function resetConfig() {
-    if (!confirm('<?= __('info_reset_confirm') ?>')) return;
-    const fd = new FormData();
-    fd.append('action', 'reset_config');
-    fetch('', { method: 'POST', body: fd })
-        .then(() => { 
-            alert('<?= __('msg_config_reset') ?>'); 
-            location.reload(); 
-        })
-        .catch(e => alert('<?= __('msg_save_error') ?>'));
-}
-
-// ============================================
-// ЭКСПОРТ ПРОЕКТА
-// ============================================
-
-function exportProject(type) {
-    let confirmMsg = '';
-    switch(type) {
-        case 'clean':
-            confirmMsg = '<?= __('export_clean_confirm') ?>';
-            break;
-        case 'config':
-            confirmMsg = '<?= __('export_config_confirm') ?>';
-            break;
-        case 'full':
-            confirmMsg = '<?= __('export_full_confirm') ?>';
-            break;
-    }
-    if (!confirm(confirmMsg)) return;
-    
-    const fd = new FormData();
-    fd.append('ajax', 'export_project');
-    fd.append('export_type', type);
-    
-    fetch('', { method: 'POST', body: fd })
-        .then(response => response.blob())
-        .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `kms_export_${type}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.tar.gz`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        })
-        .catch(e => alert('<?= __('export_error') ?>: ' + e.message));
-}
-
-// ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
     const section = document.getElementById('section-security');
     if (section && section.classList.contains('active')) {
-        <?php if ($canViewUsers): ?>loadUsers();<?php endif; ?>
+        loadUsers();
     }
 });
 
@@ -827,7 +646,7 @@ const observer = new MutationObserver(function(mutations) {
         if (mutation.attributeName === 'class') {
             const target = mutation.target;
             if (target.id === 'section-security' && target.classList.contains('active')) {
-                <?php if ($canViewUsers): ?>loadUsers();<?php endif; ?>
+                loadUsers();
             }
         }
     });
@@ -836,3 +655,5 @@ const observer = new MutationObserver(function(mutations) {
 const section = document.getElementById('section-security');
 if (section) observer.observe(section, { attributes: true });
 </script>
+<?php
+?>
