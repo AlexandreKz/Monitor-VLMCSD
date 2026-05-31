@@ -1,16 +1,104 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 1.8.0
-// ДАТА: 2026-03-27
-// @description: Секция "Статистика" (доступна всем)
+// ВЕРСИЯ: 2.0.0
+// ДАТА: 2026-05-31
+// @description: Секция "Статистика" (переработанная)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
     http_response_code(403);
     exit('Access denied');
 }
+
+// Функция для получения ТОП IP адресов из лога
+function getTopIps($logFile, $limit = 4) {
+    $ips = [];
+    
+    if (!file_exists($logFile)) {
+        return [];
+    }
+    
+    $content = file_get_contents($logFile);
+    if ($content === false) {
+        return [];
+    }
+    
+    // Собираем IP из строк "connection accepted"
+    if (preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches)) {
+        foreach ($matches[1] as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                $ips[$ip] = ($ips[$ip] ?? 0) + 1;
+            }
+        }
+    }
+    
+    // Сортируем по убыванию и берем TOP $limit
+    arsort($ips);
+    return array_slice($ips, 0, $limit, true);
+}
+
+// Функция для получения ТОП стран из кэша геолокации
+function getTopCountries($logFile, $limit = 4) {
+    $countries = [];
+    
+    if (!file_exists($logFile)) {
+        return [];
+    }
+    
+    $content = file_get_contents($logFile);
+    if ($content === false) {
+        return [];
+    }
+    
+    // Собираем IP из строк "connection accepted"
+    if (preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches)) {
+        foreach ($matches[1] as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                // Получаем страну из кэша или API
+                $cacheStatus = true;
+                $cacheMessage = '';
+                $country = getGeoLocation($ip, $cacheStatus, $cacheMessage);
+                $countries[$country] = ($countries[$country] ?? 0) + 1;
+            }
+        }
+    }
+    
+    // Сортируем по убыванию и берем TOP $limit
+    arsort($countries);
+    return array_slice($countries, 0, $limit, true);
+}
+
+// Функция для получения общего количества запросов
+function getTotalRequests($logFile) {
+    if (!file_exists($logFile)) {
+        return 0;
+    }
+    
+    $content = file_get_contents($logFile);
+    if ($content === false) {
+        return 0;
+    }
+    
+    preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches);
+    return count($matches[0]);
+}
+
+// Получаем данные для статистики
+$totalRequests = getTotalRequests($fullLogPath);
+$topIps = getTopIps($fullLogPath, 4);
+$topCountries = getTopCountries($fullLogPath, 4);
+
+// Статистика по группам (устройства из конфига)
+$groupStats = [];
+foreach ($config['groupColors'] as $group => $color) {
+    $groupStats[$group] = isset($config['devices'][$group]) ? count($config['devices'][$group]) : 0;
+}
+arsort($groupStats);
+$totalDevices = array_sum($groupStats);
+$totalGroups = count($groupStats);
 ?>
+
 <div id="section-stats" class="settings-section <?= $activeSection === 'stats' ? 'active' : '' ?>">
     <div class="section-title">
         <span>📊 <?= __('stats_title') ?></span>
@@ -30,65 +118,69 @@ if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
             <div class="stat-card-label"><?= __('stats_total_groups') ?></div>
         </div>
         <div class="stat-card">
-            <div class="stat-card-value"><?= $customGroups ?></div>
-            <div class="stat-card-label"><?= __('stats_custom_groups') ?></div>
+            <div class="stat-card-value"><?= number_format($totalRequests, 0, ',', ' ') ?></div>
+            <div class="stat-card-label"><?= __('stats_total_requests') ?></div>
         </div>
     </div>
     
-    <!-- Три блока в одну строку -->
+    <!-- Три блока в одну строку: Группы | Топ IP | Топ стран -->
     <div class="stats-detailed">
-        <!-- Статистика по группам -->
-        <div class="stat-block">
-            <div class="stat-block-title">📊 <?= __('stats_by_groups') ?></div>
-            <div class="stat-list">
-                <?php foreach ($groupStats as $group => $count): ?>
-                <div class="stat-list-item">
-                    <span class="stat-list-label" style="color: <?= htmlspecialchars($config['groupColors'][$group]) ?>;"><?= __($group) ?>:</span>
-                    <span class="stat-list-value"><?= $count ?></span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
         
-        <!-- Рекорды -->
+        <!-- Блок: По группам -->
         <div class="stat-block">
-            <div class="stat-block-title">🏆 <?= __('stats_records') ?></div>
+            <div class="stat-block-title">👥 <?= __('stats_by_groups') ?></div>
             <div class="stat-list">
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_largest_group') ?>:</span>
-                    <span class="stat-list-value"><?= __($largestGroup) ?> (<?= $largestGroupCount ?>)</span>
-                </div>
-                <?php if ($smallestGroup): ?>
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_smallest_group') ?>:</span>
-                    <span class="stat-list-value"><?= __($smallestGroup) ?> (<?= $smallestGroupCount ?>)</span>
-                </div>
+                <?php if (empty($groupStats)): ?>
+                    <div class="stat-list-empty"><?= __('stats_no_groups') ?></div>
+                <?php else: ?>
+                    <?php foreach ($groupStats as $group => $count): ?>
+                    <div class="stat-list-item">
+                        <span class="stat-list-label" style="color: <?= htmlspecialchars($config['groupColors'][$group]) ?>;">
+                            <?= __($group) ?>
+                        </span>
+                        <span class="stat-list-value"><?= $count ?></span>
+                    </div>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_oldest_device') ?>:</span>
-                    <span class="stat-list-value"><?= htmlspecialchars($oldestDevice) ?> (<?= $oldestDate ? date('d.m.Y', $oldestDate) : '—' ?>)</span>
-                </div>
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_newest_device') ?>:</span>
-                    <span class="stat-list-value"><?= htmlspecialchars($newestDevice) ?> (<?= $newestDate ? date('d.m.Y', $newestDate) : '—' ?>)</span>
-                </div>
             </div>
         </div>
         
-        <!-- Комментарии -->
+        <!-- Блок: Топ IP адресов -->
         <div class="stat-block">
-            <div class="stat-block-title">📝 <?= __('stats_comments') ?></div>
+            <div class="stat-block-title">🌐 <?= __('stats_top_ips') ?></div>
             <div class="stat-list">
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_with_comments') ?>:</span>
-                    <span class="stat-list-value"><?= $devicesWithComments ?> / <?= $totalDevices ?></span>
-                </div>
-                <div class="stat-list-item">
-                    <span class="stat-list-label"><?= __('stats_avg_length') ?>:</span>
-                    <span class="stat-list-value"><?= $avgCommentLength ?> <?= __('characters') ?></span>
-                </div>
+                <?php if (empty($topIps)): ?>
+                    <div class="stat-list-empty"><?= __('stats_no_data_ips') ?></div>
+                <?php else: ?>
+                    <?php foreach ($topIps as $ip => $count): ?>
+                    <div class="stat-list-item">
+                        <span class="stat-list-label"><?= htmlspecialchars($ip) ?></span>
+                        <span class="stat-list-value"><?= $count ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
+        
+        <!-- Блок: Топ стран -->
+        <div class="stat-block">
+            <div class="stat-block-title">🌍 <?= __('stats_top_countries') ?></div>
+            <div class="stat-list">
+                <?php if (empty($topCountries)): ?>
+                    <div class="stat-list-empty"><?= __('stats_no_data_countries') ?></div>
+                <?php else: ?>
+                    <?php foreach ($topCountries as $country => $count): ?>
+                    <div class="stat-list-item">
+                        <span class="stat-list-label">
+                            <?= getCountryFlag($country) ?> <?= htmlspecialchars($country) ?>
+                        </span>
+                        <span class="stat-list-value"><?= $count ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        
     </div>
     
     <!-- Активность (на всю ширину) -->
@@ -120,11 +212,91 @@ if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
 </div>
 
 <style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: <?= $themeCSS['card'] ?>;
+    border: 1px solid <?= $themeCSS['border'] ?>;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.stat-card-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: <?= $themeCSS['primary'] ?>;
+    margin-bottom: 4px;
+}
+
+.stat-card-label {
+    font-size: 10px;
+    color: #8aa0bb;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .stats-detailed {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     margin-bottom: 20px;
+}
+
+.stat-block {
+    background: <?= $themeCSS['input'] ?>;
+    border: 1px solid <?= $themeCSS['border'] ?>;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.stat-block-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #8aa0bb;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid <?= $themeCSS['border'] ?>;
+    padding-bottom: 6px;
+}
+
+.stat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stat-list-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px dashed <?= $themeCSS['border'] ?>;
+}
+
+.stat-list-label {
+    color: #8aa0bb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-list-value {
+    font-weight: 600;
+    color: <?= $themeCSS['primary'] ?>;
+}
+
+.stat-list-empty {
+    text-align: center;
+    color: #8aa0bb;
+    font-size: 11px;
+    padding: 15px 0;
 }
 
 .stat-tab-btn {
@@ -136,6 +308,7 @@ if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
     font-size: 12px;
     transition: all 0.2s;
 }
+
 .stat-tab-btn.active {
     background: <?= $themeCSS['primary'] ?>;
     color: white;
@@ -169,11 +342,22 @@ if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
     color: white;
     border-color: <?= $themeCSS['primary'] ?>;
 }
+
+.form-control {
+    background: <?= $themeCSS['card'] ?>;
+    border: 1px solid <?= $themeCSS['inputBorder'] ?>;
+    border-radius: 4px;
+    color: <?= $themeCSS['text'] ?>;
+    padding: 4px 8px;
+    font-size: 12px;
+}
 </style>
 
 <script>
-// ... (JavaScript остается без изменений из предыдущей версии)
-// Глобальные переменные для статистики
+// ============================================
+// ГРАФИК АКТИВНОСТИ
+// ============================================
+
 let statActivityChart = null;
 let currentStatTab = 'timeline';
 let currentStatPeriod = 'day';
@@ -326,7 +510,10 @@ function updateStatChart(data) {
     }
 }
 
-// Автоматическая загрузка графика
+// ============================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================
+
 (function() {
     function checkAndLoad() {
         const statsSection = document.getElementById('section-stats');
@@ -371,3 +558,5 @@ function updateStatChart(data) {
     }
 })();
 </script>
+<?php
+?>
