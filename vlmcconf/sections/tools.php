@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.3.0
-// ДАТА: 2026-04-27
-// @description: Секция "Инструменты"
+// ВЕРСИЯ: 3.5.0
+// ДАТА: 2026-05-31
+// @description: Секция "Инструменты" (с проверкой прав и кнопкой сброса)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'tools.php') {
@@ -13,14 +13,22 @@ if (basename($_SERVER['PHP_SELF']) === 'tools.php') {
 
 require_once __DIR__ . '/../vlmcinc/geo_cache.php';
 
-$canViewLogs = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_LOGS_VIEW);
-$canEditLogs = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_LOGS_EDIT);
-$canManageCache = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_DEVICES_EDIT) || $canViewLogs;
+// Проверяем права доступа к разделу
+$userPerms = $_SESSION['vlmc_permissions'] ?? 0;
+$canViewTools = hasPermission($userPerms, PERM_TOOLS_VIEW) || hasPermission($userPerms, PERM_TOOLS_EDIT);
+$canEditTools = hasPermission($userPerms, PERM_TOOLS_EDIT);
 
-if (!$canViewLogs && !$canManageCache) {
+// Если нет прав на просмотр — не показываем секцию
+if (!$canViewTools) {
     echo '<div class="settings-section" id="section-tools"><div class="section-title"><span>🛠️ ' . __('tools_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
     return;
 }
+
+// Права на отдельные блоки внутри раздела
+$canViewLogs = hasPermission($userPerms, PERM_LOGS_VIEW);
+$canEditLogs = hasPermission($userPerms, PERM_LOGS_EDIT) && $canEditTools;
+$canExport = $canEditTools; // Экспорт и сброс доступны только при полных правах
+$canManageCache = (hasPermission($userPerms, PERM_DEVICES_EDIT) || $canViewLogs) && $canEditTools;
 
 $cacheStats = getGeoCacheStats();
 ?>
@@ -63,25 +71,25 @@ $cacheStats = getGeoCacheStats();
                         <label><?= __('security_to') ?></label>
                         <input type="date" id="toolsEndDate" class="form-control" value="<?= date('Y-m-d') ?>">
                     </div>
-                    <button class="btn btn-warning btn-small tools-action-btn log-action-btn" onclick="toolsClearLog('date_range')">🗑️ <?= __('security_clear') ?></button>
+                    <button class="btn btn-warning btn-small tools-action-btn log-action-btn" onclick="toolsClearLog('date_range')" <?= !$canEditLogs ? 'disabled' : '' ?>>🗑️ <?= __('security_clear') ?></button>
                 </div>
             </div>
             
             <div class="tools-subsection">
                 <div class="tools-subsection-title">🗑️ <?= __('security_full_clear') ?></div>
                 <div class="two-buttons">
-                    <button class="btn btn-danger btn-small tools-action-btn log-action-btn" onclick="toolsClearLog('all')" <?= !$logFileExists ? 'disabled' : '' ?>>🗑️ <?= __('security_clear_all') ?></button>
-                    <button class="btn btn-success btn-small tools-action-btn log-action-btn" onclick="toolsBackupLog()" <?= !$logFileExists ? 'disabled' : '' ?>>💾 <?= __('security_log_backup') ?></button>
+                    <button class="btn btn-danger btn-small tools-action-btn log-action-btn" onclick="toolsClearLog('all')" <?= (!$logFileExists || !$canEditLogs) ? 'disabled' : '' ?>><?= __('security_clear_all') ?></button>
+                    <button class="btn btn-success btn-small tools-action-btn log-action-btn" onclick="toolsBackupLog()" <?= (!$logFileExists || !$canEditLogs) ? 'disabled' : '' ?>><?= __('security_log_backup') ?></button>
                 </div>
             </div>
             
-            <!-- Сообщения для блока управления логом (внизу) -->
+            <!-- Сообщения для блока управления логом -->
             <div id="logOperationMessage" class="block-message" style="display: none;"></div>
         </div>
         <?php endif; ?>
         
-        <!-- Центральная колонка: Экспорт проекта -->
-        <?php if ($isAdmin): ?>
+        <!-- Центральная колонка: Экспорт проекта и сброс настроек -->
+        <?php if ($canExport && $isAdmin): ?>
         <div class="tools-card">
             <div class="tools-card-title">💾 <?= __('export_title') ?></div>
             
@@ -103,7 +111,14 @@ $cacheStats = getGeoCacheStats();
                 <button class="btn btn-primary btn-small tools-action-btn export-action-btn" onclick="toolsExportProject('full')" style="width: 100%;">🗃️ <?= __('export_full') ?></button>
             </div>
             
-            <!-- Сообщения для блока экспорта (внизу) -->
+            <!-- Сброс настроек -->
+            <div class="tools-subsection">
+                <div class="tools-subsection-title">🔄 <?= __('info_reset') ?></div>
+                <p class="tools-desc"><?= __('info_reset_desc') ?></p>
+                <button class="btn btn-danger btn-small tools-action-btn reset-config-btn" onclick="toolsResetConfig()" style="width: 100%;">🔄 <?= __('info_reset') ?></button>
+            </div>
+            
+            <!-- Сообщения для блока экспорта -->
             <div id="exportOperationMessage" class="block-message" style="display: none;"></div>
         </div>
         <?php endif; ?>
@@ -121,13 +136,13 @@ $cacheStats = getGeoCacheStats();
             <div class="tools-subsection">
                 <div class="tools-subsection-title">🧹 <?= __('tools_cache_clear') ?></div>
                 <p class="tools-desc"><?= __('tools_cache_clear_desc') ?></p>
-                <button class="btn btn-warning btn-small tools-action-btn cache-action-btn" id="clearCacheBtn" onclick="toolsClearCache()" style="width: 100%;">🗑️ <?= __('tools_cache_clear_btn') ?></button>
+                <button class="btn btn-warning btn-small tools-action-btn cache-action-btn" id="clearCacheBtn" onclick="toolsClearCache()" style="width: 100%;" <?= !$canEditTools ? 'disabled' : '' ?>><?= __('tools_cache_clear_btn') ?></button>
             </div>
             
             <div class="tools-subsection">
                 <div class="tools-subsection-title">🔄 <?= __('tools_cache_refresh') ?></div>
                 <p class="tools-desc"><?= __('tools_cache_refresh_desc') ?></p>
-                <button class="btn btn-primary btn-small tools-action-btn cache-action-btn" id="refreshCacheBtn" onclick="showToolsConfirmModal()" style="width: 100%;">🔄 <?= __('tools_cache_refresh_btn') ?></button>
+                <button class="btn btn-primary btn-small tools-action-btn cache-action-btn" id="refreshCacheBtn" onclick="showToolsConfirmModal()" style="width: 100%;" <?= !$canEditTools ? 'disabled' : '' ?>><?= __('tools_cache_refresh_btn') ?></button>
             </div>
             
             <div class="tools-subsection">
@@ -136,7 +151,7 @@ $cacheStats = getGeoCacheStats();
                 <button class="btn btn-info btn-small tools-action-btn cache-action-btn" id="checkCacheBtn" onclick="toolsCheckCache()" style="width: 100%;">📊 <?= __('tools_cache_check_btn') ?></button>
             </div>
             
-            <!-- Сообщения для блока кэша (внизу) -->
+            <!-- Сообщения для блока кэша -->
             <div id="cacheOperationMessage" class="block-message" style="display: none;"></div>
         </div>
         <?php endif; ?>
@@ -715,6 +730,42 @@ function setToolsButtonLoading(btn, isLoading) {
 }
 
 // ============================================
+// СБРОС НАСТРОЕК
+// ============================================
+
+async function toolsResetConfig() {
+    if (isRefreshing) {
+        showExportMessage('⚠️ ' + '<?= __('tools_cache_wait') ?>', 'error');
+        return;
+    }
+    
+    if (!confirm('<?= __('info_reset_confirm') ?>')) return;
+    
+    const btn = document.querySelector('.reset-config-btn');
+    setToolsButtonLoading(btn, true);
+    showExportMessage('⏳ ' + '<?= __('tools_cache_resetting') ?>', 'info', true);
+    
+    try {
+        const fd = new FormData();
+        fd.append('action', 'reset_config');
+        
+        const response = await fetch('', { method: 'POST', body: fd });
+        const data = await response.json();
+        
+        if (data.success) {
+            showExportMessage(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showExportMessage(data.message, 'error');
+        }
+    } catch (error) {
+        showExportMessage('<?= __('msg_save_error') ?>', 'error');
+    } finally {
+        setToolsButtonLoading(btn, false);
+    }
+}
+
+// ============================================
 // УПРАВЛЕНИЕ КЭШЕМ ГЕОЛОКАЦИИ (ОСНОВНАЯ ФУНКЦИЯ)
 // ============================================
 
@@ -788,7 +839,7 @@ async function toolsRefreshCache() {
 }
 
 // ============================================
-// ОСТАЛЬНЫЕ ФУНКЦИИ
+// ОСТАЛЬНЫЕ ФУНКЦИИ (ОЧИСТКА ЛОГА, ЭКСПОРТ, ПРОВЕРКА КЭША)
 // ============================================
 
 async function toolsClearLog(type) {
