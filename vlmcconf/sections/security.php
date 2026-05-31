@@ -2,8 +2,8 @@
 // ============================================
 // ФАЙЛ: sections/security.php
 // ВЕРСИЯ: 4.0.0
-// ДАТА: 2026-04-27
-// @description: Секция "Безопасность" — управление пользователями
+// ДАТА: 2026-05-31
+// @description: Секция "Безопасность" — управление пользователями (с правами на инструменты)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -33,6 +33,8 @@ const PERM_LOGS_EDIT = <?= PERM_LOGS_EDIT ?>;
 const PERM_USERS_VIEW = <?= PERM_USERS_VIEW ?>;
 const PERM_USERS_EDIT = <?= PERM_USERS_EDIT ?>;
 const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
+const PERM_TOOLS_VIEW = <?= PERM_TOOLS_VIEW ?>;
+const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
 </script>
 
 <div id="section-security" class="settings-section <?= $activeSection === 'security' ? 'active' : '' ?>">
@@ -70,7 +72,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
 
 <!-- Модальное окно для выбора прав при добавлении/редактировании пользователя -->
 <div id="permissionsModal" class="modal" style="display: none; z-index: 100000;">
-    <div class="modal-content" style="width: 550px; z-index: 100001;">
+    <div class="modal-content" style="width: 650px; max-width: 95%; z-index: 100001;">
         <div class="modal-header">
             <h2 id="permissionsModalTitle"><?= __('permissions_title_add') ?></h2>
             <span class="modal-close" onclick="closePermissionsModal()">&times;</span>
@@ -92,6 +94,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
                     </div>
                 </div>
                 
+                <!-- Секция: Группы -->
                 <div class="form-group">
                     <label><?= __('permissions_groups') ?></label>
                     <select id="permGroups" class="form-control">
@@ -101,6 +104,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
                     </select>
                 </div>
                 
+                <!-- Секция: Устройства -->
                 <div class="form-group">
                     <label><?= __('permissions_devices') ?></label>
                     <select id="permDevices" class="form-control">
@@ -110,6 +114,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
                     </select>
                 </div>
                 
+                <!-- Секция: Логи -->
                 <div class="form-group">
                     <label><?= __('permissions_logs') ?></label>
                     <select id="permLogs" class="form-control">
@@ -119,6 +124,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
                     </select>
                 </div>
                 
+                <!-- Секция: Пользователи -->
                 <div class="form-group">
                     <label><?= __('permissions_users') ?></label>
                     <select id="permUsers" class="form-control">
@@ -128,12 +134,24 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
                     </select>
                 </div>
                 
+                <!-- Секция: Информация -->
                 <div class="form-group">
                     <label><?= __('permissions_info') ?></label>
                     <select id="permInfo" class="form-control">
                         <option value="0"><?= __('permissions_none') ?></option>
                         <option value="1"><?= __('permissions_view') ?></option>
                     </select>
+                </div>
+                
+                <!-- Секция: Инструменты (НОВАЯ) -->
+                <div class="form-group">
+                    <label><?= __('permissions_tools') ?></label>
+                    <select id="permTools" class="form-control">
+                        <option value="0"><?= __('permissions_none') ?></option>
+                        <option value="1"><?= __('permissions_view') ?></option>
+                        <option value="2"><?= __('permissions_edit') ?></option>
+                    </select>
+                    <small class="form-hint"><?= __('permissions_tools_hint') ?></small>
                 </div>
                 
                 <div id="changePasswordBlock" style="display: none;">
@@ -180,6 +198,13 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
     font-weight: 500;
     margin-bottom: 4px;
     color: #8aa0bb;
+}
+
+.form-hint {
+    display: block;
+    font-size: 10px;
+    color: #6b8ba4;
+    margin-top: 3px;
 }
 
 .form-control {
@@ -233,8 +258,8 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
     background: <?= $themeCSS['card'] ?>;
     padding: 25px;
     border-radius: 12px;
-    width: 550px;
-    max-width: 90%;
+    width: 650px;
+    max-width: 95%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     color: <?= $themeCSS['text'] ?>;
     animation: modalFadeIn 0.3s;
@@ -372,48 +397,68 @@ function showModalMessage(message, type) {
 
 function getPermissionsFromSelects() {
     let perms = 0;
-    const groupsLevel = parseInt(document.getElementById('permGroups').value);
-    const devicesLevel = parseInt(document.getElementById('permDevices').value);
-    const logsLevel = parseInt(document.getElementById('permLogs').value);
-    const usersLevel = parseInt(document.getElementById('permUsers').value);
-    const infoLevel = parseInt(document.getElementById('permInfo').value);
     
+    // Группы
+    const groupsLevel = parseInt(document.getElementById('permGroups').value);
     if (groupsLevel == 2) perms |= PERM_GROUPS_VIEW | PERM_GROUPS_EDIT;
     else if (groupsLevel == 1) perms |= PERM_GROUPS_VIEW;
     
+    // Устройства
+    const devicesLevel = parseInt(document.getElementById('permDevices').value);
     if (devicesLevel == 2) perms |= PERM_DEVICES_VIEW | PERM_DEVICES_EDIT;
     else if (devicesLevel == 1) perms |= PERM_DEVICES_VIEW;
     
+    // Логи
+    const logsLevel = parseInt(document.getElementById('permLogs').value);
     if (logsLevel == 2) perms |= PERM_LOGS_VIEW | PERM_LOGS_EDIT;
     else if (logsLevel == 1) perms |= PERM_LOGS_VIEW;
     
+    // Пользователи
+    const usersLevel = parseInt(document.getElementById('permUsers').value);
     if (usersLevel == 2) perms |= PERM_USERS_VIEW | PERM_USERS_EDIT;
     else if (usersLevel == 1) perms |= PERM_USERS_VIEW;
     
+    // Информация
+    const infoLevel = parseInt(document.getElementById('permInfo').value);
     if (infoLevel == 1) perms |= PERM_INFO_VIEW;
+    
+    // Инструменты (НОВОЕ)
+    const toolsLevel = parseInt(document.getElementById('permTools').value);
+    if (toolsLevel == 2) perms |= PERM_TOOLS_VIEW | PERM_TOOLS_EDIT;
+    else if (toolsLevel == 1) perms |= PERM_TOOLS_VIEW;
     
     return perms;
 }
 
 function setPermissionsSelects(permissions) {
+    // Группы
     if (permissions & PERM_GROUPS_EDIT) document.getElementById('permGroups').value = 2;
     else if (permissions & PERM_GROUPS_VIEW) document.getElementById('permGroups').value = 1;
     else document.getElementById('permGroups').value = 0;
     
+    // Устройства
     if (permissions & PERM_DEVICES_EDIT) document.getElementById('permDevices').value = 2;
     else if (permissions & PERM_DEVICES_VIEW) document.getElementById('permDevices').value = 1;
     else document.getElementById('permDevices').value = 0;
     
+    // Логи
     if (permissions & PERM_LOGS_EDIT) document.getElementById('permLogs').value = 2;
     else if (permissions & PERM_LOGS_VIEW) document.getElementById('permLogs').value = 1;
     else document.getElementById('permLogs').value = 0;
     
+    // Пользователи
     if (permissions & PERM_USERS_EDIT) document.getElementById('permUsers').value = 2;
     else if (permissions & PERM_USERS_VIEW) document.getElementById('permUsers').value = 1;
     else document.getElementById('permUsers').value = 0;
     
+    // Информация
     if (permissions & PERM_INFO_VIEW) document.getElementById('permInfo').value = 1;
     else document.getElementById('permInfo').value = 0;
+    
+    // Инструменты (НОВОЕ)
+    if (permissions & PERM_TOOLS_EDIT) document.getElementById('permTools').value = 2;
+    else if (permissions & PERM_TOOLS_VIEW) document.getElementById('permTools').value = 1;
+    else document.getElementById('permTools').value = 0;
 }
 
 function showAddUserModal() {
@@ -587,8 +632,9 @@ function getRoleDisplay(permissions) {
     const logs = getPermissionLevelText(permissions, PERM_LOGS_VIEW, PERM_LOGS_EDIT);
     const users = getPermissionLevelText(permissions, PERM_USERS_VIEW, PERM_USERS_EDIT);
     const info = getPermissionLevelText(permissions, PERM_INFO_VIEW, PERM_INFO_VIEW);
+    const tools = getPermissionLevelText(permissions, PERM_TOOLS_VIEW, PERM_TOOLS_EDIT);
     
-    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info}`;
+    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info} • 🛠️ ${tools}`;
 }
 
 function renderUsers(users) {
