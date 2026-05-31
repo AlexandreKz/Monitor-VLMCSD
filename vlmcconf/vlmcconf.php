@@ -9,6 +9,9 @@
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
 // ============================================
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 $requestUri = $_SERVER['REQUEST_URI'];
 $protectedExtensions = ['json', 'log', 'ini', 'conf', 'txt'];
@@ -72,8 +75,8 @@ if ($currentUserPermissions == 0 && isset($_SESSION['vlmc_username']) && $_SESSI
 // Для обратной совместимости
 $isAdmin = hasPermission($currentUserPermissions, PERM_USERS_EDIT);
 
-define('CONFIG_VERSION', '4.6.0');
-define('CONFIG_DATE', '2026-03-27');
+define('CONFIG_VERSION', '5.0.0');
+define('CONFIG_DATE', '2026-05-31');
 
 $configFile = __DIR__ . '/vlmcconf_config.json';
 $logFile = dirname(__DIR__) . '/vlmcsd.log';
@@ -1488,70 +1491,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         <div class="main-content">
             <div class="settings-menu">
-                <!-- Общие настройки - доступны всем -->
-                <div class="menu-item <?= $activeSection === 'general' ? 'active' : '' ?>" onclick="showSection('general', this)">
-                    <span class="menu-item-icon">⚙️</span>
-                    <span><?= __('menu_general') ?></span>
-                </div>
-                
-                <!-- Группы - только если есть права на просмотр -->
-                <?php if (hasPermission($currentUserPermissions, PERM_GROUPS_VIEW)): ?>
-                <div class="menu-item <?= $activeSection === 'groups' ? 'active' : '' ?>" onclick="showSection('groups', this)">
-                    <span class="menu-item-icon">👥</span>
-                    <span><?= __('menu_groups') ?></span>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Устройства - только если есть права на просмотр -->
-                <?php if (hasPermission($currentUserPermissions, PERM_DEVICES_VIEW)): ?>
-                <div class="menu-item <?= $activeSection === 'devices' ? 'active' : '' ?>" onclick="showSection('devices', this)">
-                    <span class="menu-item-icon">📱</span>
-                    <span><?= __('menu_devices') ?></span>
-                </div>
-                <?php endif; ?>
-                
-				<!-- Инструменты -->
-				<div class="menu-item <?= $activeSection === 'tools' ? 'active' : '' ?>" onclick="showSection('tools', this)">
-					<span class="menu-item-icon">🛠️</span>
-					<span><?= __('menu_tools') ?></span>
-				</div>
-				
-                <!-- Безопасность - только если есть права на просмотр логов или пользователей -->
-                <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)): ?>
-                <div class="menu-item <?= $activeSection === 'security' ? 'active' : '' ?>" onclick="showSection('security', this)">
-                    <span class="menu-item-icon">🔒</span>
-                    <span><?= __('menu_security') ?></span>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Статистика - доступна всем -->
-                <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
-                    <span class="menu-item-icon">📊</span>
-                    <span><?= __('menu_stats') ?></span>
-                </div>
-                
-                <!-- Информация - только если есть права на просмотр -->
-                <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)): ?>
-                <div class="menu-item <?= $activeSection === 'info' ? 'active' : '' ?>" onclick="showSection('info', this)">
-                    <span class="menu-item-icon">ℹ️</span>
-                    <span><?= __('menu_info') ?></span>
-                </div>
-				
-				<!-- Документация - доступна всем -->
-				<div class="menu-item <?= $activeSection === 'documentation' ? 'active' : '' ?>" onclick="showSection('documentation', this)">
-					<span class="menu-item-icon">📚</span>
-					<span><?= __('menu_documentation') ?></span>
-				</div>
-				
-                <?php endif; ?>
-                
-                <div style="flex: 1;"></div>
-                
-                <div class="menu-item logout-btn" onclick="logout()">
-                    <span class="menu-item-icon">🚪</span>
-                    <span><?= __('menu_logout') ?></span>
-                </div>
-            </div>
+    <!-- Общие настройки - доступны всем -->
+    <div class="menu-item <?= $activeSection === 'general' ? 'active' : '' ?>" onclick="showSection('general', this)">
+        <span class="menu-item-icon">⚙️</span>
+        <span><?= __('menu_general') ?></span>
+    </div>
+    
+    <!-- Группы - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_GROUPS_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'groups' ? 'active' : '' ?>" onclick="showSection('groups', this)">
+        <span class="menu-item-icon">👥</span>
+        <span><?= __('menu_groups') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Устройства - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_DEVICES_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'devices' ? 'active' : '' ?>" onclick="showSection('devices', this)">
+        <span class="menu-item-icon">📱</span>
+        <span><?= __('menu_devices') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Безопасность - только если есть права на просмотр логов или пользователей -->
+    <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'security' ? 'active' : '' ?>" onclick="showSection('security', this)">
+        <span class="menu-item-icon">🔒</span>
+        <span><?= __('menu_security') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Статистика - доступна всем -->
+    <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
+        <span class="menu-item-icon">📊</span>
+        <span><?= __('menu_stats') ?></span>
+    </div>
+    
+    <!-- Инструменты - проверка прав -->
+    <?php if (hasPermission($currentUserPermissions, PERM_TOOLS_VIEW) || hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)): ?>
+    <div class="menu-item <?= $activeSection === 'tools' ? 'active' : '' ?>" onclick="showSection('tools', this)">
+        <span class="menu-item-icon">🛠️</span>
+        <span><?= __('menu_tools') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Информация - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'info' ? 'active' : '' ?>" onclick="showSection('info', this)">
+        <span class="menu-item-icon">ℹ️</span>
+        <span><?= __('menu_info') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Документация - доступна всем -->
+    <div class="menu-item <?= $activeSection === 'documentation' ? 'active' : '' ?>" onclick="showSection('documentation', this)">
+        <span class="menu-item-icon">📚</span>
+        <span><?= __('menu_documentation') ?></span>
+    </div>
+    
+    <div style="flex: 1;"></div>
+    
+    <div class="menu-item logout-btn" onclick="logout()">
+        <span class="menu-item-icon">🚪</span>
+        <span><?= __('menu_logout') ?></span>
+    </div>
+</div>
             
             <div class="settings-content">
 				<?php include __DIR__ . '/sections/documentation.php'; ?>
