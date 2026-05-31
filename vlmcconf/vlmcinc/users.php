@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 3.7.0
-// ДАТА: 2026-03-28
+// ВЕРСИЯ: 3.8.0
+// ДАТА: 2026-05-31
 // @description: Управление пользователями с детальной валидацией
 // ============================================
 
@@ -26,13 +26,19 @@ define('PERM_USERS_EDIT', 128);
 define('PERM_INFO_NONE', 0);
 define('PERM_INFO_VIEW', 256);
 
+// Права для раздела ИНСТРУМЕНТЫ
+define('PERM_TOOLS_NONE', 0);      // Нет доступа (пункт меню скрыт)
+define('PERM_TOOLS_VIEW', 512);     // Только просмотр (нельзя изменять)
+define('PERM_TOOLS_EDIT', 1024);    // Полный доступ (очистка лога, экспорт, управление кэшем)
+
 // Полные права администратора
 define('PERM_ADMIN_FULL', 
     PERM_GROUPS_VIEW | PERM_GROUPS_EDIT |
     PERM_DEVICES_VIEW | PERM_DEVICES_EDIT |
     PERM_LOGS_VIEW | PERM_LOGS_EDIT |
     PERM_USERS_VIEW | PERM_USERS_EDIT |
-    PERM_INFO_VIEW
+    PERM_INFO_VIEW |
+    PERM_TOOLS_EDIT
 );
 
 /**
@@ -158,6 +164,7 @@ function updateUser($id, $data) {
             if (isset($data['permissions'])) $user['permissions'] = (int)$data['permissions'];
             if (isset($data['must_change_password'])) $user['must_change_password'] = $data['must_change_password'];
             if (isset($data['last_login'])) $user['last_login'] = $data['last_login'];
+            if (isset($data['username'])) $user['username'] = $data['username'];
             break;
         }
     }
@@ -261,3 +268,4 @@ function changeUserPasswordAsAdmin($userId, $newPassword) {
     }
     return ['success' => false, 'message' => 'Ошибка при смене пароля'];
 }
+?>
