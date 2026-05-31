@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 2.3.0
-// ДАТА: 2026-04-01
-// @description: Секция "Документация" с вкладками и полным скачиванием
+// ВЕРСИЯ: 5.0.0
+// ДАТА: 2026-05-31
+// @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'documentation.php') {
@@ -12,60 +12,155 @@ if (basename($_SERVER['PHP_SELF']) === 'documentation.php') {
 }
 
 // ============================================
-// РУССКАЯ ВЕРСИЯ — Веб-оболочка
+// РУССКАЯ ВЕРСИЯ
 // ============================================
 $docWebRu = <<<'HTML_WEB_RU'
 <div class="doc-content-inner">
-    <div class="resources">
-        <strong>📌 О проекте KMS Monitor:</strong><br>
-        KMS Monitor — это веб-оболочка для мониторинга и управления KMS-сервером на базе <strong>vlmcsd</strong>.<br>
-        Сам KMS-сервер распространяется отдельно.<br><br>
-        <strong>Официальные ресурсы проекта vlmcsd:</strong><br>
-        • Форум разработчика: <a href="https://forums.mydigitallife.net/threads/emulated-kms-servers-on-non-windows-platforms.50234/" target="_blank">My Digital Life Forums</a><br>
-        • Дистрибутив (только исходный код): <a href="https://www.upload.ee/files/11363713/vlmcsd-1113-2020-03-28-Hotbird64-source-only.7z.html" target="_blank">Скачать</a><br>
-        • Дистрибутив (исходный код + бинарные файлы): <a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">Скачать</a>
+    
+    <!-- Введение -->
+    <div class="section-card">
+        <div class="section-title"><span>📌</span> О проекте</div>
+        <p><strong>KMS Monitor</strong> — это веб-интерфейс для мониторинга и управления KMS-сервером на базе <strong>vlmcsd</strong>.</p>
+        <p>Инструкция разбита на логические этапы. Выполняйте их последовательно.</p>
     </div>
     
+    <!-- Этап 1: Загрузка и подготовка файлов KMS сервера -->
     <div class="section-card">
-        <div class="section-title"><span>📋</span> 1. Требования к серверу</div>
-        <ul>
-            <li>Веб-сервер: <strong>Apache 2.4+</strong> с поддержкой <code>mod_rewrite</code></li>
-            <li>PHP: <strong>7.4 — 8.3</strong> (рекомендуется 8.1+)</li>
-            <li>Расширения PHP: <code>curl</code>, <code>json</code>, <code>session</code>, <code>fileinfo</code></li>
-            <li>Доступ в интернет для геолокации IP (опционально)</li>
-        </ul>
+        <div class="section-title"><span>1️⃣</span> Загрузка и подготовка файлов KMS сервера</div>
+        
+        <p>Скачайте архив с бинарными файлами:</p>
+        <div class="code-block"><pre><a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html</a></pre></div>
+        
+        <p>Распакуйте архив на вашем компьютере. Внутри вы найдёте следующие папки и файлы:</p>
+        <div class="code-block"><pre>📁 etc/
+   ├── 📄 vlmcsd.ini      - конфигурационный файл сервера
+   └── 📄 vlmcsd.kmd      - файл данных активаций
+
+📁 binaries/Linux/intel/glibc/
+   ├── 📄 vlmcsd-x64-glibc - для 64-битных систем
+   ├── 📄 vlmcsd-x86-glibc - для 32-битных систем
+   └── ... другие версии для ARM и т.д.</pre></div>
+        
+        <p><strong>Загрузите файлы на сервер (через WinSCP / FileZilla / SCP):</strong></p>
+        <div class="code-block"><pre>1. Подключитесь к серверу по SFTP (порт 22)
+2. Перейдите в папку /usr/local/vlmcsd/ (создайте её, если нет)
+3. Скопируйте файлы из папки etc архива в /usr/local/vlmcsd/:
+   - vlmcsd.ini
+   - vlmcsd.kmd
+4. Скопируйте бинарный файл из папки binaries/Linux/intel/glibc в /usr/local/vlmcsd/:
+   - Для 64-битных систем: vlmcsd-x64-glibc
+   - Для 32-битных систем: vlmcsd-x86-glibc
+5. Переименуйте скопированный бинарный файл в vlmcsd</pre></div>
+        
+        <div class="note">💡 <strong>Выбор бинарного файла:</strong><br>
+        • Для 64-битных систем (стандартные серверы): <code>vlmcsd-x64-glibc</code><br>
+        • Для 32-битных систем (старые серверы): <code>vlmcsd-x86-glibc</code><br>
+        • Для ARM (Raspberry Pi и т.п.): <code>vlmcsd-armv7l-glibc</code> или <code>vlmcsd-aarch64-glibc</code>
+        </div>
     </div>
     
+    <!-- Этап 2: Настройка прав и ручной запуск KMS сервера -->
     <div class="section-card">
-        <div class="section-title"><span>📁</span> 2. Перенос файлов проекта</div>
-        <p>Скопируй все файлы проекта в директорию <code>/var/www/html/</code>:</p>
-        <div class="code-block"><pre># Если файлы уже есть на сервере — просто проверь
-ls -la /var/www/html/
+        <div class="section-title"><span>2️⃣</span> Настройка прав и ручной запуск KMS сервера</div>
+        
+        <p>После копирования файлов выполните команды на сервере:</p>
+        <div class="code-block"><pre># Сделайте бинарный файл исполняемым (без этого сервер не запустится)
+sudo chmod +x /usr/local/vlmcsd/vlmcsd
 
-# Если переносишь с другого сервера — создай архив
-cd /var/www
-tar -czf kms-monitor.tar.gz html/
+# Запустите сервер вручную для проверки
+sudo /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
+        
+        <p>Проверьте, что сервер запустился:</p>
+        <div class="code-block"><pre># Проверьте, слушается ли порт 1688
+sudo netstat -tlnp | grep 1688
 
-# Скопируй архив на новый сервер
-scp kms-monitor.tar.gz user@new-server:/tmp/
-
-# На новом сервере — распакуй
-cd /var/www
-sudo tar -xzf /tmp/kms-monitor.tar.gz
-
-# Убедись, что файлы на месте
-ls -la /var/www/html/vlmc.php</pre></div>
-        <div class="note">💡 <strong>Важно:</strong> Корневая директория сайта — <code>/var/www/html/</code>. Все файлы проекта должны находиться здесь.</div>
+# Посмотрите лог (должны быть строки "Listening on" и "started successfully")
+sudo tail -20 /var/log/vlmcsd.log</pre></div>
+        
+        <div class="success">✅ Успешный запуск показывает в логе:<br>
+        <code>Listening on [::]:1688</code><br>
+        <code>Listening on 0.0.0.0:1688</code><br>
+        <code>vlmcsd started successfully</code>
+        </div>
+        
+        <div class="warning">⚠️ После проверки остановите сервер комбинацией <code>Ctrl+C</code>, чтобы перейти к настройке автозапуска.</div>
     </div>
     
+    <!-- Этап 3: Настройка автозапуска KMS сервера -->
     <div class="section-card">
-        <div class="section-title"><span>🔧</span> 3. Настройка Apache</div>
-        <p>Создай конфигурационный файл для виртуального хоста:</p>
+        <div class="section-title"><span>3️⃣</span> Настройка автозапуска (systemd)</div>
+        
+        <p>Создайте файл сервиса:</p>
+        <div class="code-block"><pre>sudo nano /etc/systemd/system/vlmcsd.service</pre></div>
+        
+        <p>Вставьте содержимое:</p>
+        <div class="code-block"><pre>[Unit]
+Description=vlmcsd KMS Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log
+Restart=no
+User=root
+
+[Install]
+WantedBy=multi-user.target</pre></div>
+        
+        <p>Запустите и включите автозапуск:</p>
+        <div class="code-block"><pre># Перезагрузить конфигурацию systemd
+sudo systemctl daemon-reload
+
+# Включить автозапуск при загрузке системы
+sudo systemctl enable vlmcsd
+
+# Запустить сервис сейчас
+sudo systemctl start vlmcsd
+
+# Проверить статус
+sudo systemctl status vlmcsd</pre></div>
+        
+        <div class="note">💡 <strong>Примечание:</strong> Если статус показывает <code>activating (auto-restart)</code> — это означает, что сервер работает, но systemd не может определить его состояние. Это нормально для vlmcsd. Проверьте наличие порта 1688 командой <code>sudo netstat -tlnp | grep 1688</code>.</div>
+        
+        <div class="warning">⚠️ Если сервис не запускается, попробуйте альтернативный способ автозапуска через <code>crontab @reboot</code>:</div>
+        <div class="code-block"><pre>sudo crontab -e
+# Добавьте строку:
+@reboot /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
+    </div>
+    
+    <!-- Этап 4: Установка веб-сервера и PHP -->
+    <div class="section-card">
+        <div class="section-title"><span>4️⃣</span> Установка веб-сервера и PHP</div>
+        
+        <p><strong>Для Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.1 php8.1-curl php8.1-common libapache2-mod-php8.1</pre></div>
+        
+        <p><strong>Для Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.3 php8.3-curl php8.3-common libapache2-mod-php8.3</pre></div>
+        
+        <p><strong>Для Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.5 php8.5-curl php8.5-common libapache2-mod-php8.5</pre></div>
+        
+        <div class="note">💡 <strong>Примечание:</strong> Расширения <code>json</code> и <code>session</code> встроены в PHP, отдельно устанавливать не нужно.</div>
+    </div>
+    
+    <!-- Этап 5: Настройка Apache и включение mod_rewrite -->
+    <div class="section-card">
+        <div class="section-title"><span>5️⃣</span> Настройка Apache</div>
+        
+        <p>Включите модуль <code>mod_rewrite</code> (обязательно! Без него будет ошибка 500):</p>
+        <div class="code-block"><pre>sudo a2enmod rewrite
+sudo systemctl restart apache2</pre></div>
+        
+        <p>Создайте виртуальный хост:</p>
         <div class="code-block"><pre>sudo nano /etc/apache2/sites-available/kms-monitor.conf</pre></div>
-        <p>Вставь следующее содержимое (замени <code>example.com</code> на твой домен или IP-адрес):</p>
+        
+        <p>Вставьте содержимое (замените <code>example.com</code> на ваш домен или IP):</p>
         <div class="code-block"><pre>&lt;VirtualHost *:80&gt;
     ServerName example.com
-    ServerAdmin admin@example.com
     DocumentRoot /var/www/html
     
     &lt;Directory /var/www/html&gt;
@@ -74,436 +169,346 @@ ls -la /var/www/html/vlmc.php</pre></div>
         Require all granted
     &lt;/Directory&gt;
     
-    ErrorLog /var/log/apache2/kms-error.log
-    CustomLog /var/log/apache2/kms-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/kms-error.log
+    CustomLog ${APACHE_LOG_DIR}/kms-access.log combined
 &lt;/VirtualHost&gt;</pre></div>
-        <p>Активируй сайт и перезапусти Apache:</p>
-        <div class="code-block"><pre># Включи сайт
-sudo a2ensite kms-monitor.conf
-
-# Отключи стандартный сайт (если используется)
+        
+        <p>Активируйте сайт и перезапустите Apache:</p>
+        <div class="code-block"><pre>sudo a2ensite kms-monitor.conf
 sudo a2dissite 000-default.conf
-
-# Проверь конфигурацию на ошибки
-sudo apachectl configtest
-
-# Перезапусти Apache
 sudo systemctl reload apache2</pre></div>
-        <div class="success">✅ После этого сайт должен быть доступен по адресу <code>http://example.com/vlmc.php</code></div>
     </div>
     
+    <!-- Этап 6: Установка веб-оболочки -->
     <div class="section-card">
-        <div class="section-title"><span>🔒</span> 4. Настройка прав доступа</div>
-        <div class="code-block"><pre># Установи владельца (www-data — пользователь Apache)
+        <div class="section-title"><span>6️⃣</span> Установка веб-оболочки</div>
+        
+        <p>Скопируйте файлы проекта на сервер через <strong>WinSCP / FileZilla</strong> в папку <code>/var/www/html/</code>.</p>
+        <p>После копирования настройте права доступа:</p>
+        <div class="code-block"><pre># Установите владельца (www-data — пользователь Apache)
 sudo chown -R www-data:www-data /var/www/html
 
-# Установи права на файлы
+# Установите права на файлы (644 для файлов, 755 для папок)
 sudo find /var/www/html -type f -exec chmod 644 {} \;
-sudo find /var/www/html -type d -exec chmod 755 {} \;
-
-# Особые права для конфигурационных файлов (только чтение)
-sudo chmod 640 /var/www/html/vlmcconf/vlmcconf_config.json
-sudo chmod 640 /var/www/html/vlmcconf/users.json</pre></div>
-        <div class="warning">⚠️ <strong>Важно:</strong> Файлы <code>vlmcconf_config.json</code> и <code>users.json</code> содержат пароли в хешированном виде. Убедись, что они защищены от прямого доступа через <code>.htaccess</code>.</div>
+sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
+        
+        <div class="note">💡 Папка <code>vlmcconf/cache</code> создастся автоматически при первом обращении к геолокации. Права на родительскую папку уже установлены.</div>
     </div>
     
+    <!-- Этап 7: Настройка доступа к логу KMS сервера -->
     <div class="section-card">
-        <div class="section-title"><span>📝</span> 5. Настройка доступа к логу KMS-сервера</div>
-        <p>Веб-оболочка должна иметь доступ к лог-файлу KMS-сервера. Есть два способа:</p>
+        <div class="section-title"><span>7️⃣</span> Настройка доступа к логу</div>
         
-        <h4>Способ 1: Символическая ссылка (рекомендуется)</h4>
-        <div class="code-block"><pre># Создай символическую ссылку на лог в папке html
-sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log
+        <p><strong>Важно:</strong> Этот шаг выполняется <strong>ПОСЛЕ</strong> того, как KMS сервер уже запущен (этап 2 или 3).</p>
+        
+        <div class="code-block"><pre># Установите права на лог-файл (веб-сервер должен иметь возможность читать лог)
+sudo chmod 644 /var/log/vlmcsd.log
+sudo chown www-data:www-data /var/log/vlmcsd.log
 
-# Убедись, что ссылка создалась
-ls -la /var/www/html/vlmcsd.log</pre></div>
-        <div class="note">💡 <strong>Преимущество:</strong> При изменении пути к логу в KMS-сервере достаточно обновить ссылку, настройки оболочки не меняются.</div>
+# Создайте символическую ссылку в папке веб-оболочки
+sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         
-        <h4>Способ 2: Указать путь в настройках оболочки</h4>
-        <p>После первого входа в панель управления (<code>/vlmcconf/login.php</code>):</p>
+        <div class="note">💡 Альтернативно, путь к логу можно указать в настройках панели управления после первого входа (в разделе «Общие настройки» → «Файл лога»).</div>
+    </div>
+    
+    <!-- Этап 8: Настройка SSL/HTTPS (необязательно) -->
+    <div class="section-card">
+        <div class="section-title"><span>8️⃣</span> Настройка SSL/HTTPS (необязательно)</div>
+        
+        <p>Для работы сайта по HTTPS можно использовать бесплатный сертификат от Let's Encrypt.</p>
+        
+        <h4>Установка Certbot:</h4>
+        <div class="code-block"><pre># Для Ubuntu 22.04, 24.04, 26.04
+sudo apt update
+sudo apt install certbot python3-certbot-apache</pre></div>
+        
+        <h4>Получение сертификата:</h4>
+        <div class="code-block"><pre># Замените example.com на ваш домен
+sudo certbot --apache -d example.com</pre></div>
+        
+        <h4>Ручная настройка SSL (если Certbot не подходит):</h4>
+        <p>Создайте самоподписанный сертификат:</p>
+        <div class="code-block"><pre>sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/example.com.key \
+  -out /etc/ssl/certs/example.com.crt</pre></div>
+        
+        <p>Добавьте конфигурацию для HTTPS в <code>/etc/apache2/sites-available/kms-monitor.conf</code>:</p>
+        <div class="code-block"><pre># Включите модуль SSL
+sudo a2enmod ssl
+
+# Отредактируйте конфиг
+sudo nano /etc/apache2/sites-available/kms-monitor.conf</pre></div>
+        
+        <p>Замените содержимое на:</p>
+        <div class="code-block"><pre>&lt;VirtualHost *:443&gt;
+    ServerName example.com
+    DocumentRoot /var/www/html
+    
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/example.com.crt
+    SSLCertificateKeyFile /etc/ssl/private/example.com.key
+    
+    &lt;Directory /var/www/html&gt;
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    &lt;/Directory&gt;
+    
+    ErrorLog ${APACHE_LOG_DIR}/kms-error.log
+    CustomLog ${APACHE_LOG_DIR}/kms-access.log combined
+&lt;/VirtualHost&gt;
+
+# Редирект с HTTP на HTTPS
+&lt;VirtualHost *:80&gt;
+    ServerName example.com
+    Redirect permanent / https://example.com/
+&lt;/VirtualHost&gt;</pre></div>
+        
+        <p>Перезапустите Apache:</p>
+        <div class="code-block"><pre>sudo systemctl reload apache2</pre></div>
+    </div>
+    
+    <!-- Этап 9: Первый вход -->
+    <div class="section-card">
+        <div class="section-title"><span>9️⃣</span> Первый вход в панель управления</div>
+        
         <ol>
-            <li>Перейди в раздел <strong>Общие настройки</strong></li>
-            <li>В поле <strong>Путь к файлу лога</strong> укажи <code>/var/log/vlmcsd.log</code></li>
-            <li>Нажми <strong>Сохранить путь</strong></li>
-        </ol>
-        
-        <div class="warning">⚠️ <strong>Важно:</strong> Убедись, что пользователь <code>www-data</code> имеет права на чтение лог-файла:
-        <div class="code-block"><pre>sudo chmod 644 /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log</pre></div></div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔐</span> 6. Настройка SSL (Let's Encrypt)</div>
-        
-        <h4>Для Ubuntu 22.04 LTS:</h4>
-        <div class="code-block"><pre># Установи software-properties-common
-sudo apt update
-sudo apt install software-properties-common -y
-
-# Добавь репозиторий certbot
-sudo add-apt-repository ppa:certbot/certbot -y
-sudo apt update
-
-# Установи certbot и плагин для Apache
-sudo apt install certbot python3-certbot-apache -y
-
-# Получи сертификат (замени example.com на свой домен)
-sudo certbot --apache -d example.com
-
-# Проверь автообновление
-sudo certbot renew --dry-run</pre></div>
-        
-        <h4>Для Ubuntu 24.04 LTS:</h4>
-        <div class="code-block"><pre># Установи snapd
-sudo apt update
-sudo apt install snapd -y
-
-# Установи certbot через snap
-sudo snap install core
-sudo snap refresh core
-sudo snap install --classic certbot
-sudo ln -s /snap/bin/certbot /usr/bin/certbot
-
-# Получи сертификат (замени example.com на свой домен)
-sudo certbot --apache -d example.com
-
-# Проверь автообновление
-sudo certbot renew --dry-run</pre></div>
-        
-        <div class="note">💡 Certbot автоматически настроит автообновление сертификата. Проверить можно командой: <code>sudo systemctl list-timers | grep certbot</code></div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔐</span> 7. Первый вход в панель управления</div>
-        <ol>
-            <li>Открой браузер и перейди по адресу: <code>http://example.com/vlmcconf/login.php</code> (или <code>https://...</code> после настройки SSL)</li>
-            <li>Введи учётные данные по умолчанию:
+            <li>Откройте браузер и перейдите по адресу: <code>http://example.com/vlmcconf/login.php</code> (или <code>https://...</code> если настроили SSL)</li>
+            <li>Введите учётные данные по умолчанию:
                 <ul>
                     <li><strong>Логин:</strong> <code>root</code></li>
                     <li><strong>Пароль:</strong> <code>root</code></li>
                 </ul>
             </li>
             <li>Система <strong>обязательно предложит сменить пароль</strong> при первом входе.</li>
-            <li>Установи новый пароль (требования: минимум 8 символов, заглавные и строчные буквы, цифры, спецсимволы).</li>
+            <li>Установите новый пароль (требования: минимум 8 символов, заглавные и строчные буквы, цифры, спецсимволы).</li>
             <li>После смены пароля откроется панель управления.</li>
         </ol>
+        
         <div class="success">🎉 <strong>Готово!</strong> Теперь можно настраивать группы, добавлять устройства и управлять пользователями.</div>
     </div>
     
+    <!-- Возможные ошибки -->
     <div class="section-card">
-        <div class="section-title"><span>📂</span> 8. Полная структура файлов проекта</div>
-        <div class="file-tree">
-            <div><span class="dir">📁 /var/www/html/</span> <span class="comment">— корневая директория сайта</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">vlmc.php</span> <span class="comment">— главная страница мониторинга (доступна без авторизации)</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">.htaccess</span> <span class="comment">— защита конфигурационных файлов от прямого доступа</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">index.php</span> <span class="comment">— перенаправление на vlmc.php</span></div>
-            <div style="margin-left: 20px;">├── <span class="dir">📁 vlmcconf/</span> <span class="comment">— панель управления (требуется авторизация)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcconf.php</span> <span class="comment">— главный файл панели управления</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">login.php</span> <span class="comment">— страница авторизации</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">logout.php</span> <span class="comment">— выход из панели</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcgeoip.php</span> <span class="comment">— геолокация IP-адресов через внешние API</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcloghandler.php</span> <span class="comment">— обработка и форматирование логов</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmctheme.php</span> <span class="comment">— библиотека тем оформления</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">flags.php</span> <span class="comment">— маппинг названий стран на коды флагов</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcconf_config.json</span> <span class="comment">— конфигурация (группы, устройства, тема, язык)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">users.json</span> <span class="comment">— база пользователей (логины, хеши паролей, права)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 vlmcinc/</span> <span class="comment">— вспомогательные PHP-библиотеки</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">config.php</span> <span class="comment">— общие функции и утилиты</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">auth.php</span> — функции авторизации</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">users.php</span> — управление пользователями и правами доступа</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">analytics.php</span> — функции статистики (активность, графики)</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">structure.php</span> — динамическая структура проекта</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">ajax.php</span> — AJAX-обработчики для динамических запросов</div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 sections/</span> <span class="comment">— отдельные страницы панели управления</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">general.php</span> — общие настройки (тема, язык, путь к логу)</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">groups.php</span> — управление группами устройств</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">devices.php</span> — управление устройствами</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">security.php</span> — безопасность, очистка логов, управление пользователями</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">stats.php</span> — статистика и графики</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">info.php</span> — информация о проекте и структура файлов</div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 locale/</span> <span class="comment">— языковые файлы</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">ru.php</span> — русские переводы</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">en.php</span> — английские переводы</div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">.htaccess</span> <span class="comment">— защита директории vlmcconf</span></div>
-            <div style="margin-left: 20px;">├── <span class="dir">📁 pic/</span> <span class="comment">— иконки и изображения</span></div>
-        </div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🛠️</span> 9. Устранение неполадок</div>
+        <div class="section-title"><span>⚠️</span> Возможные ошибки и их решение</div>
         
-        <h4>❌ Ошибка 403 Forbidden</h4>
-        <div class="code-block"><pre># Проверь права
-sudo chown -R www-data:www-data /var/www/html
-sudo chmod 755 /var/www/html
-sudo chmod 644 /var/www/html/vlmc.php
-
-# Проверь .htaccess
-cat /var/www/html/.htaccess</pre></div>
+        <h4>❌ Ошибка 500 Internal Server Error</h4>
+        <p><strong>Причина:</strong> Не включён модуль <code>mod_rewrite</code>.</p>
+        <div class="code-block"><pre>sudo a2enmod rewrite
+sudo systemctl restart apache2</pre></div>
         
-        <h4>❌ Файл лога не найден</h4>
-        <div class="code-block"><pre># Проверь, существует ли лог-файл
-ls -la /var/log/vlmcsd.log
-
-# Если нет — создай
-sudo touch /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log
+        <h4>❌ Permission denied при запуске KMS сервера</h4>
+        <p><strong>Причина:</strong> Бинарный файл не имеет прав на выполнение.</p>
+        <div class="code-block"><pre>sudo chmod +x /usr/local/vlmcsd/vlmcsd</pre></div>
+        
+        <h4>❌ Файл лога не найден или не читается</h4>
+        <p><strong>Причина:</strong> Лог-файл не создан или неправильные права.</p>
+        <div class="code-block"><pre>sudo touch /var/log/vlmcsd.log
 sudo chmod 644 /var/log/vlmcsd.log
-
-# Создай символическую ссылку
+sudo chown www-data:www-data /var/log/vlmcsd.log
 sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         
-        <h4>❌ Не сохраняются настройки</h4>
-        <div class="code-block"><pre># Проверь права на запись
-sudo chmod 664 /var/www/html/vlmcconf/vlmcconf_config.json
-sudo chown www-data:www-data /var/www/html/vlmcconf/vlmcconf_config.json</pre></div>
+        <h4>❌ Не открывается страница /vlmcconf/login.php</h4>
+        <p><strong>Причина:</strong> Неправильные права на файлы или ошибка в .htaccess.</p>
+        <div class="code-block"><pre>sudo chown -R www-data:www-data /var/www/html
+sudo find /var/www/html -type f -exec chmod 644 {} \;
+sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         
-        <h4>❌ Нет флагов в блоке "Подозрительные IP"</h4>
-        <div class="code-block"><pre># Проверь подключение CSS flag-icons (открой консоль браузера F12 → вкладка Network)
-# Если флаги не загружаются — проверь интернет-соединение</pre></div>
+        <h4>❌ Сервис vlmcsd не запускается через systemd (Ubuntu 26.04)</h4>
+        <p><strong>Причина:</strong> Иногда systemd не может корректно определить состояние vlmcsd.</p>
+        <p><strong>Решение 1:</strong> Используйте автозапуск через crontab:</p>
+        <div class="code-block"><pre>sudo crontab -e
+# Добавьте строку:
+@reboot /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
+        <p><strong>Решение 2:</strong> Проверьте, что сервер всё равно работает:</p>
+        <div class="code-block"><pre>sudo netstat -tlnp | grep 1688</pre></div>
+        
+        <h4>❌ Не загружаются флаги стран в блоке "Подозрительные IP"</h4>
+        <p><strong>Причина:</strong> Нет интернета или заблокирован CDN.</p>
+        <p>Проверьте подключение к интернету. Флаги загружаются с CDN <code>cdn.jsdelivr.net</code>.</p>
+        
+        <h4>❌ Ошибка 404 при открытии vlmc.php</h4>
+        <p><strong>Причина:</strong> Неправильное имя файла. Правильный адрес: <code>/vlmc.php</code> (без буквы 's').</p>
+    </div>
+    
+    <!-- Структура проекта -->
+    <div class="section-card">
+        <div class="section-title"><span>📂</span> Структура проекта</div>
+        <div class="file-tree">
+            <div>📁 /var/www/html/</div>
+            <div style="margin-left: 20px;">├── 📄 vlmc.php — главная страница мониторинга</div>
+            <div style="margin-left: 20px;">├── 📄 index.php — редирект</div>
+            <div style="margin-left: 20px;">├── 📄 .htaccess — защита конфигурационных файлов</div>
+            <div style="margin-left: 20px;">├── 📁 vlmcconf/ — панель управления</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 login.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 logout.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcgeoip.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf_config.json — настройки</div>
+            <div style="margin-left: 40px;">│   ├── 📄 users.json — пользователи</div>
+            <div style="margin-left: 40px;">│   ├── 📁 cache/ — кэш геолокации (создаётся автоматически)</div>
+            <div style="margin-left: 40px;">│   ├── 📁 locale/ — языковые файлы</div>
+            <div style="margin-left: 40px;">│   ├── 📁 sections/ — секции панели управления</div>
+            <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
+            <div style="margin-left: 20px;">└── 📁 pic/ — иконки</div>
+        </div>
     </div>
 </div>
 HTML_WEB_RU;
 
 // ============================================
-// РУССКАЯ ВЕРСИЯ — KMS Сервер (ИСПРАВЛЕНА)
+// АНГЛИЙСКАЯ ВЕРСИЯ
 // ============================================
-$docKmsRu = <<<'HTML_KMS_RU'
+$docWebEn = <<<'HTML_WEB_EN'
 <div class="doc-content-inner">
+    
+    <!-- Introduction -->
     <div class="section-card">
-        <div class="section-title"><span>📥</span> 1. Загрузка и подготовка файлов</div>
-        <p>Перейди по ссылке и скачай архив с бинарными файлами:</p>
-        <div class="code-block"><pre>🔗 <a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html</a></pre></div>
-        <p>После скачивания распакуй архив на своём компьютере. Внутри найди папку <code>binaries/Linux/</code>.</p>
-        <p><strong>Важно:</strong> Файлы нужно загрузить на сервер через SFTP или другой способ. Ниже приведены команды для загрузки (выполняй с компьютера, где есть скачанный архив):</p>
-        <div class="code-block"><pre># Загрузи архив на сервер (замени user и server на свои данные)
-scp vlmcsd-1113-2020-03-28-Hotbird64.7z user@your-server:/tmp/
-
-# Подключись по SSH и распакуй архив
-ssh user@your-server
-cd /tmp
-sudo apt update
-sudo apt install p7zip-full -y
-7z x vlmcsd-1113-2020-03-28-Hotbird64.7z
-cd binaries/Linux/</pre></div>
-        
-        <div class="note">💡 <strong>Выбор бинарного файла:</strong><br>
-        • Для Ubuntu 22.04/24.04 x86_64: <code>cd intel/glibc/</code><br>
-        • Файл: <code>vlmcsd-x64-glibc</code><br>
-        • <strong>Важно:</strong> Обрати внимание на букву <strong>d</strong> в конце имени — это означает, что файл работает как демон (в фоне).</div>
-        
-        <div class="warning">⚠️ Если у тебя 32-битная система, выбери файл <code>vlmcsd-x86-glibc</code> в папке <code>intel/glibc/</code>.</div>
+        <div class="section-title"><span>📌</span> About the project</div>
+        <p><strong>KMS Monitor</strong> is a web interface for monitoring and managing a KMS server based on <strong>vlmcsd</strong>.</p>
+        <p>The instructions are divided into logical steps. Follow them sequentially.</p>
     </div>
     
+    <!-- Step 1: Download and prepare KMS server files -->
     <div class="section-card">
-        <div class="section-title"><span>📁</span> 2. Создание директории и копирование файлов</div>
-        <p>Создай папку для KMS-сервера и скопируй три необходимых файла:</p>
-        <div class="code-block"><pre># Создай папку для KMS-сервера
-sudo mkdir -p /usr/local/vlmcsd
+        <div class="section-title"><span>1️⃣</span> Download and prepare KMS server files</div>
+        
+        <p>Download the archive with binary files:</p>
+        <div class="code-block"><pre><a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html</a></pre></div>
+        
+        <p>Extract the archive on your computer. Inside you will find the following folders and files:</p>
+        <div class="code-block"><pre>📁 etc/
+   ├── 📄 vlmcsd.ini      - server configuration file
+   └── 📄 vlmcsd.kmd      - activation data file
 
-# Скопируй три необходимых файла (выполняй из папки, куда распакован архив)
-sudo cp vlmcsd.ini /usr/local/vlmcsd/
-sudo cp vlmcsd.kmd /usr/local/vlmcsd/
-sudo cp vlmcsd-x64-glibc /usr/local/vlmcsd/vlmcsd
-
-# Сделай файл исполняемым
-sudo chmod +x /usr/local/vlmcsd/vlmcsd
-sudo chmod 775 /usr/local/vlmcsd/vlmcsd
-
-# Проверь, что файлы на месте
-ls -la /usr/local/vlmcsd/</pre></div>
-        <div class="note">📌 <strong>Что за файлы:</strong>
-        <ul>
-            <li><code>vlmcsd</code> — сам KMS-сервер (переименованный бинарный файл)</li>
-            <li><code>vlmcsd.ini</code> — конфигурационный файл (из папки <code>\etc</code> архива)</li>
-            <li><code>vlmcsd.kmd</code> — файл данных активаций (создаётся автоматически, но лучше скопировать из архива)</li>
-        </ul>
+📁 binaries/Linux/intel/glibc/
+   ├── 📄 vlmcsd-x64-glibc - for 64-bit systems
+   ├── 📄 vlmcsd-x86-glibc - for 32-bit systems
+   └── ... other versions for ARM, etc.</pre></div>
+        
+        <p><strong>Upload files to the server (via WinSCP / FileZilla / SCP):</strong></p>
+        <div class="code-block"><pre>1. Connect to the server via SFTP (port 22)
+2. Navigate to /usr/local/vlmcsd/ (create it if doesn't exist)
+3. Copy files from the etc folder of the archive to /usr/local/vlmcsd/:
+   - vlmcsd.ini
+   - vlmcsd.kmd
+4. Copy the binary file from binaries/Linux/intel/glibc to /usr/local/vlmcsd/:
+   - For 64-bit systems: vlmcsd-x64-glibc
+   - For 32-bit systems: vlmcsd-x86-glibc
+5. Rename the copied binary file to vlmcsd</pre></div>
+        
+        <div class="note">💡 <strong>Choosing the binary:</strong><br>
+        • For 64-bit systems (standard servers): <code>vlmcsd-x64-glibc</code><br>
+        • For 32-bit systems (older servers): <code>vlmcsd-x86-glibc</code><br>
+        • For ARM (Raspberry Pi, etc.): <code>vlmcsd-armv7l-glibc</code> or <code>vlmcsd-aarch64-glibc</code>
         </div>
     </div>
     
+    <!-- Step 2: Set permissions and manual KMS server startup -->
     <div class="section-card">
-        <div class="section-title"><span>⚙️</span> 3. Создание конфигурационного файла</div>
-        <p>Отредактируй конфигурационный файл (или создай новый, если его нет):</p>
-        <div class="code-block"><pre>sudo nano /usr/local/vlmcsd/vlmcsd.ini</pre></div>
-        <p>Вставь следующее содержимое:</p>
-        <div class="code-block"><pre>[General]
-# Порт для прослушивания (стандартный KMS-порт)
-Port = 1688
+        <div class="section-title"><span>2️⃣</span> Set permissions and manual KMS server startup</div>
+        
+        <p>After copying the files, run the following commands on the server:</p>
+        <div class="code-block"><pre># Make the binary executable (the server won't start without this)
+sudo chmod +x /usr/local/vlmcsd/vlmcsd
 
-# Файл для хранения данных активаций
-DataFile = /usr/local/vlmcsd/vlmcsd.kmd
-
-# Уровень логирования (0-5, 3 — оптимально)
-LogLevel = 3
-
-# Файл лога
-LogFile = /var/log/vlmcsd.log
-
-# Запуск от определённого пользователя (безопасность)
-RunAsUser = nobody
-RunAsGroup = nogroup</pre></div>
-        <div class="note">💡 Все настройки подробно описаны в файле <code>vlmcsd.ini</code> внутри архива.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🚀</span> 4. Запуск KMS-сервера</div>
-        <div class="code-block"><pre># Ручной запуск для проверки
+# Start the server manually for testing
 sudo /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
-        <p>Проверь, что сервер запустился:</p>
-        <div class="code-block"><pre># Проверь, что порт 1688 открыт
+        
+        <p>Check that the server started:</p>
+        <div class="code-block"><pre># Check if port 1688 is listening
 sudo netstat -tlnp | grep 1688
-# Должен увидеть: tcp 0 0 0.0.0.0:1688 0.0.0.0:* LISTEN
 
-# Посмотри лог
-sudo tail -f /var/log/vlmcsd.log</pre></div>
-        <div class="success">✅ Успешный запуск должен показать в логе:<br>
+# View the log (should contain "Listening on" and "started successfully")
+sudo tail -20 /var/log/vlmcsd.log</pre></div>
+        
+        <div class="success">✅ Successful startup shows in log:<br>
         <code>Listening on [::]:1688</code><br>
         <code>Listening on 0.0.0.0:1688</code><br>
-        <code>vlmcsd started successfully</code></div>
-        <div class="warning">⚠️ Если сервер не запускается, проверь права на файлы и что порт 1688 не занят.</div>
+        <code>vlmcsd started successfully</code>
+        </div>
+        
+        <div class="warning">⚠️ After testing, stop the server with <code>Ctrl+C</code> before proceeding to autostart configuration.</div>
     </div>
     
+    <!-- Step 3: Configure KMS server autostart -->
     <div class="section-card">
-        <div class="section-title"><span>🔄</span> 5. Автозагрузка (systemd)</div>
-        <p>Для Ubuntu 22.04/24.04 используем systemd:</p>
-        <div class="code-block"><pre># Создай файл сервиса
-sudo nano /etc/systemd/system/vlmcsd.service</pre></div>
-        <p>Вставь следующее содержимое:</p>
+        <div class="section-title"><span>3️⃣</span> Configure KMS server autostart (systemd)</div>
+        
+        <p>Create the service file:</p>
+        <div class="code-block"><pre>sudo nano /etc/systemd/system/vlmcsd.service</pre></div>
+        
+        <p>Insert the following content:</p>
         <div class="code-block"><pre>[Unit]
 Description=vlmcsd KMS Server
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 ExecStart=/usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log
-PIDFile=/run/vlmcsd.pid
-Restart=on-failure
-RestartSec=5
-User=nobody
-Group=nogroup
+Restart=no
+User=root
 
 [Install]
 WantedBy=multi-user.target</pre></div>
-        <div class="code-block"><pre># Перезагрузи конфигурацию systemd
+        
+        <p>Start and enable autostart:</p>
+        <div class="code-block"><pre># Reload systemd configuration
 sudo systemctl daemon-reload
 
-# Добавь в автозагрузку
+# Enable autostart on system boot
 sudo systemctl enable vlmcsd
 
-# Запусти сервис
+# Start the service now
 sudo systemctl start vlmcsd
 
-# Проверь статус
+# Check status
 sudo systemctl status vlmcsd</pre></div>
-        <div class="note">📌 <strong>Важно:</strong> После настройки автозагрузки KMS-сервер будет автоматически запускаться при каждой перезагрузке сервера.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔗</span> 6. Настройка доступа к логу для веб-оболочки</div>
-        <p>Чтобы веб-оболочка могла читать лог KMS-сервера:</p>
-        <div class="code-block"><pre># Установи права на лог-файл
-sudo chmod 644 /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log
-
-# Создай символическую ссылку в папке веб-оболочки
-sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log
-
-# Проверь
-ls -la /var/www/html/vlmcsd.log</pre></div>
-        <div class="warning">⚠️ Если лог-файл не читается, веб-оболочка не будет отображать данные. Убедись, что пользователь <code>www-data</code> имеет доступ к файлу.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🛠️</span> 7. Устранение неполадок KMS-сервера</div>
         
-        <h4>❌ KMS сервер не запускается</h4>
-        <div class="code-block"><pre># Проверь лог на ошибки
-sudo tail -50 /var/log/vlmcsd.log
-
-# Проверь права на файлы
-ls -la /usr/local/vlmcsd/
-
-# Проверь, не занят ли порт 1688 другим процессом
-sudo lsof -i :1688</pre></div>
+        <div class="note">💡 <strong>Note:</strong> If the status shows <code>activating (auto-restart)</code>, this means the server is running but systemd cannot determine its state. This is normal for vlmcsd. Check if port 1688 is listening with <code>sudo netstat -tlnp | grep 1688</code>.</div>
         
-        <h4>❌ Ошибка "Address already in use"</h4>
-        <div class="code-block"><pre># Найди процесс, использующий порт 1688
-sudo lsof -i :1688
-# Убей процесс (замени PID на реальный)
-sudo kill -9 PID
-
-# Или проверь, не запущен ли уже vlmcsd
-sudo systemctl stop vlmcsd
-sudo pkill vlmcsd</pre></div>
+        <div class="warning">⚠️ If the service doesn't start, try an alternative autostart method via <code>crontab @reboot</code>:</div>
+        <div class="code-block"><pre>sudo crontab -e
+# Add the line:
+@reboot /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
+    </div>
+    
+    <!-- Step 4: Install web server and PHP -->
+    <div class="section-card">
+        <div class="section-title"><span>4️⃣</span> Install web server and PHP</div>
         
-        <h4>❌ Клиенты не могут активироваться</h4>
-        <div class="code-block"><pre># Проверь, что порт 1688 открыт в firewall
-sudo ufw status
-# Если нужно — открой порт
-sudo ufw allow 1688/tcp
-
-# Проверь, что сервер слушает все интерфейсы
-sudo netstat -tlnp | grep 1688
-# Должен быть 0.0.0.0:1688, а не 127.0.0.1:1688</pre></div>
-    </div>
-</div>
-HTML_KMS_RU;
-
-// ============================================
-// АНГЛИЙСКАЯ ВЕРСИЯ — Web Interface
-// ============================================
-$docWebEn = <<<'HTML_WEB_EN'
-<div class="doc-content-inner">
-    <div class="resources">
-        <strong>📌 About KMS Monitor:</strong><br>
-        KMS Monitor is a web interface for monitoring and managing a KMS server based on <strong>vlmcsd</strong>.<br>
-        The KMS server itself is distributed separately.<br><br>
-        <strong>Official vlmcsd resources:</strong><br>
-        • Developer Forum: <a href="https://forums.mydigitallife.net/threads/emulated-kms-servers-on-non-windows-platforms.50234/" target="_blank">My Digital Life Forums</a><br>
-        • Distribution (source only): <a href="https://www.upload.ee/files/11363713/vlmcsd-1113-2020-03-28-Hotbird64-source-only.7z.html" target="_blank">Download</a><br>
-        • Distribution (source + binaries): <a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">Download</a>
+        <p><strong>For Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.1 php8.1-curl php8.1-common libapache2-mod-php8.1</pre></div>
+        
+        <p><strong>For Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.3 php8.3-curl php8.3-common libapache2-mod-php8.3</pre></div>
+        
+        <p><strong>For Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
+        <div class="code-block"><pre>sudo apt update
+sudo apt install apache2 php8.5 php8.5-curl php8.5-common libapache2-mod-php8.5</pre></div>
+        
+        <div class="note">💡 <strong>Note:</strong> The <code>json</code> and <code>session</code> extensions are built into PHP, no separate installation required.</div>
     </div>
     
+    <!-- Step 5: Configure Apache and enable mod_rewrite -->
     <div class="section-card">
-        <div class="section-title"><span>📋</span> 1. Server Requirements</div>
-        <ul>
-            <li>Web server: <strong>Apache 2.4+</strong> with <code>mod_rewrite</code> support</li>
-            <li>PHP: <strong>7.4 — 8.3</strong> (recommended 8.1+)</li>
-            <li>PHP extensions: <code>curl</code>, <code>json</code>, <code>session</code>, <code>fileinfo</code></li>
-            <li>Internet access for IP geolocation (optional)</li>
-        </ul>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>📁</span> 2. File Transfer</div>
-        <p>Copy all project files to <code>/var/www/html/</code>:</p>
-        <div class="code-block"><pre># If files are already on server — just verify
-ls -la /var/www/html/
-
-# If transferring from another server — create archive
-cd /var/www
-tar -czf kms-monitor.tar.gz html/
-
-# Copy archive to new server
-scp kms-monitor.tar.gz user@new-server:/tmp/
-
-# Extract on new server
-cd /var/www
-sudo tar -xzf /tmp/kms-monitor.tar.gz
-
-# Verify files are in place
-ls -la /var/www/html/vlmc.php</pre></div>
-        <div class="note">💡 <strong>Important:</strong> The web root directory is <code>/var/www/html/</code>. All project files must be placed here.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔧</span> 3. Apache Configuration</div>
-        <p>Create a virtual host configuration file:</p>
+        <div class="section-title"><span>5️⃣</span> Configure Apache</div>
+        
+        <p>Enable the <code>mod_rewrite</code> module (required! Without it you'll get error 500):</p>
+        <div class="code-block"><pre>sudo a2enmod rewrite
+sudo systemctl restart apache2</pre></div>
+        
+        <p>Create a virtual host:</p>
         <div class="code-block"><pre>sudo nano /etc/apache2/sites-available/kms-monitor.conf</pre></div>
+        
         <p>Insert the following content (replace <code>example.com</code> with your domain or IP):</p>
         <div class="code-block"><pre>&lt;VirtualHost *:80&gt;
     ServerName example.com
-    ServerAdmin admin@example.com
     DocumentRoot /var/www/html
     
     &lt;Directory /var/www/html&gt;
@@ -512,395 +517,206 @@ ls -la /var/www/html/vlmc.php</pre></div>
         Require all granted
     &lt;/Directory&gt;
     
-    ErrorLog /var/log/apache2/kms-error.log
-    CustomLog /var/log/apache2/kms-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/kms-error.log
+    CustomLog ${APACHE_LOG_DIR}/kms-access.log combined
 &lt;/VirtualHost&gt;</pre></div>
+        
         <p>Enable the site and restart Apache:</p>
-        <div class="code-block"><pre># Enable the site
-sudo a2ensite kms-monitor.conf
-
-# Disable default site (if used)
+        <div class="code-block"><pre>sudo a2ensite kms-monitor.conf
 sudo a2dissite 000-default.conf
-
-# Check configuration for errors
-sudo apachectl configtest
-
-# Restart Apache
 sudo systemctl reload apache2</pre></div>
-        <div class="success">✅ After this, the site should be available at <code>http://example.com/vlmc.php</code></div>
     </div>
     
+    <!-- Step 6: Install web interface -->
     <div class="section-card">
-        <div class="section-title"><span>🔒</span> 4. Permissions Setup</div>
-        <div class="code-block"><pre># Set owner (www-data is Apache user)
+        <div class="section-title"><span>6️⃣</span> Install web interface</div>
+        
+        <p>Copy the project files to the server using <strong>WinSCP / FileZilla</strong> to the <code>/var/www/html/</code> folder.</p>
+        <p>After copying, set the permissions:</p>
+        <div class="code-block"><pre># Set owner (www-data is the Apache user)
 sudo chown -R www-data:www-data /var/www/html
 
-# Set file permissions
+# Set file permissions (644 for files, 755 for directories)
 sudo find /var/www/html -type f -exec chmod 644 {} \;
-sudo find /var/www/html -type d -exec chmod 755 {} \;
-
-# Special permissions for config files (read-only)
-sudo chmod 640 /var/www/html/vlmcconf/vlmcconf_config.json
-sudo chmod 640 /var/www/html/vlmcconf/users.json</pre></div>
-        <div class="warning">⚠️ <strong>Important:</strong> Files <code>vlmcconf_config.json</code> and <code>users.json</code> contain hashed passwords. Ensure they are protected from direct access via <code>.htaccess</code>.</div>
+sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
+        
+        <div class="note">💡 The <code>vlmcconf/cache</code> folder will be created automatically on the first geolocation request. Parent folder permissions are already set.</div>
     </div>
     
+    <!-- Step 7: Configure log access -->
     <div class="section-card">
-        <div class="section-title"><span>📝</span> 5. Log File Access Configuration</div>
-        <p>The web interface needs access to the KMS server log file. There are two ways:</p>
+        <div class="section-title"><span>7️⃣</span> Configure log access</div>
         
-        <h4>Method 1: Symbolic Link (Recommended)</h4>
-        <div class="code-block"><pre># Create symbolic link to log in html folder
-sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log
+        <p><strong>Important:</strong> This step must be performed <strong>AFTER</strong> the KMS server has been started (step 2 or 3).</p>
+        
+        <div class="code-block"><pre># Set log file permissions (web server must be able to read the log)
+sudo chmod 644 /var/log/vlmcsd.log
+sudo chown www-data:www-data /var/log/vlmcsd.log
 
-# Verify the link
-ls -la /var/www/html/vlmcsd.log</pre></div>
-        <div class="note">💡 <strong>Advantage:</strong> If the log path changes on the KMS server, you only need to update the symlink, not the web interface settings.</div>
+# Create symbolic link in web directory
+sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         
-        <h4>Method 2: Specify Path in Web Interface</h4>
-        <p>After first login to the control panel (<code>/vlmcconf/login.php</code>):</p>
+        <div class="note">💡 Alternatively, the log path can be set in the control panel settings after first login (in "General Settings" → "Log file path").</div>
+    </div>
+    
+    <!-- Step 8: SSL/HTTPS configuration (optional) -->
+    <div class="section-card">
+        <div class="section-title"><span>8️⃣</span> SSL/HTTPS configuration (optional)</div>
+        
+        <p>To run the site over HTTPS, you can use a free Let's Encrypt certificate.</p>
+        
+        <h4>Install Certbot:</h4>
+        <div class="code-block"><pre># For Ubuntu 22.04, 24.04, 26.04
+sudo apt update
+sudo apt install certbot python3-certbot-apache</pre></div>
+        
+        <h4>Obtain a certificate:</h4>
+        <div class="code-block"><pre># Replace example.com with your domain
+sudo certbot --apache -d example.com</pre></div>
+        
+        <h4>Manual SSL configuration (if Certbot doesn't work):</h4>
+        <p>Create a self-signed certificate:</p>
+        <div class="code-block"><pre>sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/example.com.key \
+  -out /etc/ssl/certs/example.com.crt</pre></div>
+        
+        <p>Add HTTPS configuration to <code>/etc/apache2/sites-available/kms-monitor.conf</code>:</p>
+        <div class="code-block"><pre># Enable SSL module
+sudo a2enmod ssl
+
+# Edit the config
+sudo nano /etc/apache2/sites-available/kms-monitor.conf</pre></div>
+        
+        <p>Replace the content with:</p>
+        <div class="code-block"><pre>&lt;VirtualHost *:443&gt;
+    ServerName example.com
+    DocumentRoot /var/www/html
+    
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/example.com.crt
+    SSLCertificateKeyFile /etc/ssl/private/example.com.key
+    
+    &lt;Directory /var/www/html&gt;
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    &lt;/Directory&gt;
+    
+    ErrorLog ${APACHE_LOG_DIR}/kms-error.log
+    CustomLog ${APACHE_LOG_DIR}/kms-access.log combined
+&lt;/VirtualHost&gt;
+
+# Redirect HTTP to HTTPS
+&lt;VirtualHost *:80&gt;
+    ServerName example.com
+    Redirect permanent / https://example.com/
+&lt;/VirtualHost&gt;</pre></div>
+        
+        <p>Restart Apache:</p>
+        <div class="code-block"><pre>sudo systemctl reload apache2</pre></div>
+    </div>
+    
+    <!-- Step 9: First login -->
+    <div class="section-card">
+        <div class="section-title"><span>9️⃣</span> First login to control panel</div>
+        
         <ol>
-            <li>Go to <strong>General Settings</strong></li>
-            <li>In <strong>Log file path</strong> field, enter <code>/var/log/vlmcsd.log</code></li>
-            <li>Click <strong>Save Path</strong></li>
-        </ol>
-        
-        <div class="warning">⚠️ <strong>Important:</strong> Ensure the <code>www-data</code> user has read permissions for the log file:
-        <div class="code-block"><pre>sudo chmod 644 /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log</pre></div></div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔐</span> 6. SSL Configuration (Let's Encrypt)</div>
-        
-        <h4>For Ubuntu 22.04 LTS:</h4>
-        <div class="code-block"><pre># Install software-properties-common
-sudo apt update
-sudo apt install software-properties-common -y
-
-# Add certbot repository
-sudo add-apt-repository ppa:certbot/certbot -y
-sudo apt update
-
-# Install certbot and Apache plugin
-sudo apt install certbot python3-certbot-apache -y
-
-# Obtain certificate (replace example.com with your domain)
-sudo certbot --apache -d example.com
-
-# Test automatic renewal
-sudo certbot renew --dry-run</pre></div>
-        
-        <h4>For Ubuntu 24.04 LTS:</h4>
-        <div class="code-block"><pre># Install snapd
-sudo apt update
-sudo apt install snapd -y
-
-# Install certbot via snap
-sudo snap install core
-sudo snap refresh core
-sudo snap install --classic certbot
-sudo ln -s /snap/bin/certbot /usr/bin/certbot
-
-# Obtain certificate (replace example.com with your domain)
-sudo certbot --apache -d example.com
-
-# Test automatic renewal
-sudo certbot renew --dry-run</pre></div>
-        
-        <div class="note">💡 Certbot automatically configures certificate renewal. Check with: <code>sudo systemctl list-timers | grep certbot</code></div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔐</span> 7. First Login to Control Panel</div>
-        <ol>
-            <li>Open browser and go to: <code>http://example.com/vlmcconf/login.php</code> (or <code>https://...</code> after SSL setup)</li>
+            <li>Open your browser and go to: <code>http://example.com/vlmcconf/login.php</code> (or <code>https://...</code> if you configured SSL)</li>
             <li>Enter default credentials:
                 <ul>
                     <li><strong>Username:</strong> <code>root</code></li>
                     <li><strong>Password:</strong> <code>root</code></li>
                 </ul>
             </li>
-            <li>The system <strong>will require password change</strong> on first login.</li>
-            <li>Set a new password (requirements: minimum 8 characters, uppercase/lowercase letters, digits, special characters).</li>
-            <li>After password change, the control panel will open.</li>
+            <li>The system <strong>will require a password change</strong> on first login.</li>
+            <li>Set a new password (requirements: minimum 8 characters, uppercase and lowercase letters, digits, special characters).</li>
+            <li>After changing the password, the control panel will open.</li>
         </ol>
+        
         <div class="success">🎉 <strong>Done!</strong> Now you can configure groups, add devices, and manage users.</div>
     </div>
     
+    <!-- Troubleshooting -->
     <div class="section-card">
-        <div class="section-title"><span>📂</span> 8. Complete File Structure</div>
-        <div class="file-tree">
-            <div><span class="dir">📁 /var/www/html/</span> <span class="comment">— web root directory</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">vlmc.php</span> <span class="comment">— main monitoring page (public)</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">.htaccess</span> <span class="comment">— protection for config files</span></div>
-            <div style="margin-left: 20px;">├── <span class="file">index.php</span> <span class="comment">— redirects to vlmc.php</span></div>
-            <div style="margin-left: 20px;">├── <span class="dir">📁 vlmcconf/</span> <span class="comment">— control panel (requires authentication)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcconf.php</span> <span class="comment">— main settings panel</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">login.php</span> <span class="comment">— login page</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">logout.php</span> <span class="comment">— logout</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcgeoip.php</span> <span class="comment">— IP geolocation via external APIs</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcloghandler.php</span> <span class="comment">— log processing and formatting</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmctheme.php</span> <span class="comment">— theme library</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">flags.php</span> <span class="comment">— country name to flag code mapping</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">vlmcconf_config.json</span> <span class="comment">— configuration (groups, devices, theme, language)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">users.json</span> <span class="comment">— user database (usernames, password hashes, permissions)</span></div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 vlmcinc/</span> <span class="comment">— helper PHP libraries</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">config.php</span> <span class="comment">— common functions and utilities</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">auth.php</span> — authentication functions</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">users.php</span> — user and permission management</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">analytics.php</span> — statistics functions (activity, charts)</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">structure.php</span> — dynamic project structure</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">ajax.php</span> — AJAX handlers for dynamic requests</div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 sections/</span> <span class="comment">— control panel pages</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">general.php</span> — general settings (theme, language, log path)</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">groups.php</span> — device group management</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">devices.php</span> — device management</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">security.php</span> — security, log cleanup, user management</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">stats.php</span> — statistics and charts</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">info.php</span> — project information and file structure</div>
-            <div style="margin-left: 40px;">│   ├── <span class="dir">📁 locale/</span> <span class="comment">— language files</span></div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">ru.php</span> — Russian translations</div>
-            <div style="margin-left: 60px;">│   │   ├── <span class="file">en.php</span> — English translations</div>
-            <div style="margin-left: 40px;">│   ├── <span class="file">.htaccess</span> <span class="comment">— vlmcconf directory protection</span></div>
-            <div style="margin-left: 20px;">├── <span class="dir">📁 pic/</span> <span class="comment">— icons and images</span></div>
-        </div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🛠️</span> 9. Troubleshooting (Web Interface)</div>
+        <div class="section-title"><span>⚠️</span> Troubleshooting</div>
         
-        <h4>❌ Error 403 Forbidden</h4>
-        <div class="code-block"><pre># Check permissions
-sudo chown -R www-data:www-data /var/www/html
-sudo chmod 755 /var/www/html
-sudo chmod 644 /var/www/html/vlmc.php
-
-# Check .htaccess
-cat /var/www/html/.htaccess</pre></div>
+        <h4>❌ Error 500 Internal Server Error</h4>
+        <p><strong>Cause:</strong> <code>mod_rewrite</code> module is not enabled.</p>
+        <div class="code-block"><pre>sudo a2enmod rewrite
+sudo systemctl restart apache2</pre></div>
         
-        <h4>❌ Log file not found</h4>
-        <div class="code-block"><pre># Check if log file exists
-ls -la /var/log/vlmcsd.log
-
-# If not — create it
-sudo touch /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log
+        <h4>❌ Permission denied when starting KMS server</h4>
+        <p><strong>Cause:</strong> Binary file does not have execute permissions.</p>
+        <div class="code-block"><pre>sudo chmod +x /usr/local/vlmcsd/vlmcsd</pre></div>
+        
+        <h4>❌ Log file not found or not readable</h4>
+        <p><strong>Cause:</strong> Log file does not exist or has incorrect permissions.</p>
+        <div class="code-block"><pre>sudo touch /var/log/vlmcsd.log
 sudo chmod 644 /var/log/vlmcsd.log
-
-# Create symbolic link
+sudo chown www-data:www-data /var/log/vlmcsd.log
 sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         
-        <h4>❌ Settings not saving</h4>
-        <div class="code-block"><pre># Check write permissions
-sudo chmod 664 /var/www/html/vlmcconf/vlmcconf_config.json
-sudo chown www-data:www-data /var/www/html/vlmcconf/vlmcconf_config.json</pre></div>
+        <h4>❌ Page /vlmcconf/login.php not opening</h4>
+        <p><strong>Cause:</strong> Incorrect file permissions or .htaccess error.</p>
+        <div class="code-block"><pre>sudo chown -R www-data:www-data /var/www/html
+sudo find /var/www/html -type f -exec chmod 644 {} \;
+sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         
-        <h4>❌ Country flags not displaying</h4>
-        <div class="code-block"><pre># Check flag-icons CSS loading (open browser console F12 → Network tab)
-# If flags don't load — check internet connection</pre></div>
+        <h4>❌ vlmcsd service won't start via systemd (Ubuntu 26.04)</h4>
+        <p><strong>Cause:</strong> Sometimes systemd cannot correctly determine vlmcsd's state.</p>
+        <p><strong>Solution 1:</strong> Use crontab for autostart:</p>
+        <div class="code-block"><pre>sudo crontab -e
+# Add the line:
+@reboot /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
+        <p><strong>Solution 2:</strong> Check if the server is still running:</p>
+        <div class="code-block"><pre>sudo netstat -tlnp | grep 1688</pre></div>
+        
+        <h4>❌ Country flags not loading in "Suspicious IPs" block</h4>
+        <p><strong>Cause:</strong> No internet connection or CDN blocked.</p>
+        <p>Check your internet connection. Flags are loaded from CDN <code>cdn.jsdelivr.net</code>.</p>
+        
+        <h4>❌ Error 404 when opening vlmc.php</h4>
+        <p><strong>Cause:</strong> Incorrect filename. The correct URL is: <code>/vlmc.php</code> (without the letter 's').</p>
+    </div>
+    
+    <!-- Project structure -->
+    <div class="section-card">
+        <div class="section-title"><span>📂</span> Project structure</div>
+        <div class="file-tree">
+            <div>📁 /var/www/html/</div>
+            <div style="margin-left: 20px;">├── 📄 vlmc.php — main monitoring page</div>
+            <div style="margin-left: 20px;">├── 📄 index.php — redirect</div>
+            <div style="margin-left: 20px;">├── 📄 .htaccess — config file protection</div>
+            <div style="margin-left: 20px;">├── 📁 vlmcconf/ — control panel</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 login.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 logout.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcgeoip.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
+            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf_config.json — settings</div>
+            <div style="margin-left: 40px;">│   ├── 📄 users.json — users</div>
+            <div style="margin-left: 40px;">│   ├── 📁 cache/ — geolocation cache (auto-created)</div>
+            <div style="margin-left: 40px;">│   ├── 📁 locale/ — language files</div>
+            <div style="margin-left: 40px;">│   ├── 📁 sections/ — control panel sections</div>
+            <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — helper libraries</div>
+            <div style="margin-left: 20px;">└── 📁 pic/ — icons</div>
+        </div>
     </div>
 </div>
 HTML_WEB_EN;
 
 // ============================================
-// АНГЛИЙСКАЯ ВЕРСИЯ — KMS Server (FIXED)
-// ============================================
-$docKmsEn = <<<'HTML_KMS_EN'
-<div class="doc-content-inner">
-    <div class="section-card">
-        <div class="section-title"><span>📥</span> 1. Download and Prepare Files</div>
-        <p>Go to the link and download the archive with binary files:</p>
-        <div class="code-block"><pre>🔗 <a href="https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html" target="_blank">https://www.upload.ee/files/11363704/vlmcsd-1113-2020-03-28-Hotbird64.7z.html</a></pre></div>
-        <p>After downloading, extract the archive on your computer. Inside, find the folder <code>binaries/Linux/</code>.</p>
-        <p><strong>Important:</strong> Files need to be uploaded to the server via SFTP or another method. Below are commands for uploading (run from the computer where the archive is downloaded):</p>
-        <div class="code-block"><pre># Upload the archive to the server (replace user and server with your data)
-scp vlmcsd-1113-2020-03-28-Hotbird64.7z user@your-server:/tmp/
-
-# Connect via SSH and extract the archive
-ssh user@your-server
-cd /tmp
-sudo apt update
-sudo apt install p7zip-full -y
-7z x vlmcsd-1113-2020-03-28-Hotbird64.7z
-cd binaries/Linux/</pre></div>
-        
-        <div class="note">💡 <strong>Choosing the binary:</strong><br>
-        • For Ubuntu 22.04/24.04 x86_64: <code>cd intel/glibc/</code><br>
-        • File: <code>vlmcsd-x64-glibc</code><br>
-        • <strong>Important:</strong> Note the letter <strong>d</strong> at the end — this indicates daemon mode.</div>
-        
-        <div class="warning">⚠️ If you have a 32-bit system, choose <code>vlmcsd-x86-glibc</code> from the <code>intel/glibc/</code> folder.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>📁</span> 2. Create Directory and Copy Files</div>
-        <p>Create a folder for the KMS server and copy the three required files:</p>
-        <div class="code-block"><pre># Create KMS server directory
-sudo mkdir -p /usr/local/vlmcsd
-
-# Copy three required files (run from the extracted folder)
-sudo cp vlmcsd.ini /usr/local/vlmcsd/
-sudo cp vlmcsd.kmd /usr/local/vlmcsd/
-sudo cp vlmcsd-x64-glibc /usr/local/vlmcsd/vlmcsd
-
-# Make executable
-sudo chmod +x /usr/local/vlmcsd/vlmcsd
-sudo chmod 775 /usr/local/vlmcsd/vlmcsd
-
-# Verify files are in place
-ls -la /usr/local/vlmcsd/</pre></div>
-        <div class="note">📌 <strong>What these files are:</strong>
-        <ul>
-            <li><code>vlmcsd</code> — the KMS server itself (renamed binary file)</li>
-            <li><code>vlmcsd.ini</code> — configuration file (from the <code>\etc</code> folder of the archive)</li>
-            <li><code>vlmcsd.kmd</code> — activation data file (created automatically, but better to copy from the archive)</li>
-        </ul>
-        </div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>⚙️</span> 3. Create Configuration File</div>
-        <p>Edit the configuration file (or create a new one if it doesn't exist):</p>
-        <div class="code-block"><pre>sudo nano /usr/local/vlmcsd/vlmcsd.ini</pre></div>
-        <p>Insert the following content:</p>
-        <div class="code-block"><pre>[General]
-# Listening port (standard KMS port)
-Port = 1688
-
-# Activation data storage file
-DataFile = /usr/local/vlmcsd/vlmcsd.kmd
-
-# Logging level (0-5, 3 is optimal)
-LogLevel = 3
-
-# Log file
-LogFile = /var/log/vlmcsd.log
-
-# Run as specific user (security)
-RunAsUser = nobody
-RunAsGroup = nogroup</pre></div>
-        <div class="note">💡 All settings are well documented in the <code>vlmcsd.ini</code> file inside the archive.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🚀</span> 4. Start KMS Server</div>
-        <div class="code-block"><pre># Manual start for testing
-sudo /usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log</pre></div>
-        <p>Verify the server started correctly:</p>
-        <div class="code-block"><pre># Check if port 1688 is listening
-sudo netstat -tlnp | grep 1688
-# Should see: tcp 0 0 0.0.0.0:1688 0.0.0.0:* LISTEN
-
-# View log
-sudo tail -f /var/log/vlmcsd.log</pre></div>
-        <div class="success">✅ Successful startup shows in log:<br>
-        <code>Listening on [::]:1688</code><br>
-        <code>Listening on 0.0.0.0:1688</code><br>
-        <code>vlmcsd started successfully</code></div>
-        <div class="warning">⚠️ If the server doesn't start, check file permissions and that port 1688 is not in use.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔄</span> 5. Autostart with systemd</div>
-        <p>For Ubuntu 22.04/24.04, use systemd:</p>
-        <div class="code-block"><pre># Create service file
-sudo nano /etc/systemd/system/vlmcsd.service</pre></div>
-        <p>Insert the following content:</p>
-        <div class="code-block"><pre>[Unit]
-Description=vlmcsd KMS Server
-After=network.target
-
-[Service]
-Type=forking
-ExecStart=/usr/local/vlmcsd/vlmcsd -i /usr/local/vlmcsd/vlmcsd.ini -l /var/log/vlmcsd.log
-PIDFile=/run/vlmcsd.pid
-Restart=on-failure
-RestartSec=5
-User=nobody
-Group=nogroup
-
-[Install]
-WantedBy=multi-user.target</pre></div>
-        <div class="code-block"><pre># Reload systemd configuration
-sudo systemctl daemon-reload
-
-# Enable autostart
-sudo systemctl enable vlmcsd
-
-# Start the service
-sudo systemctl start vlmcsd
-
-# Check status
-sudo systemctl status vlmcsd</pre></div>
-        <div class="note">📌 <strong>Important:</strong> After configuring autostart, the KMS server will automatically start on every system reboot.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🔗</span> 6. Log Access for Web Interface</div>
-        <p>To allow the web interface to read the KMS server log:</p>
-        <div class="code-block"><pre># Set log file permissions
-sudo chmod 644 /var/log/vlmcsd.log
-sudo chown www-data:www-data /var/log/vlmcsd.log
-
-# Create symbolic link in web folder
-sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log
-
-# Verify
-ls -la /var/www/html/vlmcsd.log</pre></div>
-        <div class="warning">⚠️ If the log file is not readable, the web interface won't display any data. Ensure the <code>www-data</code> user has access to the file.</div>
-    </div>
-    
-    <div class="section-card">
-        <div class="section-title"><span>🛠️</span> 7. KMS Server Troubleshooting</div>
-        
-        <h4>❌ KMS server won't start</h4>
-        <div class="code-block"><pre># Check log for errors
-sudo tail -50 /var/log/vlmcsd.log
-
-# Check file permissions
-ls -la /usr/local/vlmcsd/
-
-# Check if port 1688 is already in use
-sudo lsof -i :1688</pre></div>
-        
-        <h4>❌ Error "Address already in use"</h4>
-        <div class="code-block"><pre># Find process using port 1688
-sudo lsof -i :1688
-# Kill the process (replace PID with actual number)
-sudo kill -9 PID
-
-# Or stop any running vlmcsd
-sudo systemctl stop vlmcsd
-sudo pkill vlmcsd</pre></div>
-        
-        <h4>❌ Clients cannot activate</h4>
-        <div class="code-block"><pre># Check if port 1688 is open in firewall
-sudo ufw status
-# If needed — open the port
-sudo ufw allow 1688/tcp
-
-# Verify server listens on all interfaces
-sudo netstat -tlnp | grep 1688
-# Should be 0.0.0.0:1688, not 127.0.0.1:1688</pre></div>
-    </div>
-</div>
-HTML_KMS_EN;
-
-// ============================================
-// ПОЛНЫЙ HTML ДЛЯ СКАЧИВАНИЯ (с переключателями) - ИСПРАВЛЕНА
+// ПОЛНЫЙ HTML ДЛЯ СКАЧИВАНИЯ
 // ============================================
 function getFullDownloadHtml() {
-    global $docWebRu, $docKmsRu, $docWebEn, $docKmsEn;
+    global $docWebRu, $docWebEn;
     
-    // Экранируем содержимое для вставки в JavaScript
     $webRuJson = json_encode($docWebRu);
-    $kmsRuJson = json_encode($docKmsRu);
     $webEnJson = json_encode($docWebEn);
-    $kmsEnJson = json_encode($docKmsEn);
     
-    // Формируем HTML через конкатенацию
-    $html = '<!DOCTYPE html>
+    return '<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -961,14 +777,14 @@ function getFullDownloadHtml() {
             flex-shrink: 0;
         }
         
-        .lang-tabs, .section-tabs {
+        .lang-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
             flex-wrap: wrap;
         }
         
-        .lang-btn, .section-btn {
+        .lang-btn {
             background: none;
             border: none;
             padding: 8px 20px;
@@ -980,12 +796,12 @@ function getFullDownloadHtml() {
             transition: all 0.2s;
         }
         
-        .lang-btn.active, .section-btn.active {
+        .lang-btn.active {
             background: #3b82f6;
             color: white;
         }
         
-        .lang-btn:hover:not(.active), .section-btn:hover:not(.active) {
+        .lang-btn:hover:not(.active) {
             background: #2d3f52;
             color: #e1e9f0;
         }
@@ -1000,7 +816,6 @@ function getFullDownloadHtml() {
             flex: 1;
         }
         
-        /* Стили для скроллбара */
         .doc-content::-webkit-scrollbar {
             width: 8px;
         }
@@ -1021,7 +836,7 @@ function getFullDownloadHtml() {
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 25px;
-            border: 1px solid #33485d;
+            border: 2px solid #33485d;
         }
         
         .section-title {
@@ -1085,17 +900,6 @@ function getFullDownloadHtml() {
             line-height: 1.8;
         }
         
-        .file-tree .dir { color: #3b82f6; }
-        .file-tree .file { color: #8aa0bb; }
-        .file-tree .comment { color: #6b8ba4; margin-left: 10px; }
-        
-        .resources {
-            background: #0f1a2f;
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
-        
         a { color: #3b82f6; text-decoration: none; }
         a:hover { text-decoration: underline; }
         
@@ -1116,7 +920,7 @@ function getFullDownloadHtml() {
             .doc-content { margin: 0 20px 16px 20px; padding: 16px; }
             footer { padding: 12px 20px; }
             .code-block { font-size: 11px; }
-            .lang-btn, .section-btn { padding: 6px 12px; font-size: 12px; }
+            .lang-btn { padding: 6px 12px; font-size: 12px; }
         }
     </style>
 </head>
@@ -1124,7 +928,7 @@ function getFullDownloadHtml() {
 <div class="container">
     <div class="header">
         <h1>📦 KMS Monitor</h1>
-        <div class="version">Версия 4.8.1 | Полное руководство по развёртыванию | Апрель 2026</div>
+        <div class="version">Версия 5.0.0 | Полное руководство по развёртыванию | Май 2026</div>
     </div>
     
     <div class="tabs-wrapper">
@@ -1132,70 +936,33 @@ function getFullDownloadHtml() {
             <button class="lang-btn active" data-lang="ru">🇷🇺 Русский</button>
             <button class="lang-btn" data-lang="en">🇬🇧 English</button>
         </div>
-        
-        <div class="section-tabs">
-            <button class="section-btn active" data-section="web">🌐 Веб-оболочка</button>
-            <button class="section-btn" data-section="kms">🖥️ KMS Сервер</button>
-        </div>
     </div>
     
     <div id="docContent" class="doc-content"></div>
     
     <footer>
-        KMS Monitor v4.8.1 — Полное руководство по развёртыванию<br>
+        KMS Monitor v5.0.0 — Полное руководство по развёртыванию<br>
         © 2025-2026
     </footer>
 </div>
 
 <script>
-// Все содержимое для разных языков и вкладок
 const contentMap = {
-    ru: {
-        web: ' . $webRuJson . ',
-        kms: ' . $kmsRuJson . '
-    },
-    en: {
-        web: ' . $webEnJson . ',
-        kms: ' . $kmsEnJson . '
-    }
-};
-
-const tabLabels = {
-    ru: {
-        web: "🌐 Веб-оболочка",
-        kms: "🖥️ KMS Сервер"
-    },
-    en: {
-        web: "🌐 Web Interface",
-        kms: "🖥️ KMS Server"
-    }
+    ru: ' . $webRuJson . ',
+    en: ' . $webEnJson . '
 };
 
 let currentLang = "ru";
-let currentSection = "web";
 
 function renderDocumentation() {
     const container = document.getElementById("docContent");
     if (container) {
-        container.innerHTML = contentMap[currentLang][currentSection];
+        container.innerHTML = contentMap[currentLang];
     }
     
-    // Обновляем активные кнопки языка
     document.querySelectorAll(".lang-btn").forEach(btn => {
         btn.classList.remove("active");
         if (btn.dataset.lang === currentLang) btn.classList.add("active");
-    });
-    
-// Обновляем текст кнопок секций в зависимости от языка
-const webBtn = document.querySelector(\'.section-btn[data-section="web"]\');
-const kmsBtn = document.querySelector(\'.section-btn[data-section="kms"]\');
-if (webBtn) webBtn.innerHTML = tabLabels[currentLang].web;
-if (kmsBtn) kmsBtn.innerHTML = tabLabels[currentLang].kms;
-    
-    // Обновляем активные кнопки секций
-    document.querySelectorAll(".section-btn").forEach(btn => {
-        btn.classList.remove("active");
-        if (btn.dataset.section === currentSection) btn.classList.add("active");
     });
 }
 
@@ -1206,19 +973,10 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
     });
 });
 
-document.querySelectorAll(".section-btn").forEach(btn => {
-    btn.addEventListener("click", function() {
-        currentSection = this.dataset.section;
-        renderDocumentation();
-    });
-});
-
 renderDocumentation();
 </script>
 </body>
 </html>';
-    
-    return $html;
 }
 
 ?>
@@ -1229,23 +987,16 @@ renderDocumentation();
         <button id="downloadDocBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">📥 <?= __('doc_download') ?></button>
     </div>
     
-    <div class="doc-tabs-wrapper" style="flex-shrink: 0;">
-        <!-- Уровень 1: Переключение языка -->
-        <div class="doc-lang-tabs">
-            <button class="doc-lang-btn active" data-lang="ru">🇷🇺 Русский</button>
+    <!-- Переключение языка -->
+    <div class="doc-tabs-wrapper" style="flex-shrink: 0; margin-bottom: 15px;">
+        <div class="doc-lang-tabs" style="display: inline-flex; gap: 10px; background: <?= $themeCSS['input'] ?>; padding: 8px 12px; border-radius: 8px;">
+            <button class="doc-lang-btn active" data-lang="ru" style="background: none; border: none; cursor: pointer; font-weight: 600; padding: 4px 12px; border-radius: 6px;">🇷🇺 Русский</button>
             <span style="color: <?= $themeCSS['border'] ?>;">|</span>
-            <button class="doc-lang-btn" data-lang="en">🇬🇧 English</button>
-        </div>
-        
-        <!-- Уровень 2: Вкладки (Веб-оболочка / KMS Сервер) -->
-        <div class="doc-section-tabs">
-            <button class="doc-tab-btn active" data-tab="web">🌐 <?= __('doc_web') ?></button>
-            <span style="color: <?= $themeCSS['border'] ?>;">|</span>
-            <button class="doc-tab-btn" data-tab="kms">🖥️ <?= __('doc_kms') ?></button>
+            <button class="doc-lang-btn" data-lang="en" style="background: none; border: none; cursor: pointer; font-weight: 600; padding: 4px 12px; border-radius: 6px;">🇬🇧 English</button>
         </div>
     </div>
     
-    <!-- Контейнер для содержимого (будет прокручиваться) -->
+    <!-- Контейнер для содержимого -->
     <div id="docContent" class="doc-content">
         <?= $docWebRu ?>
     </div>
@@ -1262,66 +1013,30 @@ renderDocumentation();
     padding: 20px;
 }
 
-/* Обертка для переключателей */
 .doc-tabs-wrapper {
     flex-shrink: 0;
     margin-bottom: 15px;
 }
 
-/* Блок с переключателями */
-.doc-lang-tabs, .doc-section-tabs {
-    display: inline-flex;
-    gap: 10px;
-    background: <?= $themeCSS['input'] ?>;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-
-.doc-lang-btn, .doc-tab-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-
-.doc-lang-btn.active, .doc-tab-btn.active {
+.doc-lang-btn.active {
     color: <?= $themeCSS['primary'] ?> !important;
-    background: <?= $themeCSS['card'] ?>;
+    background: <?= $themeCSS['card'] ?> !important;
 }
 
-.doc-lang-btn:hover, .doc-tab-btn:hover {
+.doc-lang-btn:hover {
     opacity: 0.8;
     background: <?= $themeCSS['card'] ?>;
 }
 
-/* Стили для скроллбара внутри документации */
-.doc-content::-webkit-scrollbar {
-    width: 8px;
-}
-.doc-content::-webkit-scrollbar-track {
-    background: <?= $themeCSS['bg'] ?>;
-    border-radius: 4px;
-}
-.doc-content::-webkit-scrollbar-thumb {
-    background: <?= $themeCSS['primary'] ?>;
-    border-radius: 4px;
-}
-.doc-content::-webkit-scrollbar-thumb:hover {
-    background: #2563eb;
-}
-
-/* Стили для внутреннего контента (без изменений) */
+/* Стили для внутреннего контента */
 .doc-content .section-card {
     background: <?= $themeCSS['input'] ?>;
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 25px;
-    border: 1px solid <?= $themeCSS['border'] ?>;
+    border: 2px solid <?= $themeCSS['border'] ?>;
 }
+
 .doc-content .section-title {
     font-size: 22px;
     font-weight: 600;
@@ -1333,19 +1048,11 @@ renderDocumentation();
     border-bottom: 1px solid <?= $themeCSS['border'] ?>;
     padding-bottom: 12px;
 }
+
 .doc-content .section-title span {
     font-size: 26px;
 }
-.doc-content h3 {
-    font-size: 18px;
-    margin: 20px 0 12px 0;
-    color: #8aa0bb;
-}
-.doc-content h4 {
-    font-size: 16px;
-    margin: 15px 0 10px 0;
-    color: #b0c4de;
-}
+
 .doc-content .code-block {
     background: #0a0f1a;
     border: 1px solid <?= $themeCSS['border'] ?>;
@@ -1356,6 +1063,7 @@ renderDocumentation();
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
 }
+
 .doc-content .note {
     background: <?= $themeCSS['warning'] ?>20;
     border-left: 4px solid <?= $themeCSS['warning'] ?>;
@@ -1363,6 +1071,7 @@ renderDocumentation();
     margin: 12px 0;
     border-radius: 6px;
 }
+
 .doc-content .warning {
     background: <?= $themeCSS['danger'] ?>20;
     border-left: 4px solid <?= $themeCSS['danger'] ?>;
@@ -1370,6 +1079,7 @@ renderDocumentation();
     margin: 12px 0;
     border-radius: 6px;
 }
+
 .doc-content .success {
     background: <?= $themeCSS['success'] ?>20;
     border-left: 4px solid <?= $themeCSS['success'] ?>;
@@ -1377,6 +1087,7 @@ renderDocumentation();
     margin: 12px 0;
     border-radius: 6px;
 }
+
 .doc-content .file-tree {
     background: #0a0f1a;
     padding: 12px 16px;
@@ -1385,23 +1096,7 @@ renderDocumentation();
     font-size: 12px;
     line-height: 1.7;
 }
-.doc-content .file-tree .dir {
-    color: <?= $themeCSS['primary'] ?>;
-}
-.doc-content .file-tree .file {
-    color: #8aa0bb;
-}
-.doc-content .file-tree .comment {
-    color: #6b8ba4;
-    margin-left: 8px;
-}
-.doc-content .resources {
-    background: <?= $themeCSS['input'] ?>;
-    padding: 16px 20px;
-    border-radius: 8px;
-    margin-bottom: 25px;
-    border: 1px solid <?= $themeCSS['border'] ?>;
-}
+
 #section-documentation.active {
     display: flex;
     flex-direction: column;
@@ -1409,68 +1104,47 @@ renderDocumentation();
     min-height: 0;
 }
 
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
 
+.btn-primary {
+    background: <?= $themeCSS['primary'] ?>;
+    color: white;
+}
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
 </style>
 
 <script>
-// Все содержимое для разных языков и вкладок (для веб-версии)
+// Содержимое для разных языков
 const contentMap = {
-    ru: {
-        web: <?= json_encode($docWebRu) ?>,
-        kms: <?= json_encode($docKmsRu) ?>
-    },
-    en: {
-        web: <?= json_encode($docWebEn) ?>,
-        kms: <?= json_encode($docKmsEn) ?>
-    }
+    ru: <?= json_encode($docWebRu) ?>,
+    en: <?= json_encode($docWebEn) ?>
 };
 
 let currentLang = 'ru';
-let currentTab = 'web';
-
-// Тексты для кнопок вкладок на разных языках
-const tabLabels = {
-    ru: {
-        web: '🌐 Веб-оболочка',
-        kms: '🖥️ KMS Сервер'
-    },
-    en: {
-        web: '🌐 Web Interface',
-        kms: '🖥️ KMS Server'
-    }
-};
 
 function renderDocumentation() {
     const container = document.getElementById('docContent');
     if (container) {
-        container.innerHTML = contentMap[currentLang][currentTab];
+        container.innerHTML = contentMap[currentLang];
     }
     
-    // Обновляем активные кнопки языка
     document.querySelectorAll('.doc-lang-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.lang === currentLang) {
-            btn.classList.add('active');
-            btn.style.color = '<?= $themeCSS['primary'] ?>';
-        } else {
-            btn.style.color = '<?= $themeCSS['text'] ?>';
-        }
-    });
-    
-    // Обновляем текст кнопок вкладок в зависимости от языка
-    const webBtn = document.querySelector('.doc-tab-btn[data-tab="web"]');
-    const kmsBtn = document.querySelector('.doc-tab-btn[data-tab="kms"]');
-    if (webBtn) {
-        webBtn.innerHTML = tabLabels[currentLang].web;
-    }
-    if (kmsBtn) {
-        kmsBtn.innerHTML = tabLabels[currentLang].kms;
-    }
-    
-    // Обновляем активные кнопки вкладок
-    document.querySelectorAll('.doc-tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.tab === currentTab) {
             btn.classList.add('active');
             btn.style.color = '<?= $themeCSS['primary'] ?>';
         } else {
@@ -1487,15 +1161,7 @@ document.querySelectorAll('.doc-lang-btn').forEach(btn => {
     });
 });
 
-// Переключение вкладок
-document.querySelectorAll('.doc-tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        currentTab = this.dataset.tab;
-        renderDocumentation();
-    });
-});
-
-// Скачивание ПОЛНОГО документа (с переключателями)
+// Скачивание полного документа
 document.getElementById('downloadDocBtn').addEventListener('click', function() {
     const fullHtml = <?= json_encode(getFullDownloadHtml()) ?>;
     const blob = new Blob([fullHtml], { type: 'text/html' });
@@ -1514,16 +1180,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const docSection = document.getElementById('section-documentation');
     if (docSection && docSection.classList.contains('active')) {
         renderDocumentation();
-    } else if (docSection) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'class' && docSection.classList.contains('active')) {
-                    renderDocumentation();
-                    observer.disconnect();
-                }
-            });
-        });
-        observer.observe(docSection, { attributes: true });
     }
 });
+
+// Наблюдатель за активацией секции
+const docObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'class') {
+            const target = mutation.target;
+            if (target.id === 'section-documentation' && target.classList.contains('active')) {
+                renderDocumentation();
+                docObserver.disconnect();
+            }
+        }
+    });
+});
+
+const docSection = document.getElementById('section-documentation');
+if (docSection) {
+    docObserver.observe(docSection, { attributes: true });
+}
 </script>
+<?php
+?>
