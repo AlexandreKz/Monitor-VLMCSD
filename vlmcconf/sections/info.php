@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.4.0
-// ДАТА: 2026-03-26
+// ВЕРСИЯ: 1.5.0
+// ДАТА: 2026-05-31
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW)
 // ============================================
 
@@ -11,7 +11,7 @@ if (basename($_SERVER['PHP_SELF']) === 'info.php') {
     exit('Access denied');
 }
 
-// Проверяем права на просмотр информации (используем глобальную функцию hasPermission)
+// Проверяем права на просмотр информации
 $canViewInfo = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_INFO_VIEW);
 
 if (!$canViewInfo) {
@@ -21,15 +21,15 @@ if (!$canViewInfo) {
 ?>
 
 <div id="section-info" class="settings-section <?= $activeSection === 'info' ? 'active' : '' ?>">
-    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span>ℹ️ <?= __('info_title') ?></span>
+        <button class="btn btn-primary btn-small" onclick="refreshFileInfo()" style="font-size: 11px; padding: 4px 10px;">🔄 <?= __('refresh') ?></button>
         <?php if ($activeSection === 'info' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
-        <button class="btn btn-small btn-primary" onclick="refreshFileInfo()" style="font-size: 11px; padding: 4px 10px; margin-left: auto;">🔄 <?= __('refresh') ?></button>
     </div>
     
-    <!-- Блок с версией, темой, конфигом и кнопкой сброса -->
+    <!-- Блок с версией, темой, конфигом -->
     <div style="background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 10px; margin-bottom: 20px; font-size: 12px;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; flex: 1;">
@@ -90,4 +90,82 @@ if (!$canViewInfo) {
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: <?= $themeCSS['primary'] ?>;
+    color: white;
+}
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.btn-small {
+    padding: 4px 10px;
+    font-size: 11px;
+}
 </style>
+
+<script>
+function refreshFileInfo() {
+    document.querySelectorAll('.file-row').forEach(row => {
+        const path = row.dataset.path;
+        const sizeCell = row.querySelector('.file-size');
+        const mtimeCell = row.querySelector('.file-mtime');
+        if (!path) return;
+        
+        const fd = new FormData();
+        fd.append('ajax', 'file_info');
+        fd.append('path', path);
+        
+        fetch('', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => { 
+                if (d.success) { 
+                    if (sizeCell && sizeCell.textContent !== d.size) sizeCell.textContent = d.size; 
+                    if (mtimeCell && mtimeCell.textContent !== d.date) mtimeCell.textContent = d.date; 
+                } 
+            })
+            .catch(e => console.error('File info error:', e));
+    });
+}
+
+// Инициализация при активации секции
+document.addEventListener('DOMContentLoaded', function() {
+    const section = document.getElementById('section-info');
+    if (section && section.classList.contains('active')) {
+        setTimeout(refreshFileInfo, 500);
+    }
+});
+
+const infoObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'class') {
+            const target = mutation.target;
+            if (target.id === 'section-info' && target.classList.contains('active')) {
+                setTimeout(refreshFileInfo, 500);
+            }
+        }
+    });
+});
+
+const infoSection = document.getElementById('section-info');
+if (infoSection) {
+    infoObserver.observe(infoSection, { attributes: true });
+}
+</script>
+<?php
+?>
