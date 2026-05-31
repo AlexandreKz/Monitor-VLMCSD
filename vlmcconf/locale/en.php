@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 1.6.0
-// ДАТА: 2026-04-27
+// ВЕРСИЯ: 1.8.0
+// ДАТА: 2026-05-31
 // @description: English translations
 // ============================================
 
@@ -32,6 +32,14 @@ return [
     'log_status_found' => 'File found',
     'log_status_not_found' => 'File not found',
     
+    // Theme preview
+    'theme_preview' => 'Theme Preview',
+    'theme_preview_button' => 'Button',
+    'theme_preview_success' => 'Success',
+    'theme_preview_error' => 'Error',
+    'theme_preview_card' => 'Example text on card',
+    'theme_preview_muted' => 'Muted text',
+    
     // Theme names
     'theme_dark' => '🌙 Dark',
     'theme_light' => '☀️ Light',
@@ -50,14 +58,6 @@ return [
     'theme_poker' => '🎲 Poker',
     'theme_corporate_blue' => '🔷 Corporate Blue',
     
-	// Theme preview
-	'theme_preview' => 'Theme Preview',
-	'theme_preview_button' => 'Button',
-	'theme_preview_success' => 'Success',
-	'theme_preview_error' => 'Error',
-	'theme_preview_card' => 'Example text on card',
-	'theme_preview_muted' => 'Muted text',
-	
     // Group names
     'Домашние' => '🏠 Home',
     'Рабочие' => '💼 Work',
@@ -129,6 +129,14 @@ return [
     'stats_by_device' => 'By device',
     'stats_select_device' => 'Select device',
     
+	// Statistics (additional)
+	'stats_total_requests' => 'Total requests',
+	'stats_top_ips' => 'Top IP addresses',
+	'stats_top_countries' => 'Top countries',
+	'stats_no_data_ips' => 'No IP data available',
+	'stats_no_data_countries' => 'No country data available',
+	'stats_no_groups' => 'No groups created',
+	
     // Information
     'info_title' => 'Project Information',
     'info_version' => 'Version',
@@ -146,54 +154,74 @@ return [
     'info_structure' => 'Project structure',
     'info_reset' => 'Reset settings',
     'info_reset_confirm' => 'Reset all settings? This will delete all added groups and devices.',
+    'info_reset_desc' => 'Reset all settings to default values (theme, language, groups, devices)',
     
     // Tools
-	'tools_title' => 'Tools',
-	'tools_log_management' => 'Log Management',
-	'tools_geo_cache' => 'GeoIP Cache',
-	'tools_cache_files' => 'Cache files',
-	'tools_cache_size' => 'Cache size',
-	'tools_cache_clear' => 'Clear Cache',
-	'tools_cache_clear_desc' => 'Delete all geo-location cache files',
-	'tools_cache_clear_btn' => 'Clear Cache',
-	'tools_cache_clear_confirm' => 'Delete all geo-location cache files? This may slow down geo-data loading on next requests.',
-	'tools_cache_refresh' => 'Refresh Cache',
-	'tools_cache_refresh_desc' => 'Re-request geo-data for all IPs from the log',
-	'tools_cache_refresh_btn' => 'Refresh Cache',
-	'tools_cache_check' => 'Check Cache',
-	'tools_cache_check_desc' => 'Show current cache statistics',
-	'tools_cache_check_btn' => 'Check',
-	'tools_cache_stats' => 'Cache statistics',
-	'tools_cache_cleared' => 'Cache cleared',
-	'tools_cache_refreshed' => 'Cache refreshed',
-	'tools_cache_updated_count' => 'Cache statistics updated',
-	'tools_cache_no_ips' => 'No IPs to update',
-	'tools_cache_started' => 'Cache refresh started',
-	'tools_cache_starting' => 'Starting cache refresh...',
-	'tools_cache_background' => 'Cache is being updated in background',
-	'tools_cache_ips' => 'IPs',
-	'tools_cache_error' => 'Cache refresh error',
-	'tools_cache_processing' => 'Processing batch',
-	'tools_cache_portion_complete' => '✅ Batch %d: processed %d of %d IPs (%d left)',
-	'tools_cache_complete' => 'Cache update completed',
-	'tools_cache_of' => 'of',
-	'tools_cache_remaining' => 'remaining',
-	'tools_cache_in_progress' => 'Updating cache',
-	'tools_cache_in_progress_title' => 'Updating GeoIP Cache',
-	'tools_cache_already_running' => 'Update already running, please wait',
-	'tools_cache_updated' => 'updated',
-	'tools_cache_wait' => 'Please wait for cache update to complete',
-	'tools_cache_clearing' => 'Clearing...',
-	'tools_cache_backup' => 'Creating backup...',
-	'tools_cache_export' => 'Preparing export...',
-	'tools_cache_clearing_cache' => 'Clearing cache...',
-	'tools_cache_confirm_title' => 'Confirm Operation',
-	'tools_cache_confirm_warning' => 'The cache update process may take a long time depending on the number of IP addresses in the log (approximately 1 minute for 300 IPs).',
-	'tools_cache_estimate' => '⏱️ During the update, all control panel functions will be unavailable. Are you sure you want to continue?',
-	'tools_cache_confirm_yes' => 'Yes, continue',
-	'tools_cache_confirm_no' => 'No, cancel',
-	'tools_cache_result_title' => 'Cache Update Result',
-	'tools_cache_result_ok' => 'Close',
+    'tools_title' => 'Tools',
+    'tools_log_management' => 'Log Management',
+    'tools_geo_cache' => 'GeoIP Cache',
+    'tools_cache_files' => 'Cache files',
+    'tools_cache_size' => 'Cache size',
+    'tools_cache_clear' => 'Clear Cache',
+    'tools_cache_clear_desc' => 'Delete all geo-location cache files',
+    'tools_cache_clear_btn' => 'Clear Cache',
+    'tools_cache_clear_confirm' => 'Delete all geo-location cache files? This may slow down geo-data loading on next requests.',
+    'tools_cache_refresh' => 'Refresh Cache',
+    'tools_cache_refresh_desc' => 'Re-request geo-data for all IPs from the log',
+    'tools_cache_refresh_btn' => 'Refresh Cache',
+    'tools_cache_check' => 'Check Cache',
+    'tools_cache_check_desc' => 'Show current cache statistics',
+    'tools_cache_check_btn' => 'Check',
+    'tools_cache_stats' => 'Cache statistics',
+    'tools_cache_cleared' => 'Cache cleared',
+    'tools_cache_refreshed' => 'Cache refreshed',
+    'tools_cache_updated_count' => 'Cache statistics updated',
+    'tools_cache_no_ips' => 'No IPs to update',
+    'tools_cache_started' => 'Cache refresh started',
+    'tools_cache_starting' => 'Starting cache refresh...',
+    'tools_cache_background' => 'Cache is being updated in background',
+    'tools_cache_ips' => 'IPs',
+    'tools_cache_error' => 'Cache refresh error',
+    'tools_cache_processing' => 'Processing batch',
+    'tools_cache_portion_complete' => '✅ Batch %d: processed %d of %d IPs (%d left)',
+    'tools_cache_complete' => 'Cache update completed',
+    'tools_cache_of' => 'of',
+    'tools_cache_remaining' => 'remaining',
+    'tools_cache_in_progress' => 'Updating cache',
+    'tools_cache_in_progress_title' => 'Updating GeoIP Cache',
+    'tools_cache_already_running' => 'Update already running, please wait',
+    'tools_cache_updated' => 'updated',
+    'tools_cache_wait' => 'Please wait for cache update to complete',
+    'tools_cache_clearing' => 'Clearing...',
+    'tools_cache_backup' => 'Creating backup...',
+    'tools_cache_export' => 'Preparing export...',
+    'tools_cache_clearing_cache' => 'Clearing cache...',
+    'tools_cache_confirm_title' => 'Confirm Operation',
+    'tools_cache_confirm_warning' => 'The cache update process may take a long time depending on the number of IP addresses in the log (approximately 1 minute for 300 IPs).',
+    'tools_cache_estimate' => '⏱️ During the update, all control panel functions will be unavailable. Are you sure you want to continue?',
+    'tools_cache_confirm_yes' => 'Yes, continue',
+    'tools_cache_confirm_no' => 'No, cancel',
+    'tools_cache_result_title' => 'Cache Update Result',
+    'tools_cache_result_ok' => 'Close',
+    'tools_cache_resetting' => 'Resetting settings...',
+    
+    // Permissions
+    'permissions_tools' => '🛠️ Tools',
+    'permissions_tools_hint' => 'Access to Tools section (log management, export, cache)',
+    
+    // Export project
+    'export_title' => 'Export Project',
+    'export_clean' => 'Clean project',
+    'export_with_config' => 'With settings',
+    'export_full' => 'Full backup',
+    'export_clean_desc' => 'File structure only, no logs and settings',
+    'export_config_desc' => 'With settings (config + users), no logs',
+    'export_full_desc' => 'Full project backup (including log files)',
+    'export_clean_confirm' => 'Create clean export (file structure only, no logs and settings)?',
+    'export_config_confirm' => 'Create export with current settings (config + users, no logs)?',
+    'export_full_confirm' => 'Create full backup (including log files)?',
+    'export_success' => 'Export created',
+    'export_error' => 'Export creation error',
     
     // Common
     'save' => 'Save',
@@ -301,45 +329,25 @@ return [
     'permissions_edit_short' => '✏️',
     'permissions_save' => '💾 Save',
     
-    // Project export
-    'export_title' => 'Export Project',
-    'export_clean' => 'Clean project',
-    'export_with_config' => 'With settings',
-    'export_full' => 'Full backup',
-    'export_clean_desc' => 'File structure only, no logs and settings',
-    'export_config_desc' => 'With settings (config + users), no logs',
-    'export_full_desc' => 'Full project backup (including log files)',
-    'export_clean_confirm' => 'Create clean export (file structure only, no logs and settings)?',
-    'export_config_confirm' => 'Create export with current settings (config + users, no logs)?',
-    'export_full_confirm' => 'Create full backup (including log files)?',
-    'export_success' => 'Export created',
-    'export_error' => 'Export creation error',
-    
-    // Device addition
-    'add_device_error_name_group' => 'Device name and group are required',
-    'add_device_error_group_not_exists' => 'Group does not exist',
-    'add_device_error_already_exists' => 'Device already exists',
-    'add_device_success' => 'Device added',
-    'add_device_auth_required' => 'Add devices only through control panel',
-    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
-    
     // Geolocation
     'geo_local' => 'Local',
     'geo_unknown' => 'Unknown',
     'geo_cache_warning' => '⚠️ Cache disabled (folder not writable)',
     'geo_cache_write_error' => '⚠️ Cache disabled (write error)',
     'geo_invalid_ip' => 'Invalid IP address',
-    
-    // Passwords
-    'password_min_length' => 'Password must be at least 8 characters',
-    'password_need_uppercase' => 'Password must contain at least one uppercase letter (A-Z)',
-    'password_need_lowercase' => 'Password must contain at least one lowercase letter (a-z)',
-    'password_need_digit' => 'Password must contain at least one digit (0-9)',
-    'password_need_special' => 'Password must contain at least one special character (!@#$%^&*()_+ etc.)',
-    
-    // Usernames
-    'username_min_length' => 'Username must be at least 3 characters',
-    'username_invalid_chars' => 'Username can only contain letters, numbers, hyphen (-) and underscore (_)',
+    'geo_title' => 'Information',
+    'geo_device_title' => '🌍 Device Information',
+    'geo_suspicious_title' => '🌍 Suspicious IP Information',
+    'geo_loading' => '⏳ Loading data...',
+    'geo_country' => 'Country',
+    'geo_region' => 'Region',
+    'geo_city' => 'City',
+    'geo_isp' => 'ISP',
+    'geo_org' => 'Organization',
+    'geo_timezone' => 'Timezone',
+    'geo_range' => 'Range',
+    'geo_provider_ranges' => 'Provider ranges',
+    'geo_error' => 'Data load error',
     
     // Main monitor
     'title_monitor' => 'Corporate Monitoring',
@@ -378,6 +386,21 @@ return [
     'tooltip_products' => 'Products',
     'none' => 'none',
     'never' => 'never',
+    
+    // Add device modal
+    'add_device_title' => '➕ Add Device',
+    'add_device_name' => 'Device name',
+    'add_device_name_placeholder' => 'Enter device name',
+    'add_device_group' => 'Group',
+    'add_device_comment' => 'Comment (optional)',
+    'add_device_comment_placeholder' => 'e.g., owner name',
+    'add_device_btn' => 'Add Device',
+    'add_device_error_name_group' => 'Device name and group are required',
+    'add_device_error_group_not_exists' => 'Group does not exist',
+    'add_device_error_already_exists' => 'Device already exists',
+    'add_device_success' => 'Device added',
+    'add_device_auth_required' => 'Log in to add devices',
+    'error_no_permission_to_add' => '❌ You don\'t have permission to add devices',
     
     // Statuses
     'status_file_not_found' => 'File not found',
@@ -422,6 +445,15 @@ return [
     'invalid_login' => 'Invalid username or password',
     'user_not_found' => 'User not found',
     'password_change_error' => 'Error changing password',
+    
+    // Validation
+    'username_min_length' => 'Username must be at least 3 characters',
+    'username_invalid_chars' => 'Username can only contain letters, numbers, hyphen (-) and underscore (_)',
+    'password_min_length' => 'Password must be at least 8 characters',
+    'password_need_uppercase' => 'Password must contain at least one uppercase letter (A-Z)',
+    'password_need_lowercase' => 'Password must contain at least one lowercase letter (a-z)',
+    'password_need_digit' => 'Password must contain at least one digit (0-9)',
+    'password_need_special' => 'Password must contain at least one special character (!@#$%^&*()_+ etc.)',
     
     // Labels
     'label_language' => 'Interface Language',

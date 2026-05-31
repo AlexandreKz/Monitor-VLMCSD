@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 1.6.0
-// ДАТА: 2026-04-27
+// ВЕРСИЯ: 1.8.0
+// ДАТА: 2026-05-31
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -32,6 +32,14 @@ return [
     'log_status_found' => 'Файл найден',
     'log_status_not_found' => 'Файл не найден',
     
+    // Предпросмотр темы
+    'theme_preview' => 'Предпросмотр темы',
+    'theme_preview_button' => 'Кнопка',
+    'theme_preview_success' => 'Успех',
+    'theme_preview_error' => 'Ошибка',
+    'theme_preview_card' => 'Пример текста на карточке',
+    'theme_preview_muted' => 'Второстепенный текст',
+    
     // Названия тем
     'theme_dark' => '🌙 Тёмная',
     'theme_light' => '☀️ Светлая',
@@ -50,14 +58,6 @@ return [
     'theme_poker' => '🎲 Покер',
     'theme_corporate_blue' => '🔷 Корпоративный синий',
     
-	// Предпросмотр темы
-	'theme_preview' => 'Предпросмотр темы',
-	'theme_preview_button' => 'Кнопка',
-	'theme_preview_success' => 'Успех',
-	'theme_preview_error' => 'Ошибка',
-	'theme_preview_card' => 'Пример текста на карточке',
-	'theme_preview_muted' => 'Второстепенный текст',
-	
     // Названия групп
     'Домашние' => '🏠 Домашние',
     'Рабочие' => '💼 Рабочие',
@@ -129,6 +129,14 @@ return [
     'stats_by_device' => 'По устройству',
     'stats_select_device' => 'Выберите устройство',
     
+	// Статистика (дополнительные)
+	'stats_total_requests' => 'Всего запросов',
+	'stats_top_ips' => 'Топ IP адресов',
+	'stats_top_countries' => 'Топ стран',
+	'stats_no_data_ips' => 'Нет данных об IP',
+	'stats_no_data_countries' => 'Нет данных о странах',
+	'stats_no_groups' => 'Нет созданных групп',
+	
     // Информация
     'info_title' => 'Информация о проекте',
     'info_version' => 'Версия',
@@ -146,61 +154,81 @@ return [
     'info_structure' => 'Структура проекта',
     'info_reset' => 'Сбросить настройки',
     'info_reset_confirm' => 'Сбросить все настройки? Это удалит все добавленные группы и устройства.',
+    'info_reset_desc' => 'Сбросить все настройки к значениям по умолчанию (тема, язык, группы, устройства)',
     
     // Инструменты
-	'tools_title' => 'Инструменты',
-	'tools_log_management' => 'Управление логом',
-	'tools_geo_cache' => 'Кэш геолокации',
-	'tools_cache_files' => 'Файлов в кэше',
-	'tools_cache_size' => 'Объём кэша',
-	'tools_cache_clear' => 'Очистка кэша',
-	'tools_cache_clear_desc' => 'Удалить все файлы кэша геолокации',
-	'tools_cache_clear_btn' => 'Очистить кэш',
-	'tools_cache_clear_confirm' => 'Удалить все файлы кэша геолокации? Это может замедлить загрузку геоданных при следующем обращении.',
-	'tools_cache_refresh' => 'Обновление кэша',
-	'tools_cache_refresh_desc' => 'Перезапросить геоданные для всех IP из лога',
-	'tools_cache_refresh_btn' => 'Обновить кэш',
-	'tools_cache_check' => 'Проверка кэша',
-	'tools_cache_check_desc' => 'Показать текущую статистику кэша',
-	'tools_cache_check_btn' => 'Проверить',
-	'tools_cache_stats' => 'Статистика кэша',
-	'tools_cache_cleared' => 'Кэш очищен',
-	'tools_cache_refreshed' => 'Кэш обновлён',
-	'tools_cache_updated_count' => 'Статистика обновлена',
-	'tools_cache_no_ips' => 'Нет IP для обновления',
-	'tools_cache_started' => 'Обновление кэша запущено',
-	'tools_cache_starting' => 'Запуск обновления кэша...',
-	'tools_cache_background' => 'Кэш обновляется в фоновом режиме',
-	'tools_cache_ips' => 'IP',
-	'tools_cache_error' => 'Ошибка обновления кэша',
-	'tools_cache_processing' => 'Обработка порции',
-	'tools_cache_portion_complete' => '✅ Порция %d: обработано %d из %d IP (осталось %d)',
-	'tools_cache_complete' => 'Обновление кэша завершено',
-	'tools_cache_of' => 'из',
-	'tools_cache_remaining' => 'осталось',
-	'tools_cache_in_progress' => 'Обновление кэша',
-	'tools_cache_in_progress_title' => 'Обновление кэша геолокации',
-	'tools_cache_already_running' => 'Обновление уже выполняется, подождите',
-	'tools_cache_updated' => 'обновлено',
-	'tools_cache_wait' => 'Дождитесь завершения обновления кэша',
-	'tools_cache_clearing' => 'Выполняется очистка...',
-	'tools_cache_backup' => 'Создание резервной копии...',
-	'tools_cache_export' => 'Подготовка экспорта...',
-	'tools_cache_clearing_cache' => 'Очистка кэша...',
-	'tools_cache_confirm_title' => 'Подтверждение операции',
-	'tools_cache_confirm_warning' => 'Процесс обновления кэша может занять длительное время, в зависимости от количества IP адресов в логе (примерно 1 минута для 300 IP).',
-	'tools_cache_estimate' => '⏱️ На время обновления все функции панели управления будут недоступны. Вы уверены, что хотите продолжить?',
-	'tools_cache_confirm_yes' => 'Да, продолжить',
-	'tools_cache_confirm_no' => 'Нет, отмена',
-	'tools_cache_result_title' => 'Результат обновления кэша',
-	'tools_cache_result_ok' => 'Закрыть',
+    'tools_title' => 'Инструменты',
+    'tools_log_management' => 'Управление логом',
+    'tools_geo_cache' => 'Кэш геолокации',
+    'tools_cache_files' => 'Файлов в кэше',
+    'tools_cache_size' => 'Объём кэша',
+    'tools_cache_clear' => 'Очистка кэша',
+    'tools_cache_clear_desc' => 'Удалить все файлы кэша геолокации',
+    'tools_cache_clear_btn' => 'Очистить кэш',
+    'tools_cache_clear_confirm' => 'Удалить все файлы кэша геолокации? Это может замедлить загрузку геоданных при следующем обращении.',
+    'tools_cache_refresh' => 'Обновление кэша',
+    'tools_cache_refresh_desc' => 'Перезапросить геоданные для всех IP из лога',
+    'tools_cache_refresh_btn' => 'Обновить кэш',
+    'tools_cache_check' => 'Проверка кэша',
+    'tools_cache_check_desc' => 'Показать текущую статистику кэша',
+    'tools_cache_check_btn' => 'Проверить',
+    'tools_cache_stats' => 'Статистика кэша',
+    'tools_cache_cleared' => 'Кэш очищен',
+    'tools_cache_refreshed' => 'Кэш обновлён',
+    'tools_cache_updated_count' => 'Статистика обновлена',
+    'tools_cache_no_ips' => 'Нет IP для обновления',
+    'tools_cache_started' => 'Обновление кэша запущено',
+    'tools_cache_starting' => 'Запуск обновления кэша...',
+    'tools_cache_background' => 'Кэш обновляется в фоновом режиме',
+    'tools_cache_ips' => 'IP',
+    'tools_cache_error' => 'Ошибка обновления кэша',
+    'tools_cache_processing' => 'Обработка порции',
+    'tools_cache_portion_complete' => '✅ Порция %d: обработано %d из %d IP (осталось %d)',
+    'tools_cache_complete' => 'Обновление кэша завершено',
+    'tools_cache_of' => 'из',
+    'tools_cache_remaining' => 'осталось',
+    'tools_cache_in_progress' => 'Обновление кэша',
+    'tools_cache_in_progress_title' => 'Обновление кэша геолокации',
+    'tools_cache_already_running' => 'Обновление уже выполняется, подождите',
+    'tools_cache_updated' => 'обновлено',
+    'tools_cache_wait' => 'Дождитесь завершения обновления кэша',
+    'tools_cache_clearing' => 'Выполняется очистка...',
+    'tools_cache_backup' => 'Создание резервной копии...',
+    'tools_cache_export' => 'Подготовка экспорта...',
+    'tools_cache_clearing_cache' => 'Очистка кэша...',
+    'tools_cache_confirm_title' => 'Подтверждение операции',
+    'tools_cache_confirm_warning' => 'Процесс обновления кэша может занять длительное время, в зависимости от количества IP адресов в логе (примерно 1 минута для 300 IP).',
+    'tools_cache_estimate' => '⏱️ На время обновления все функции панели управления будут недоступны. Вы уверены, что хотите продолжить?',
+    'tools_cache_confirm_yes' => 'Да, продолжить',
+    'tools_cache_confirm_no' => 'Нет, отмена',
+    'tools_cache_result_title' => 'Результат обновления кэша',
+    'tools_cache_result_ok' => 'Закрыть',
+    'tools_cache_resetting' => 'Сброс настроек...',
+    
+    // Права доступа
+    'permissions_tools' => '🛠️ Инструменты',
+    'permissions_tools_hint' => 'Доступ к разделу «Инструменты» (управление логом, экспорт, кэш)',
+    
+    // Экспорт проекта
+    'export_title' => 'Экспорт проекта',
+    'export_clean' => 'Чистый проект',
+    'export_with_config' => 'С настройками',
+    'export_full' => 'Полный бэкап',
+    'export_clean_desc' => 'Только структура файлов, без логов и настроек',
+    'export_config_desc' => 'С настройками (конфиг + пользователи), без логов',
+    'export_full_desc' => 'Полный бэкап проекта (включая лог-файлы)',
+    'export_clean_confirm' => 'Создать чистый экспорт (только структура файлов, без логов и настроек)?',
+    'export_config_confirm' => 'Создать экспорт с текущими настройками (конфиг + пользователи, без логов)?',
+    'export_full_confirm' => 'Создать полный бэкап (включая лог-файлы)?',
+    'export_success' => 'Экспорт создан',
+    'export_error' => 'Ошибка при создании экспорта',
     
     // Общие
     'save' => 'Сохранить',
     'apply' => 'Применить',
     'add' => 'Добавить',
-    'delete' => 'Удалить',
     'edit' => 'Редактировать',
+    'delete' => 'Удалить',
     'close' => 'Закрыть',
     'back' => 'Назад',
     'refresh' => 'Обновить',
@@ -281,7 +309,7 @@ return [
     'new_password' => 'Новый пароль',
     'confirm_password' => 'Подтверждение пароля',
     
-    // Права доступа
+    // Модальное окно прав
     'permissions_title_add' => '➕ Добавление пользователя',
     'permissions_title_edit' => '✎ Редактирование пользователя',
     'permissions_title_password' => '🔑 Смена пароля',
@@ -301,45 +329,25 @@ return [
     'permissions_edit_short' => '✏️',
     'permissions_save' => '💾 Сохранить',
     
-    // Экспорт проекта
-    'export_title' => 'Экспорт проекта',
-    'export_clean' => 'Чистый проект',
-    'export_with_config' => 'С настройками',
-    'export_full' => 'Полный бэкап',
-    'export_clean_desc' => 'Только структура файлов, без логов и настроек',
-    'export_config_desc' => 'С настройками (конфиг + пользователи), без логов',
-    'export_full_desc' => 'Полный бэкап проекта (включая лог-файлы)',
-    'export_clean_confirm' => 'Создать чистый экспорт (только структура файлов, без логов и настроек)?',
-    'export_config_confirm' => 'Создать экспорт с текущими настройками (конфиг + пользователи, без логов)?',
-    'export_full_confirm' => 'Создать полный бэкап (включая лог-файлы)?',
-    'export_success' => 'Экспорт создан',
-    'export_error' => 'Ошибка при создании экспорта',
-    
-    // Добавление устройств
-    'add_device_error_name_group' => 'Имя устройства и группа обязательны',
-    'add_device_error_group_not_exists' => 'Группа не существует',
-    'add_device_error_already_exists' => 'Устройство уже существует',
-    'add_device_success' => 'Устройство добавлено',
-    'add_device_auth_required' => 'Добавление устройств только через панель управления',
-    'error_no_permission_to_add' => '❌ У вас нет прав на добавление устройств',
-    
     // Геолокация
     'geo_local' => 'Локальный',
     'geo_unknown' => 'Неизвестно',
     'geo_cache_warning' => '⚠️ Кеш отключен (папка недоступна для записи)',
     'geo_cache_write_error' => '⚠️ Кеш отключен (ошибка записи)',
     'geo_invalid_ip' => 'Неверный IP адрес',
-    
-    // Пароли
-    'password_min_length' => 'Пароль должен быть не менее 8 символов',
-    'password_need_uppercase' => 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)',
-    'password_need_lowercase' => 'Пароль должен содержать хотя бы одну строчную букву (a-z)',
-    'password_need_digit' => 'Пароль должен содержать хотя бы одну цифру (0-9)',
-    'password_need_special' => 'Пароль должен содержать хотя бы один спецсимвол (!@#$%^&*()_+ и т.д.)',
-    
-    // Логины
-    'username_min_length' => 'Логин должен быть не менее 3 символов',
-    'username_invalid_chars' => 'Логин может содержать только буквы, цифры, дефис (-) и подчеркивание (_)',
+    'geo_title' => 'Информация',
+    'geo_device_title' => '🌍 Информация об устройстве',
+    'geo_suspicious_title' => '🌍 Информация о подозрительном IP',
+    'geo_loading' => '⏳ Загрузка данных...',
+    'geo_country' => 'Страна',
+    'geo_region' => 'Регион',
+    'geo_city' => 'Город',
+    'geo_isp' => 'Провайдер',
+    'geo_org' => 'Организация',
+    'geo_timezone' => 'Часовой пояс',
+    'geo_range' => 'Диапазон',
+    'geo_provider_ranges' => 'Диапазоны',
+    'geo_error' => 'Ошибка загрузки данных',
     
     // Главный монитор
     'title_monitor' => 'Корпоративный мониторинг',
@@ -378,6 +386,21 @@ return [
     'tooltip_products' => 'Продукты',
     'none' => 'нет',
     'never' => 'никогда',
+    
+    // Модальное окно добавления устройства
+    'add_device_title' => '➕ Добавить устройство',
+    'add_device_name' => 'Имя устройства',
+    'add_device_name_placeholder' => 'Введите имя устройства',
+    'add_device_group' => 'Группа',
+    'add_device_comment' => 'Комментарий (необязательно)',
+    'add_device_comment_placeholder' => 'Например, кому принадлежит',
+    'add_device_btn' => 'Добавить устройство',
+    'add_device_error_name_group' => 'Имя устройства и группа обязательны',
+    'add_device_error_group_not_exists' => 'Группа не существует',
+    'add_device_error_already_exists' => 'Устройство уже существует',
+    'add_device_success' => 'Устройство добавлено',
+    'add_device_auth_required' => 'Авторизуйтесь для добавления устройств',
+    'error_no_permission_to_add' => '❌ У вас нет прав на добавление устройств',
     
     // Статусы
     'status_file_not_found' => 'Файл не найден',
@@ -422,6 +445,15 @@ return [
     'invalid_login' => 'Неверный логин или пароль',
     'user_not_found' => 'Пользователь не найден',
     'password_change_error' => 'Ошибка при смене пароля',
+    
+    // Валидация
+    'username_min_length' => 'Логин должен быть не менее 3 символов',
+    'username_invalid_chars' => 'Логин может содержать только буквы, цифры, дефис (-) и подчеркивание (_)',
+    'password_min_length' => 'Пароль должен быть не менее 8 символов',
+    'password_need_uppercase' => 'Пароль должен содержать хотя бы одну заглавную букву (A-Z)',
+    'password_need_lowercase' => 'Пароль должен содержать хотя бы одну строчную букву (a-z)',
+    'password_need_digit' => 'Пароль должен содержать хотя бы одну цифру (0-9)',
+    'password_need_special' => 'Пароль должен содержать хотя бы один спецсимвол (!@#$%^&*()_+ и т.д.)',
     
     // Подсказки
     'label_language' => 'Язык интерфейса',
