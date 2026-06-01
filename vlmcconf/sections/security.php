@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 4.0.0
-// ДАТА: 2026-05-31
-// @description: Секция "Безопасность" — управление пользователями (с правами на инструменты)
+// ВЕРСИЯ: 5.1.0
+// ДАТА: 2026-06-01
+// @description: Секция "Безопасность" — управление пользователями + белые IP
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -12,14 +12,13 @@ if (basename($_SERVER['PHP_SELF']) === 'security.php') {
 }
 
 // Проверяем права доступа к секциям
-$canViewUsers = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_USERS_VIEW);
-$canEditUsers = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_USERS_EDIT);
+$userPerms = $_SESSION['vlmc_permissions'] ?? 0;
+$canViewUsers = hasPermission($userPerms, PERM_USERS_VIEW);
+$canEditUsers = hasPermission($userPerms, PERM_USERS_EDIT);
+$canManageWhitelist = hasPermission($userPerms, PERM_IP_WHITELIST);
 
-// Если нет прав на просмотр — не показываем секцию
-if (!$canViewUsers) {
-    echo '<div class="settings-section" id="section-security"><div class="section-title"><span>🔒 ' . __('security_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
-    return;
-}
+// Получаем список белых IP из конфига
+$whitelistIps = $config['whitelist_ips'] ?? [];
 ?>
 
 <script>
@@ -35,6 +34,7 @@ const PERM_USERS_EDIT = <?= PERM_USERS_EDIT ?>;
 const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
 const PERM_TOOLS_VIEW = <?= PERM_TOOLS_VIEW ?>;
 const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
+const PERM_IP_WHITELIST = <?= PERM_IP_WHITELIST ?>;
 </script>
 
 <div id="section-security" class="settings-section <?= $activeSection === 'security' ? 'active' : '' ?>">
@@ -45,28 +45,75 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
         <?php endif; ?>
     </div>
     
-    <!-- Управление пользователями -->
-    <div class="settings-card">
-        <div class="settings-card-title">👥 <?= __('users_management') ?></div>
+    <!-- Две колонки -->
+    <div class="security-two-columns">
         
-        <!-- Кнопка добавления пользователя (только если есть права на редактирование) -->
-        <?php if ($canEditUsers): ?>
-        <div style="margin-bottom: 20px;">
-            <button class="btn btn-primary" onclick="showAddUserModal()">➕ <?= __('users_add') ?></button>
-        </div>
-        <?php endif; ?>
-        
-        <!-- Список пользователей -->
-        <div id="usersList" style="max-height: 400px; overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 1fr 0.8fr; gap: 10px; padding: 8px 0; border-bottom: 2px solid <?= $themeCSS['border'] ?>; font-weight: 600; font-size: 11px;">
-                <span><?= __('users_username') ?></span>
-                <span><?= __('users_role') ?></span>
-                <span><?= __('users_created') ?></span>
-                <span><?= __('users_last_login') ?></span>
-                <span><?= __('actions') ?></span>
+        <!-- ЛЕВАЯ КОЛОНКА: Управление пользователями (65%) -->
+        <div class="security-users-column">
+            <div class="settings-card">
+                <div class="settings-card-title">👥 <?= __('users_management') ?></div>
+                
+                <!-- Кнопка добавления пользователя (только если есть права на редактирование) -->
+                <?php if ($canEditUsers): ?>
+                <div style="margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="showAddUserModal()">➕ <?= __('users_add') ?></button>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Список пользователей -->
+                <div id="usersList" style="max-height: 400px; overflow-y: auto;">
+                    <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr; gap: 10px; padding: 8px 0; border-bottom: 2px solid <?= $themeCSS['border'] ?>; font-weight: 600; font-size: 11px;">
+                        <span><?= __('users_username') ?></span>
+                        <span><?= __('users_role') ?></span>
+                        <span><?= __('users_created') ?></span>
+                        <span><?= __('actions') ?></span>
+                    </div>
+                    <div id="usersListContainer">⏳ <?= __('loading') ?></div>
+                </div>
             </div>
-            <div id="usersListContainer">⏳ <?= __('loading') ?></div>
         </div>
+        
+        <!-- ПРАВАЯ КОЛОНКА: Белые IP (35%) -->
+		<div class="security-whitelist-column">
+			<div class="settings-card">
+				<div class="settings-card-title"><?= __('whitelist_title') ?></div>  <!-- иконка уже в переводе -->
+				
+				<!-- Строка с кнопкой и описанием -->
+				<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+					<?php if ($canManageWhitelist): ?>
+					<button class="btn btn-primary" style="white-space: nowrap;" onclick="showAddWhitelistIpModal()"><?= __('whitelist_add_ip') ?></button>
+					<?php endif; ?>
+					<p style="margin: 0; flex: 1; font-size: 11px; color: #8aa0bb; line-height: 1.4;"><?= __('whitelist_description') ?></p>
+				</div>
+				
+				<!-- Таблица белых IP -->
+				<div id="whitelistList" style="max-height: 300px; overflow-y: auto;">
+					<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; padding: 8px 0; border-bottom: 2px solid <?= $themeCSS['border'] ?>; font-weight: 600; font-size: 11px;">
+						<span><?= __('whitelist_ip') ?></span>
+						<span><?= __('actions') ?></span>
+					</div>
+					<div id="whitelistListContainer">
+					<?php if (empty($whitelistIps)): ?>
+						<div style="text-align: center; padding: 20px; color: #8aa0bb;"><?= __('whitelist_empty') ?></div>
+					<?php else: ?>
+						<?php foreach ($whitelistIps as $ip): ?>
+						<div class="whitelist-item" data-ip="<?= htmlspecialchars($ip) ?>">
+							<span><?= htmlspecialchars($ip) ?></span>
+							<span>
+								<?php if ($canManageWhitelist): ?>
+								<button class="btn-whitelist-delete" onclick="removeWhitelistIp('<?= htmlspecialchars($ip) ?>')" title="<?= __('delete') ?>">🗑️</button>
+								<?php else: ?>
+								<span class="lock-icon" title="<?= __('access_denied') ?>">🔒</span>
+								<?php endif; ?>
+							</span>
+						</div>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</div>
+				</div>
+			</div>
+		</div>
+        
     </div>
 </div>
 
@@ -94,7 +141,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </div>
                 </div>
                 
-                <!-- Секция: Группы -->
                 <div class="form-group">
                     <label><?= __('permissions_groups') ?></label>
                     <select id="permGroups" class="form-control">
@@ -104,7 +150,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </select>
                 </div>
                 
-                <!-- Секция: Устройства -->
                 <div class="form-group">
                     <label><?= __('permissions_devices') ?></label>
                     <select id="permDevices" class="form-control">
@@ -114,7 +159,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </select>
                 </div>
                 
-                <!-- Секция: Логи -->
                 <div class="form-group">
                     <label><?= __('permissions_logs') ?></label>
                     <select id="permLogs" class="form-control">
@@ -124,7 +168,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </select>
                 </div>
                 
-                <!-- Секция: Пользователи -->
                 <div class="form-group">
                     <label><?= __('permissions_users') ?></label>
                     <select id="permUsers" class="form-control">
@@ -134,7 +177,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </select>
                 </div>
                 
-                <!-- Секция: Информация -->
                 <div class="form-group">
                     <label><?= __('permissions_info') ?></label>
                     <select id="permInfo" class="form-control">
@@ -143,7 +185,6 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                     </select>
                 </div>
                 
-                <!-- Секция: Инструменты (НОВАЯ) -->
                 <div class="form-group">
                     <label><?= __('permissions_tools') ?></label>
                     <select id="permTools" class="form-control">
@@ -152,6 +193,15 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
                         <option value="2"><?= __('permissions_edit') ?></option>
                     </select>
                     <small class="form-hint"><?= __('permissions_tools_hint') ?></small>
+                </div>
+                
+                <div class="form-group">
+                    <label><?= __('permissions_whitelist') ?></label>
+                    <select id="permWhitelist" class="form-control">
+                        <option value="0"><?= __('permissions_none') ?></option>
+                        <option value="1"><?= __('permissions_enabled') ?></option>
+                    </select>
+                    <small class="form-hint"><?= __('permissions_whitelist_hint') ?></small>
                 </div>
                 
                 <div id="changePasswordBlock" style="display: none;">
@@ -170,13 +220,55 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
     </div>
 </div>
 
+<!-- Модальное окно добавления IP в белый список -->
+<div id="addWhitelistIpModal" class="modal" style="display: none; z-index: 100000;">
+    <div class="modal-content" style="width: 450px; max-width: 90%;">
+        <div class="modal-header">
+            <h2>➕ <?= __('whitelist_add_ip_title') ?></h2>
+            <span class="modal-close" onclick="closeAddWhitelistIpModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="whitelistMessage" class="modal-message" style="display: none;"></div>
+            <div class="form-group">
+                <label><?= __('whitelist_ip_address') ?></label>
+                <input type="text" id="whitelistIpInput" class="form-control" placeholder="192.168.1.100" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label><?= __('whitelist_ip_comment') ?></label>
+                <input type="text" id="whitelistCommentInput" class="form-control" placeholder="<?= __('whitelist_ip_comment_placeholder') ?>" autocomplete="off">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeAddWhitelistIpModal()"><?= __('cancel') ?></button>
+                <button class="btn btn-primary" onclick="addWhitelistIp()"><?= __('whitelist_add_btn') ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+.security-two-columns {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.security-users-column {
+    flex: 0.65;
+    min-width: 0;
+}
+
+.security-whitelist-column {
+    flex: 0.35;
+    min-width: 0;
+}
+
 .settings-card {
     background: <?= $themeCSS['input'] ?>;
     border: 1px solid <?= $themeCSS['border'] ?>;
     border-radius: 8px;
     padding: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 0;
+    height: 100%;
 }
 
 .settings-card-title {
@@ -186,6 +278,49 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
     color: #8aa0bb;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+}
+
+.whitelist-description {
+    margin: 0;
+    flex: 1;
+    font-size: 11px;
+    color: #8aa0bb;
+    line-height: 1.4;
+}
+
+.whitelist-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed <?= $themeCSS['border'] ?>;
+    align-items: center;
+    font-size: 12px;
+}
+
+.whitelist-item:last-child {
+    border-bottom: none;
+}
+
+.btn-whitelist-delete {
+    background: none;
+    border: none;
+    color: <?= $themeCSS['danger'] ?>;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-whitelist-delete:hover {
+    background: <?= $themeCSS['danger'] ?>20;
+    transform: scale(1.05);
+}
+
+.lock-icon {
+    color: #8aa0bb;
+    font-size: 12px;
 }
 
 .form-group {
@@ -238,6 +373,20 @@ const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
 .btn-primary:hover {
     background: #2563eb;
     transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-small {
+    padding: 4px 10px;
+    font-size: 11px;
 }
 
 .modal {
@@ -398,67 +547,61 @@ function showModalMessage(message, type) {
 function getPermissionsFromSelects() {
     let perms = 0;
     
-    // Группы
     const groupsLevel = parseInt(document.getElementById('permGroups').value);
     if (groupsLevel == 2) perms |= PERM_GROUPS_VIEW | PERM_GROUPS_EDIT;
     else if (groupsLevel == 1) perms |= PERM_GROUPS_VIEW;
     
-    // Устройства
     const devicesLevel = parseInt(document.getElementById('permDevices').value);
     if (devicesLevel == 2) perms |= PERM_DEVICES_VIEW | PERM_DEVICES_EDIT;
     else if (devicesLevel == 1) perms |= PERM_DEVICES_VIEW;
     
-    // Логи
     const logsLevel = parseInt(document.getElementById('permLogs').value);
     if (logsLevel == 2) perms |= PERM_LOGS_VIEW | PERM_LOGS_EDIT;
     else if (logsLevel == 1) perms |= PERM_LOGS_VIEW;
     
-    // Пользователи
     const usersLevel = parseInt(document.getElementById('permUsers').value);
     if (usersLevel == 2) perms |= PERM_USERS_VIEW | PERM_USERS_EDIT;
     else if (usersLevel == 1) perms |= PERM_USERS_VIEW;
     
-    // Информация
     const infoLevel = parseInt(document.getElementById('permInfo').value);
     if (infoLevel == 1) perms |= PERM_INFO_VIEW;
     
-    // Инструменты (НОВОЕ)
     const toolsLevel = parseInt(document.getElementById('permTools').value);
     if (toolsLevel == 2) perms |= PERM_TOOLS_VIEW | PERM_TOOLS_EDIT;
     else if (toolsLevel == 1) perms |= PERM_TOOLS_VIEW;
+    
+    const whitelistLevel = parseInt(document.getElementById('permWhitelist').value);
+    if (whitelistLevel == 1) perms |= PERM_IP_WHITELIST;
     
     return perms;
 }
 
 function setPermissionsSelects(permissions) {
-    // Группы
     if (permissions & PERM_GROUPS_EDIT) document.getElementById('permGroups').value = 2;
     else if (permissions & PERM_GROUPS_VIEW) document.getElementById('permGroups').value = 1;
     else document.getElementById('permGroups').value = 0;
     
-    // Устройства
     if (permissions & PERM_DEVICES_EDIT) document.getElementById('permDevices').value = 2;
     else if (permissions & PERM_DEVICES_VIEW) document.getElementById('permDevices').value = 1;
     else document.getElementById('permDevices').value = 0;
     
-    // Логи
     if (permissions & PERM_LOGS_EDIT) document.getElementById('permLogs').value = 2;
     else if (permissions & PERM_LOGS_VIEW) document.getElementById('permLogs').value = 1;
     else document.getElementById('permLogs').value = 0;
     
-    // Пользователи
     if (permissions & PERM_USERS_EDIT) document.getElementById('permUsers').value = 2;
     else if (permissions & PERM_USERS_VIEW) document.getElementById('permUsers').value = 1;
     else document.getElementById('permUsers').value = 0;
     
-    // Информация
     if (permissions & PERM_INFO_VIEW) document.getElementById('permInfo').value = 1;
     else document.getElementById('permInfo').value = 0;
     
-    // Инструменты (НОВОЕ)
     if (permissions & PERM_TOOLS_EDIT) document.getElementById('permTools').value = 2;
     else if (permissions & PERM_TOOLS_VIEW) document.getElementById('permTools').value = 1;
     else document.getElementById('permTools').value = 0;
+    
+    if (permissions & PERM_IP_WHITELIST) document.getElementById('permWhitelist').value = 1;
+    else document.getElementById('permWhitelist').value = 0;
 }
 
 function showAddUserModal() {
@@ -633,8 +776,9 @@ function getRoleDisplay(permissions) {
     const users = getPermissionLevelText(permissions, PERM_USERS_VIEW, PERM_USERS_EDIT);
     const info = getPermissionLevelText(permissions, PERM_INFO_VIEW, PERM_INFO_VIEW);
     const tools = getPermissionLevelText(permissions, PERM_TOOLS_VIEW, PERM_TOOLS_EDIT);
+    const whitelist = (permissions & PERM_IP_WHITELIST) ? '✅' : '❌';
     
-    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info} • 🛠️ ${tools}`;
+    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info} • 🛠️ ${tools} • ⚪ ${whitelist}`;
 }
 
 function renderUsers(users) {
@@ -650,11 +794,10 @@ function renderUsers(users) {
         const roleDisplay = getRoleDisplay(user.permissions);
         
         html += `
-            <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 1fr 0.8fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed <?= $themeCSS['border'] ?>; align-items: center; font-size: 12px;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed <?= $themeCSS['border'] ?>; align-items: center; font-size: 12px;">
                 <span><strong>${escapeHtml(user.username)}</strong></span>
                 <span style="font-size: 10px;">${escapeHtml(roleDisplay)}</span>
                 <span style="font-size: 10px;">${user.created || '—'}</span>
-                <span style="font-size: 10px;">${user.last_login || '—'}</span>
                 <span>
                     ${isCurrent ? '<span style="color: #8aa0bb; font-size: 10px;"><?= __('current_user') ?></span>' : `
                         <?php if ($canEditUsers): ?>
@@ -674,6 +817,93 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ============================================
+// УПРАВЛЕНИЕ БЕЛЫМИ IP
+// ============================================
+
+function showAddWhitelistIpModal() {
+    document.getElementById('whitelistIpInput').value = '';
+    document.getElementById('whitelistCommentInput').value = '';
+    document.getElementById('whitelistMessage').style.display = 'none';
+    document.getElementById('addWhitelistIpModal').style.display = 'flex';
+}
+
+function closeAddWhitelistIpModal() {
+    document.getElementById('addWhitelistIpModal').style.display = 'none';
+}
+
+function addWhitelistIp() {
+    const ip = document.getElementById('whitelistIpInput').value.trim();
+    const comment = document.getElementById('whitelistCommentInput').value.trim();
+    const messageDiv = document.getElementById('whitelistMessage');
+    
+    if (!ip) {
+        messageDiv.className = 'modal-message error';
+        messageDiv.innerHTML = '❌ <?= __('whitelist_ip_required') ?>';
+        messageDiv.style.display = 'block';
+        return;
+    }
+    
+    const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipRegex.test(ip)) {
+        messageDiv.className = 'modal-message error';
+        messageDiv.innerHTML = '❌ <?= __('whitelist_ip_invalid') ?>';
+        messageDiv.style.display = 'block';
+        return;
+    }
+    
+    messageDiv.className = 'modal-message';
+    messageDiv.innerHTML = '⏳ <?= __('whitelist_adding') ?>';
+    messageDiv.style.display = 'block';
+    
+    const fd = new FormData();
+    fd.append('ajax', 'add_whitelist_ip');
+    fd.append('ip', ip);
+    fd.append('comment', comment);
+    
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.className = 'modal-message success';
+                messageDiv.innerHTML = '✅ ' + data.message;
+                setTimeout(() => {
+                    closeAddWhitelistIpModal();
+                    location.reload();
+                }, 1500);
+            } else {
+                messageDiv.className = 'modal-message error';
+                messageDiv.innerHTML = '❌ ' + data.message;
+            }
+        })
+        .catch(error => {
+            messageDiv.className = 'modal-message error';
+            messageDiv.innerHTML = '❌ <?= __('whitelist_add_error') ?>';
+        });
+}
+
+function removeWhitelistIp(ip) {
+    if (!confirm('<?= __('whitelist_remove_confirm') ?> ' + ip + '?')) return;
+    
+    const fd = new FormData();
+    fd.append('ajax', 'remove_whitelist_ip');
+    fd.append('ip', ip);
+    
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showModalMessage(data.message, 'success');
+                location.reload();
+            } else {
+                showModalMessage(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showModalMessage('<?= __('whitelist_remove_error') ?>', 'error');
+        });
 }
 
 // ============================================
