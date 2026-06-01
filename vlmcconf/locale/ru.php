@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 1.8.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 1.9.0
+// ДАТА: 2026-06-01
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -111,16 +111,13 @@ return [
     'stats_title' => 'Статистика',
     'stats_total_devices' => 'Всего устройств',
     'stats_total_groups' => 'Всего групп',
-    'stats_custom_groups' => 'Пользовательских',
+    'stats_total_requests' => 'Всего запросов',
     'stats_by_groups' => 'По группам',
-    'stats_records' => 'Рекорды',
-    'stats_largest_group' => 'Самая большая группа',
-    'stats_smallest_group' => 'Самая маленькая группа',
-    'stats_oldest_device' => 'Самое старое устройство',
-    'stats_newest_device' => 'Самое новое устройство',
-    'stats_comments' => 'Комментарии',
-    'stats_with_comments' => 'С комментариями',
-    'stats_avg_length' => 'Средняя длина',
+    'stats_top_ips' => 'Топ IP адресов',
+    'stats_top_countries' => 'Топ стран',
+    'stats_no_data_ips' => 'Нет данных об IP',
+    'stats_no_data_countries' => 'Нет данных о странах',
+    'stats_no_groups' => 'Нет созданных групп',
     'stats_activity' => 'Активность подключений',
     'stats_days' => 'Дни',
     'stats_weeks' => 'Недели',
@@ -129,14 +126,6 @@ return [
     'stats_by_device' => 'По устройству',
     'stats_select_device' => 'Выберите устройство',
     
-	// Статистика (дополнительные)
-	'stats_total_requests' => 'Всего запросов',
-	'stats_top_ips' => 'Топ IP адресов',
-	'stats_top_countries' => 'Топ стран',
-	'stats_no_data_ips' => 'Нет данных об IP',
-	'stats_no_data_countries' => 'Нет данных о странах',
-	'stats_no_groups' => 'Нет созданных групп',
-	
     // Информация
     'info_title' => 'Информация о проекте',
     'info_version' => 'Версия',
@@ -208,6 +197,9 @@ return [
     // Права доступа
     'permissions_tools' => '🛠️ Инструменты',
     'permissions_tools_hint' => 'Доступ к разделу «Инструменты» (управление логом, экспорт, кэш)',
+    'permissions_whitelist' => '⚪ Белые IP',
+    'permissions_whitelist_hint' => 'Управление белыми IP (добавление/удаление из списка)',
+    'permissions_enabled' => '✅ Включено',
     
     // Экспорт проекта
     'export_title' => 'Экспорт проекта',
@@ -222,6 +214,28 @@ return [
     'export_full_confirm' => 'Создать полный бэкап (включая лог-файлы)?',
     'export_success' => 'Экспорт создан',
     'export_error' => 'Ошибка при создании экспорта',
+    
+    // Белые IP
+    'whitelist_title' => '⚪ Белые IP',
+    'whitelist_description' => 'IP-адреса из этого списка НЕ будут отображаться в блоке «Подозрительные IP» на главной.',
+    'whitelist_ip' => 'IP-адрес',
+    'whitelist_add_ip' => '➕ Добавить IP',
+    'whitelist_add_ip_title' => '➕ Добавить IP в белый список',
+    'whitelist_ip_address' => 'IP-адрес',
+    'whitelist_ip_comment' => 'Комментарий (необязательно)',
+    'whitelist_ip_comment_placeholder' => 'Например, сервер биллинга',
+    'whitelist_add_btn' => '➕ Добавить',
+    'whitelist_empty' => 'Нет IP в белом списке',
+    'whitelist_ip_required' => 'IP-адрес обязателен',
+    'whitelist_ip_invalid' => 'Неверный формат IP-адреса',
+    'whitelist_ip_exists' => 'IP-адрес уже есть в белом списке',
+    'whitelist_ip_added' => 'IP-адрес добавлен в белый список',
+    'whitelist_ip_removed' => 'IP-адрес удалён из белого списка',
+    'whitelist_ip_not_found' => 'IP-адрес не найден в белом списке',
+    'whitelist_remove_confirm' => 'Удалить IP-адрес',
+    'whitelist_adding' => 'Добавление...',
+    'whitelist_add_error' => 'Ошибка при добавлении IP',
+    'whitelist_remove_error' => 'Ошибка при удалении IP',
     
     // Общие
     'save' => 'Сохранить',
@@ -244,6 +258,7 @@ return [
     'readonly' => 'Только чтение',
     'loading' => 'Загрузка...',
     'error_loading' => 'Ошибка загрузки',
+	'actions' => 'Действия',
     
     // Сообщения
     'msg_theme_saved' => '✅ Тема оформления изменена',

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 1.8.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 1.9.0
+// ДАТА: 2026-06-01
 // @description: English translations
 // ============================================
 
@@ -111,16 +111,13 @@ return [
     'stats_title' => 'Statistics',
     'stats_total_devices' => 'Total devices',
     'stats_total_groups' => 'Total groups',
-    'stats_custom_groups' => 'Custom',
+    'stats_total_requests' => 'Total requests',
     'stats_by_groups' => 'By groups',
-    'stats_records' => 'Records',
-    'stats_largest_group' => 'Largest group',
-    'stats_smallest_group' => 'Smallest group',
-    'stats_oldest_device' => 'Oldest device',
-    'stats_newest_device' => 'Newest device',
-    'stats_comments' => 'Comments',
-    'stats_with_comments' => 'With comments',
-    'stats_avg_length' => 'Avg length',
+    'stats_top_ips' => 'Top IP addresses',
+    'stats_top_countries' => 'Top countries',
+    'stats_no_data_ips' => 'No IP data available',
+    'stats_no_data_countries' => 'No country data available',
+    'stats_no_groups' => 'No groups created',
     'stats_activity' => 'Connection activity',
     'stats_days' => 'Days',
     'stats_weeks' => 'Weeks',
@@ -129,14 +126,6 @@ return [
     'stats_by_device' => 'By device',
     'stats_select_device' => 'Select device',
     
-	// Statistics (additional)
-	'stats_total_requests' => 'Total requests',
-	'stats_top_ips' => 'Top IP addresses',
-	'stats_top_countries' => 'Top countries',
-	'stats_no_data_ips' => 'No IP data available',
-	'stats_no_data_countries' => 'No country data available',
-	'stats_no_groups' => 'No groups created',
-	
     // Information
     'info_title' => 'Project Information',
     'info_version' => 'Version',
@@ -208,6 +197,9 @@ return [
     // Permissions
     'permissions_tools' => '🛠️ Tools',
     'permissions_tools_hint' => 'Access to Tools section (log management, export, cache)',
+    'permissions_whitelist' => '⚪ Whitelist IPs',
+    'permissions_whitelist_hint' => 'Manage whitelist IPs (add/remove from list)',
+    'permissions_enabled' => '✅ Enabled',
     
     // Export project
     'export_title' => 'Export Project',
@@ -222,6 +214,28 @@ return [
     'export_full_confirm' => 'Create full backup (including log files)?',
     'export_success' => 'Export created',
     'export_error' => 'Export creation error',
+    
+    // Whitelist IPs
+    'whitelist_title' => '⚪ Whitelist IPs',
+    'whitelist_description' => 'IP addresses in this list will NOT appear in the "Suspicious IPs" block on the main page.',
+    'whitelist_ip' => 'IP address',
+    'whitelist_add_ip' => '➕ Add IP',
+    'whitelist_add_ip_title' => '➕ Add IP to whitelist',
+    'whitelist_ip_address' => 'IP address',
+    'whitelist_ip_comment' => 'Comment (optional)',
+    'whitelist_ip_comment_placeholder' => 'e.g., billing server',
+    'whitelist_add_btn' => '➕ Add',
+    'whitelist_empty' => 'No IPs in whitelist',
+    'whitelist_ip_required' => 'IP address is required',
+    'whitelist_ip_invalid' => 'Invalid IP address format',
+    'whitelist_ip_exists' => 'IP address already exists in whitelist',
+    'whitelist_ip_added' => 'IP address added to whitelist',
+    'whitelist_ip_removed' => 'IP address removed from whitelist',
+    'whitelist_ip_not_found' => 'IP address not found in whitelist',
+    'whitelist_remove_confirm' => 'Remove IP address',
+    'whitelist_adding' => 'Adding...',
+    'whitelist_add_error' => 'Error adding IP',
+    'whitelist_remove_error' => 'Error removing IP',
     
     // Common
     'save' => 'Save',
@@ -244,6 +258,7 @@ return [
     'readonly' => 'Read only',
     'loading' => 'Loading...',
     'error_loading' => 'Loading error',
+	'actions' => 'Actions',
     
     // Messages
     'msg_theme_saved' => '✅ Theme applied',
