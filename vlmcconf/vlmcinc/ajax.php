@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.1.0
-// ДАТА: 2026-04-27
+// ВЕРСИЯ: 3.2.0
+// ДАТА: 2026-06-01
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
@@ -331,6 +331,119 @@ if (isset($_POST['ajax'])) {
     }
     
     // ============================================
+    // AJAX: Управление белыми IP
+    // ============================================
+    
+    // Получить список белых IP
+    if ($_POST['ajax'] === 'get_whitelist_ips') {
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $whitelistIps = $config['whitelist_ips'] ?? [];
+        echo json_encode(['success' => true, 'ips' => $whitelistIps]);
+        exit;
+    }
+    
+    // Добавить IP в белый список
+    if ($_POST['ajax'] === 'add_whitelist_ip') {
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+        if (!hasPermission($userPermissions, PERM_IP_WHITELIST)) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $ip = trim($_POST['ip'] ?? '');
+        $comment = trim($_POST['comment'] ?? '');
+        
+        // Валидация IP
+        if (empty($ip)) {
+            echo json_encode(['success' => false, 'message' => __('whitelist_ip_required')]);
+            exit;
+        }
+        
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            echo json_encode(['success' => false, 'message' => __('whitelist_ip_invalid')]);
+            exit;
+        }
+        
+        // Получаем текущий список
+        $whitelistIps = $config['whitelist_ips'] ?? [];
+        
+        // Проверяем, не существует ли уже
+        if (in_array($ip, $whitelistIps)) {
+            echo json_encode(['success' => false, 'message' => __('whitelist_ip_exists')]);
+            exit;
+        }
+        
+        // Добавляем IP
+        $whitelistIps[] = $ip;
+        $config['whitelist_ips'] = $whitelistIps;
+        $config['last_modified'] = date('Y-m-d H:i:s');
+        
+        if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+            echo json_encode(['success' => true, 'message' => __('whitelist_ip_added')]);
+        } else {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+        }
+        exit;
+    }
+    
+    // Удалить IP из белого списка
+    if ($_POST['ajax'] === 'remove_whitelist_ip') {
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+        if (!hasPermission($userPermissions, PERM_IP_WHITELIST)) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $ip = trim($_POST['ip'] ?? '');
+        
+        if (empty($ip)) {
+            echo json_encode(['success' => false, 'message' => __('whitelist_ip_required')]);
+            exit;
+        }
+        
+        $whitelistIps = $config['whitelist_ips'] ?? [];
+        $newWhitelist = [];
+        $removed = false;
+        
+        foreach ($whitelistIps as $existingIp) {
+            if ($existingIp !== $ip) {
+                $newWhitelist[] = $existingIp;
+            } else {
+                $removed = true;
+            }
+        }
+        
+        if (!$removed) {
+            echo json_encode(['success' => false, 'message' => __('whitelist_ip_not_found')]);
+            exit;
+        }
+        
+        $config['whitelist_ips'] = $newWhitelist;
+        $config['last_modified'] = date('Y-m-d H:i:s');
+        
+        if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+            echo json_encode(['success' => true, 'message' => __('whitelist_ip_removed')]);
+        } else {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+        }
+        exit;
+    }
+    
+    // ============================================
     // AJAX: Управление кэшем геолокации
     // ============================================
     
@@ -355,48 +468,47 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
-// ============================================
-// AJAX: Принудительное обновление кэша геолокации
-// ============================================
-if ($_POST['ajax'] === 'refresh_geo_cache') {
-    // Отключаем вывод ошибок в ответ
-    error_reporting(0);
-    ini_set('display_errors', 0);
-    
-    require_once __DIR__ . '/../vlmcinc/geo_cache.php';
-    
-    $fullLogPath = $GLOBALS['fullLogPath'];
-    
-    // Получаем параметры порции
-    $offset = isset($_POST['offset']) ? (int)$_POST['offset'] : 0;
-    $limit = isset($_POST['limit']) ? (int)$_POST['limit'] : 30;
-    
-    // Получаем все IP из лога
-    $allIps = getAllIpsFromMonitor($fullLogPath, $config);
-    
-    if (empty($allIps)) {
-        echo json_encode([
-            'success' => true, 
-            'processed' => 0,
-            'updated' => 0, 
-            'failed' => 0,
-            'has_more' => false,
-            'total_all' => 0,
-            'message' => __('tools_cache_no_ips')
-        ]);
+    // Принудительное обновление кэша геолокации
+    if ($_POST['ajax'] === 'refresh_geo_cache') {
+        require_once __DIR__ . '/../vlmcinc/geo_cache.php';
+        
+        $fullLogPath = $GLOBALS['fullLogPath'];
+        $allIps = getAllIpsFromMonitor($fullLogPath, $config);
+        
+        if (empty($allIps)) {
+            echo json_encode([
+                'success' => true, 
+                'updated' => 0, 
+                'failed' => 0, 
+                'total' => 0, 
+                'message' => __('tools_cache_no_ips')
+            ]);
+            exit;
+        }
+        
+        if (function_exists('pcntl_fork')) {
+            $pid = pcntl_fork();
+            
+            if ($pid == -1) {
+                $result = refreshGeoCacheForIpsFast($allIps);
+                echo json_encode($result);
+            } elseif ($pid == 0) {
+                refreshGeoCacheForIpsBackground($allIps);
+                exit;
+            } else {
+                echo json_encode([
+                    'success' => true, 
+                    'async' => true,
+                    'total' => count($allIps),
+                    'message' => __('tools_cache_background')
+                ]);
+            }
+        } else {
+            $result = refreshGeoCacheForIpsFast($allIps);
+            echo json_encode($result);
+        }
         exit;
     }
-    
-    // Обрабатываем порцию
-    $result = refreshGeoCacheByPortion($allIps, $offset, $limit);
-    
-    // Очищаем буфер вывода перед отправкой JSON
-    if (ob_get_length()) ob_clean();
-    
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($result);
-    exit;
-}
     
     // ============================================
     // AJAX: Экспорт проекта (универсальный)
@@ -549,6 +661,49 @@ if ($_POST['ajax'] === 'refresh_geo_cache') {
     }
     
     // ============================================
+    // AJAX: Сброс настроек
+    // ============================================
+    if (isset($_POST['action']) && $_POST['action'] === 'reset_config') {
+        header('Content-Type: application/json');
+        
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+        if (!hasPermission($userPermissions, PERM_ADMIN_FULL)) {
+            echo json_encode(['success' => false, 'message' => __('access_denied')]);
+            exit;
+        }
+        
+        $configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+        
+        $defaultConfig = [
+            'config_version' => CONFIG_VERSION,
+            'config_date' => date('Y-m-d'),
+            'theme' => 'dark',
+            'language' => 'ru',
+            'logPath' => 'vlmcsd.log',
+            'groupColors' => [
+                'Домашние' => '#2ecc71',
+                'Рабочие' => '#e74c3c',
+                'Знакомые' => '#3498db',
+                'Клиенты' => '#9b59b6'
+            ],
+            'devices' => [],
+            'whitelist_ips' => []
+        ];
+        
+        if (file_put_contents($configFile, json_encode($defaultConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+            echo json_encode(['success' => true, 'message' => __('msg_config_reset')]);
+        } else {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+        }
+        exit;
+    }
+    
+    // ============================================
     // AJAX: Проверка прав пользователя
     // ============================================
     if ($_POST['ajax'] === 'check_permission') {
@@ -568,6 +723,13 @@ if ($_POST['ajax'] === 'refresh_geo_cache') {
         if ($permission === 'PERM_DEVICES_EDIT') {
             $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
             $hasPermission = ($userPermissions & 8) === 8;
+            echo json_encode(['has_permission' => $hasPermission]);
+            exit;
+        }
+        
+        if ($permission === 'PERM_IP_WHITELIST') {
+            $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+            $hasPermission = ($userPermissions & PERM_IP_WHITELIST) === PERM_IP_WHITELIST;
             echo json_encode(['has_permission' => $hasPermission]);
             exit;
         }
