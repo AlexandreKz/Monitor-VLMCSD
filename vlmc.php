@@ -1,37 +1,19 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.0.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 5.1.0
+// ДАТА: 2026-06-01
 // @description: Главный файл мониторинга KMS сервера
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 4.8.1
+ * Version: 5.1.0
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
  * @license MIT
  * 
  * Copyright (c) 2026 AlexandreKz
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 // ============================================
@@ -52,7 +34,8 @@ $config = [
     'logPath' => 'vlmcsd.log',
     'groupColors' => [],
     'devices' => [],
-    'language' => 'ru'
+    'language' => 'ru',
+    'whitelist_ips' => []
 ];
 
 if (file_exists($configFile)) {
@@ -61,6 +44,9 @@ if (file_exists($configFile)) {
         $config = array_merge($config, $loaded);
         if (isset($loaded['theme'])) {
             $theme = $loaded['theme'];
+        }
+        if (!isset($config['whitelist_ips'])) {
+            $config['whitelist_ips'] = [];
         }
     }
 }
@@ -196,6 +182,60 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
     exit;
 }
 
+// Обработчик для добавления IP в белый список
+if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
+    header('Content-Type: application/json');
+    
+    // Запускаем сессию для проверки прав
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Проверка авторизации
+    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        echo json_encode(['success' => false, 'message' => __('access_denied')]);
+        exit;
+    }
+    
+    // Проверка права PERM_IP_WHITELIST (2048)
+    $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
+    if (!($userPermissions & 2048)) {
+        echo json_encode(['success' => false, 'message' => __('access_denied')]);
+        exit;
+    }
+    
+    $ip = trim($_POST['ip'] ?? '');
+    
+    if (empty($ip)) {
+        echo json_encode(['success' => false, 'message' => __('whitelist_ip_required')]);
+        exit;
+    }
+    
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        echo json_encode(['success' => false, 'message' => __('whitelist_ip_invalid')]);
+        exit;
+    }
+    
+    // Получаем текущий список белых IP из конфига
+    $whitelistIps = $config['whitelist_ips'] ?? [];
+    
+    if (in_array($ip, $whitelistIps)) {
+        echo json_encode(['success' => false, 'message' => __('whitelist_ip_exists')]);
+        exit;
+    }
+    
+    $whitelistIps[] = $ip;
+    $config['whitelist_ips'] = $whitelistIps;
+    $config['last_modified'] = date('Y-m-d H:i:s');
+    
+    if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+        echo json_encode(['success' => true, 'message' => __('whitelist_ip_added')]);
+    } else {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+    }
+    exit;
+}
+
 // ============================================
 // ОСНОВНАЯ ЛОГИКА (СТАТИСТИКА)
 // ============================================
@@ -262,7 +302,7 @@ function getUptime($logFile) {
     ];
 }
 
-function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage) {
+function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelistIps = []) {
     if (!file_exists($logFile)) return null;
     
     $content = file_get_contents($logFile);
@@ -272,14 +312,14 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage) {
     
     $stats = [
         'products' => [],
+        'products_unique' => [],
         'suspicious_ips' => [],
         'unknown_devices' => [],
-        'kms_versions' => []
-    ];
-    
-    $stats['kms_details'] = [
-        'v4' => ['count' => 0, 'last_time' => 0, 'devices' => [], 'products' => []],
-        'v6' => ['count' => 0, 'last_time' => 0, 'devices' => [], 'products' => []]
+        'kms_versions' => [],
+        'kms_details' => [
+            'v4' => ['count' => 0, 'last_time' => 0, 'devices' => [], 'products' => [], 'products_unique' => []],
+            'v6' => ['count' => 0, 'last_time' => 0, 'devices' => [], 'products' => [], 'products_unique' => []]
+        ]
     ];
     
     $ipTimes = [];
@@ -348,23 +388,51 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage) {
             }
         }
         
-        if (preg_match('/KMS v[46]\.0 request from/', $line) && preg_match('/for (.+)$/', $line, $matches)) {
-            $product = trim($matches[1]);
-            $stats['products'][$product] = ($stats['products'][$product] ?? 0) + 1;
+        // Подсчёт продуктов по уникальным устройствам
+        if (preg_match('/KMS v[46]\.0 request from (\S+?) for (.+)$/', $line, $matches)) {
+            $device = $matches[1];
+            $product = trim($matches[2]);
+            
+            if (!isset($stats['products_unique'][$product])) {
+                $stats['products_unique'][$product] = [];
+            }
+            $stats['products_unique'][$product][$device] = true;
             
             if (preg_match('/KMS v([46])\.0 request from/', $line, $vMatch)) {
                 $version = $vMatch[1];
                 $versionKey = 'v' . $version;
                 $productKey = substr($product, 0, 30);
-                if (!isset($stats['kms_details'][$versionKey]['products'][$productKey])) {
-                    $stats['kms_details'][$versionKey]['products'][$productKey] = 0;
+                
+                if (!isset($stats['kms_details'][$versionKey]['products_unique'][$productKey])) {
+                    $stats['kms_details'][$versionKey]['products_unique'][$productKey] = [];
                 }
-                $stats['kms_details'][$versionKey]['products'][$productKey]++;
+                $stats['kms_details'][$versionKey]['products_unique'][$productKey][$device] = true;
             }
         }
     }
     
+    // Преобразование уникальных устройств в количество
+    $stats['products'] = [];
+    foreach ($stats['products_unique'] as $product => $devices) {
+        $stats['products'][$product] = count($devices);
+    }
+    
+    foreach (['v4', 'v6'] as $version) {
+        if (isset($stats['kms_details'][$version]['products_unique'])) {
+            $stats['kms_details'][$version]['products'] = [];
+            foreach ($stats['kms_details'][$version]['products_unique'] as $product => $devices) {
+                $stats['kms_details'][$version]['products'][$product] = count($devices);
+            }
+        }
+    }
+    
+    // Анализ подозрительных IP
     foreach ($ipTimes as $ip => $times) {
+        // Пропускаем IP из белого списка
+        if (in_array($ip, $whitelistIps)) {
+            continue;
+        }
+        
         if (count($times) >= 3) {
             $hasKmsRequest = false;
             foreach ($stats['unknown_devices'] as $device) {
@@ -402,7 +470,8 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage) {
     return $stats;
 }
 
-$stats = analyzeLog($logFile, $devices, $cacheStatus, $cacheMessage);
+$whitelistIps = $config['whitelist_ips'] ?? [];
+$stats = analyzeLog($logFile, $devices, $cacheStatus, $cacheMessage, $whitelistIps);
 
 $deviceStats = array_count_values($devices);
 $uptime = getUptime($logFile);
@@ -506,8 +575,9 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .settings-button:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['primary'] ?>; color: #ffffff; transform: scale(1.05); }
-        .add-device-btn { background: transparent; border: none; color: #4ade80; cursor: pointer; padding: 0 2px; border-radius: 3px; font-size: 12px; transition: all 0.2s; }
-        .add-device-btn:hover { color: #6ee7b7; transform: scale(1.1); }
+        .add-device-btn, .add-whitelist-btn { background: transparent; border: none; color: #4ade80; cursor: pointer; padding: 0 2px; border-radius: 3px; font-size: 12px; transition: all 0.2s; }
+        .add-device-btn:hover, .add-whitelist-btn:hover { color: #6ee7b7; transform: scale(1.1); }
+        .add-whitelist-lock, .add-device-lock { color: #8aa0bb; font-size: 12px; cursor: help; }
         .cache-warning { color: <?= $themeCSS['warning'] ?>; font-size: 11px; background: rgba(243, 156, 18, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid <?= $themeCSS['warning'] ?>; }
         .uptime-info { display: flex; align-items: center; gap: 8px; background: <?= $themeCSS['card'] ?>; padding: 3px 10px; border-radius: 20px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 11px; }
         .uptime-status { color: #4ade80; }
@@ -601,7 +671,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             font-size: 10px;
             border: 1px solid <?= $themeCSS['danger'] ?>;
             display: grid;
-            grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
+            grid-template-columns: 1fr 0.5fr 0.8fr 1.2fr;
             align-items: center;
             gap: 4px;
             border-left: 3px solid <?= $themeCSS['danger'] ?>;
@@ -628,6 +698,11 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             text-overflow: ellipsis;
             flex: 1;
             min-width: 0;
+        }
+        .suspicious-actions {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
         }
         .copy-cidr-btn {
             background: transparent;
@@ -692,7 +767,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .modal-form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
         .modal-form-group label { font-size: 11px; font-weight: 500; color: #8aa0bb; text-transform: uppercase; }
         .modal-form-control { padding: 8px 10px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 13px; }
-        .modal-form-control:focus { outline: none; border-color: <?= $themeCSS['primary'] ?>; }
         .modal-btn { padding: 10px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 5px; }
         .modal-btn-primary { background: <?= $themeCSS['primary'] ?>; color: white; }
         .modal-btn-success { background: #4ade80; color: white; }
@@ -857,7 +931,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         <button class="scroll-bottom-btn" id="scrollBottomBtn">↓</button>
     </div>
     
-    <div class="footer">KMS Log Monitor • <?= __('version') ?> 4.8.1 • <?= __('footer_copyright') ?></div>
+    <div class="footer">KMS Log Monitor • <?= __('version') ?> 5.1.0 • <?= __('footer_copyright') ?></div>
     
     <div id="geoModal" class="modal"><div class="modal-content" id="geoModalContent"><div class="modal-header" id="geoModalHeader"><h2>🌍 <?= __('geo_title') ?></h2><span class="modal-close" onclick="closeGeoModal()">&times;</span></div><div class="modal-body" id="geoModalBody"><div class="modal-loading">⏳ <?= __('geo_loading') ?></div></div></div></div>
     
@@ -878,6 +952,9 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     let currentFilter = '';
     let currentEventFilter = 'all';
     let currentGroupFilter = 'all';
+    
+    // Переменные для прав
+    let canAddToWhitelist = false;
     
     function positionTooltips() {
         const v4badge = document.getElementById('v4-badge');
@@ -998,6 +1075,29 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     
     function closeAddDeviceModal() { document.getElementById('addDeviceModal').style.display = 'none'; }
     
+    function addToWhitelist(ip) {
+        if (!confirm(`<?= __('whitelist_remove_confirm') ?> ${ip}?`)) return;
+        
+        const fd = new FormData();
+        fd.append('ajax', 'add_whitelist_ip');
+        fd.append('ip', ip);
+        
+        fetch('', { method: 'POST', body: fd })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ ' + data.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast('❌ ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('❌ <?= __('whitelist_add_error') ?>');
+            });
+    }
+    
     document.getElementById('addDeviceForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const deviceName = document.getElementById('deviceName').value.trim();
@@ -1056,61 +1156,60 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     }
     
     function renderUnknownList() {
-    const list = document.getElementById('unknownList');
-    if (!unknownDevices || unknownDevices.length === 0) { 
-        list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('unknown_empty') ?></div>'; 
-        return; 
-    }
-    
-    // Проверка прав через AJAX
-    fetch('vlmcconf/vlmcinc/ajax.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'ajax=check_permission&permission=PERM_DEVICES_EDIT'
-    })
-    .then(response => response.json())
-    .then(data => {
-        renderUnknownListWithPermission(data.has_permission);
-    })
-    .catch(error => {
-        console.error('Permission check error:', error);
-        renderUnknownListWithPermission(false);
-    });
-    
-    function renderUnknownListWithPermission(canAdd) {
-        let sorted = [...unknownDevices];
-        sorted.sort((a, b) => {
-            let valA, valB;
-            switch(unknownSort.field) {
-                case 'device': valA = a.device.toLowerCase(); valB = b.device.toLowerCase(); break;
-                case 'ip': valA = a.last_ip; valB = b.last_ip; break;
-                case 'count': valA = a.count; valB = b.count; break;
-                default: valA = a.device; valB = b.device;
-            }
-            if (valA < valB) return unknownSort.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return unknownSort.direction === 'asc' ? 1 : -1;
-            return 0;
+        const list = document.getElementById('unknownList');
+        if (!unknownDevices || unknownDevices.length === 0) { 
+            list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('unknown_empty') ?></div>'; 
+            return; 
+        }
+        
+        fetch('vlmcconf/vlmcinc/ajax.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'ajax=check_permission&permission=PERM_DEVICES_EDIT'
+        })
+        .then(response => response.json())
+        .then(data => {
+            renderUnknownListWithPermission(data.has_permission);
+        })
+        .catch(error => {
+            console.error('Permission check error:', error);
+            renderUnknownListWithPermission(false);
         });
         
-        let html = '';
-        sorted.forEach(item => {
-            const escapedDevice = escapeHtml(item.device);
-            const escapedIp = escapeHtml(item.last_ip);
+        function renderUnknownListWithPermission(canAdd) {
+            let sorted = [...unknownDevices];
+            sorted.sort((a, b) => {
+                let valA, valB;
+                switch(unknownSort.field) {
+                    case 'device': valA = a.device.toLowerCase(); valB = b.device.toLowerCase(); break;
+                    case 'ip': valA = a.last_ip; valB = b.last_ip; break;
+                    case 'count': valA = a.count; valB = b.count; break;
+                    default: valA = a.device; valB = b.device;
+                }
+                if (valA < valB) return unknownSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return unknownSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
             
-            const addButton = canAdd 
-                ? `<button class="add-device-btn" onclick="showAddDeviceModal('${escapedDevice.replace(/'/g, "\\'")}', '${escapedIp}')" title="<?= __('unknown_add_tooltip') ?>">➕</button>`
-                : `<span style="color: #6b8ba4; font-size: 10px;" title="<?= __('add_device_auth_required') ?>">🔒</span>`;
-            
-            html += `<div class="unknown-item" title="<?= __('unknown_first_seen') ?> ${new Date(item.first_seen * 1000).toLocaleString()}\n<?= __('unknown_last_seen') ?> ${new Date(item.last_seen * 1000).toLocaleString()}">
-                <span class="unknown-device">${escapedDevice}</span>
-                <span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>
-                <span class="unknown-add">${addButton}</span>
-                <span class="unknown-count">${item.count}</span>
-            </div>`;
-        });
-        list.innerHTML = html;
+            let html = '';
+            sorted.forEach(item => {
+                const escapedDevice = escapeHtml(item.device);
+                const escapedIp = escapeHtml(item.last_ip);
+                
+                const addButton = canAdd 
+                    ? `<button class="add-device-btn" onclick="showAddDeviceModal('${escapedDevice.replace(/'/g, "\\'")}', '${escapedIp}')" title="<?= __('unknown_add_tooltip') ?>">➕</button>`
+                    : `<span class="add-device-lock" title="<?= __('add_device_auth_required') ?>">🔒</span>`;
+                
+                html += `<div class="unknown-item" title="<?= __('unknown_first_seen') ?> ${new Date(item.first_seen * 1000).toLocaleString()}\n<?= __('unknown_last_seen') ?> ${new Date(item.last_seen * 1000).toLocaleString()}">
+                    <span class="unknown-device">${escapedDevice}</span>
+                    <span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>
+                    <span class="unknown-add">${addButton}</span>
+                    <span class="unknown-count">${item.count}</span>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
     }
-}
     
     function renderSuspiciousList() {
         const list = document.getElementById('suspiciousList');
@@ -1118,36 +1217,66 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             list.innerHTML = '<div style="color: #8aa0bb; text-align: center; padding: 15px; font-size: 10px;"><?= __('suspicious_empty') ?></div>'; 
             return; 
         }
-        let sorted = [...suspiciousIps];
-        sorted.sort((a, b) => {
-            let valA, valB;
-            switch(suspiciousSort.field) {
-                case 'ip': valA = a.ip; valB = b.ip; break;
-                case 'count': valA = a.count; valB = b.count; break;
-                case 'cidr': valA = a.cidr; valB = b.cidr; break;
-                case 'country': valA = (a.country_name || a.country).toLowerCase(); valB = (b.country_name || b.country).toLowerCase(); break;
-                default: valA = a.ip; valB = b.ip;
-            }
-            if (valA < valB) return suspiciousSort.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return suspiciousSort.direction === 'asc' ? 1 : -1;
-            return 0;
+        
+        fetch('vlmcconf/vlmcinc/ajax.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'ajax=check_permission&permission=PERM_IP_WHITELIST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            canAddToWhitelist = data.has_permission;
+            renderSuspiciousListWithPermission();
+        })
+        .catch(error => {
+            console.error('Permission check error:', error);
+            canAddToWhitelist = false;
+            renderSuspiciousListWithPermission();
         });
-        let html = '';
-        sorted.forEach(item => {
-            const escapedIp = escapeHtml(item.ip);
-            const escapedCidr = escapeHtml(item.cidr);
-            const countryCode = item.country_code || '';
-            const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
-            const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
+        
+        function renderSuspiciousListWithPermission() {
+            let sorted = [...suspiciousIps];
+            sorted.sort((a, b) => {
+                let valA, valB;
+                switch(suspiciousSort.field) {
+                    case 'ip': valA = a.ip; valB = b.ip; break;
+                    case 'count': valA = a.count; valB = b.count; break;
+                    case 'cidr': valA = a.cidr; valB = b.cidr; break;
+                    case 'country': valA = (a.country_name || a.country).toLowerCase(); valB = (b.country_name || b.country).toLowerCase(); break;
+                    default: valA = a.ip; valB = b.ip;
+                }
+                if (valA < valB) return suspiciousSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return suspiciousSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
             
-            html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
-                <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
-                <span class="suspicious-count">${item.count}</span>
-                <div class="suspicious-cidr-container"><span class="suspicious-cidr">${escapedCidr}</span><button class="copy-cidr-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedCidr}')" title="<?= __('suspicious_copy_cidr') ?>">📋</button></div>
-                <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 6px; vertical-align: middle;">` : ''}${countryName}</span>
-            </div>`;
-        });
-        list.innerHTML = html;
+            let html = '';
+            sorted.forEach(item => {
+                const escapedIp = escapeHtml(item.ip);
+                const escapedCidr = escapeHtml(item.cidr);
+                const countryCode = item.country_code || '';
+                const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
+                const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
+                
+                const whitelistButton = canAddToWhitelist
+                    ? `<button class="add-whitelist-btn" onclick="addToWhitelist('${escapedIp}')" title="<?= __('whitelist_add_ip') ?>">➕</button>`
+                    : `<span class="add-whitelist-lock" title="<?= __('whitelist_auth_required') ?>">🔒</span>`;
+                
+                html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
+                    <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
+                    <span class="suspicious-count">${item.count}</span>
+                    <div class="suspicious-cidr-container">
+                        <span class="suspicious-cidr">${escapedCidr}</span>
+                        <button class="copy-cidr-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedCidr}')" title="<?= __('suspicious_copy_cidr') ?>">📋</button>
+                    </div>
+                    <div class="suspicious-actions">
+                        ${whitelistButton}
+                        <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 4px; vertical-align: middle;">` : ''}${countryName}</span>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
     }
     
     function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
