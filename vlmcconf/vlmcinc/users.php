@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 3.8.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 3.9.0
+// ДАТА: 2026-06-01
 // @description: Управление пользователями с детальной валидацией
 // ============================================
 
@@ -27,9 +27,12 @@ define('PERM_INFO_NONE', 0);
 define('PERM_INFO_VIEW', 256);
 
 // Права для раздела ИНСТРУМЕНТЫ
-define('PERM_TOOLS_NONE', 0);      // Нет доступа (пункт меню скрыт)
-define('PERM_TOOLS_VIEW', 512);     // Только просмотр (нельзя изменять)
-define('PERM_TOOLS_EDIT', 1024);    // Полный доступ (очистка лога, экспорт, управление кэшем)
+define('PERM_TOOLS_NONE', 0);
+define('PERM_TOOLS_VIEW', 512);
+define('PERM_TOOLS_EDIT', 1024);
+
+// Право для управления белыми IP (исключения из подозрительных)
+define('PERM_IP_WHITELIST', 2048);
 
 // Полные права администратора
 define('PERM_ADMIN_FULL', 
@@ -38,7 +41,8 @@ define('PERM_ADMIN_FULL',
     PERM_LOGS_VIEW | PERM_LOGS_EDIT |
     PERM_USERS_VIEW | PERM_USERS_EDIT |
     PERM_INFO_VIEW |
-    PERM_TOOLS_EDIT
+    PERM_TOOLS_EDIT |
+    PERM_IP_WHITELIST
 );
 
 /**
