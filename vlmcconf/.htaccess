@@ -26,3 +26,6 @@ DirectoryIndex vlmcconf.php login.php
 <FilesMatch "\.(php)$">
     Require all granted
 </FilesMatch>
+
+# Защита папки cache
+RewriteRule ^cache/ - [F,L]

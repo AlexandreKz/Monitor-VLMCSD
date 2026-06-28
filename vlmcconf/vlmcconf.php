@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 4.8.1
-// ДАТА: 2026-04-03
+// ВЕРСИЯ: 5.0.0
+// ДАТА: 2026-06-02
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -12,6 +12,8 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+define('VLMCS_CONF', true);
 
 $requestUri = $_SERVER['REQUEST_URI'];
 $protectedExtensions = ['json', 'log', 'ini', 'conf', 'txt'];
@@ -51,6 +53,7 @@ require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/geo_cache.php';
+require_once __DIR__ . '/vlmcinc/emoji_manager.php';
 
 // ============================================
 // ПРОВЕРКА ПРАВ
@@ -95,7 +98,8 @@ $defaultConfig = [
     'language' => 'ru',
     'logPath' => 'vlmcsd.log',
     'groupColors' => $defaultGroupColors,
-    'devices' => []
+    'devices' => [],
+    'whitelist_ips' => []
 ];
 
 foreach (array_keys($defaultGroupColors) as $group) {
@@ -103,14 +107,90 @@ foreach (array_keys($defaultGroupColors) as $group) {
 }
 
 // Загрузка конфига
-$config = $defaultConfig;
-if (file_exists($configFile)) {
-    $loaded = json_decode(file_get_contents($configFile), true);
-    if ($loaded) {
-        $config = array_merge($defaultConfig, $loaded);
-        $config['config_version'] = CONFIG_VERSION;
-        $config['config_date'] = CONFIG_DATE;
+// Загрузка конфига с автоматическим обновлением структуры
+$config = load_config_with_update($configFile, $defaultConfig, CONFIG_VERSION);
+
+// ============================================
+// АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ НОВЫХ СЕКЦИЙ (ДЛЯ ОБНОВЛЕНИЯ)
+// ============================================
+
+$needSave = false;
+
+// whitelist_ips
+if (!isset($config['whitelist_ips'])) {
+    $config['whitelist_ips'] = [];
+    $needSave = true;
+}
+
+// integrations
+if (!isset($config['integrations'])) {
+    $config['integrations'] = [
+        'ad' => [
+            'enabled' => false,
+            'auth_enabled' => false,
+            'server' => '',
+            'port' => 389,
+            'use_ssl' => false,
+            'base_dn' => '',
+            'domain' => '',
+            'service_user' => '',
+            'service_password' => ''
+        ],
+        'webhook' => [
+            'enabled' => false,
+            'url' => '',
+            'secret' => '',
+            'events' => ['suspicious_ip', 'mass_activation']
+        ]
+    ];
+    $needSave = true;
+} else {
+    if (!isset($config['integrations']['ad'])) {
+        $config['integrations']['ad'] = [
+            'enabled' => false,
+            'auth_enabled' => false,
+            'server' => '',
+            'port' => 389,
+            'use_ssl' => false,
+            'base_dn' => '',
+            'domain' => '',
+            'service_user' => '',
+            'service_password' => ''
+        ];
+        $needSave = true;
     }
+    if (!isset($config['integrations']['ad']['auth_enabled'])) {
+        $config['integrations']['ad']['auth_enabled'] = false;
+        $needSave = true;
+    }
+    if (!isset($config['integrations']['webhook'])) {
+        $config['integrations']['webhook'] = [
+            'enabled' => false,
+            'url' => '',
+            'secret' => '',
+            'events' => ['suspicious_ip', 'mass_activation']
+        ];
+        $needSave = true;
+    }
+}
+
+// api
+if (!isset($config['api'])) {
+    $config['api'] = [
+        'enabled' => false,
+        'base_path' => '/api/v1',
+        'cors_origins' => ['*'],
+        'rate_limit' => 60,
+        'keys' => []
+    ];
+    $needSave = true;
+}
+
+// Сохраняем если были изменения
+if ($needSave) {
+    $config['last_modified'] = date('Y-m-d H:i:s');
+    $config['last_modified_version'] = CONFIG_VERSION;
+    file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
 
 $themeCSS = getThemeCSS($config['theme']);
@@ -204,7 +284,8 @@ $allDevices = [];
 foreach ($config['devices'] as $group => $list) {
     foreach ($list as $d) {
         $d['group'] = $group;
-        $d['color'] = isset($config['groupColors'][$group]) ? $config['groupColors'][$group] : '#888';
+        $groupColorData = $config['groupColors'][$group] ?? '#888';
+        $d['color'] = is_array($groupColorData) ? $groupColorData['color'] : $groupColorData;
         $allDevices[] = $d;
     }
 }
@@ -225,7 +306,7 @@ if (empty($deviceList) && !empty($allDevices)) {
     sort($deviceList);
 }
 if (empty($deviceList)) {
-    $deviceList = ['DESKTOP-RC5D9N0', 'X2-31337', 'AKZ-31337', 'UMA', 'MN-31337'];
+    $deviceList = [__('no_devices_found')];
 }
 $deviceList = array_map('strval', $deviceList);
 
@@ -240,6 +321,19 @@ require_once __DIR__ . '/vlmcinc/ajax.php';
 $activeSection = $_GET['section'] ?? 'general';
 $message = $_GET['message'] ?? '';
 $messageType = $_GET['type'] ?? 'success';
+
+// AJAX загрузка вкладки обновления
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_update_tab') {
+    if (!defined('VLMCS_CONF')) {
+        define('VLMCS_CONF', true);
+    }
+    $activeTab = 'update';
+    ob_start();
+    include __DIR__ . '/sections/update.php';
+    $content = ob_get_clean();
+    echo $content;
+    exit;
+}
 
 // ============================================
 // ОБРАБОТКА POST ЗАПРОСОВ
@@ -275,39 +369,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             exit;
         }
         
-        // Добавление группы
-        if ($_POST['action'] === 'add_group' && isset($_POST['groupName']) && isset($_POST['groupColor']) && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
-            $groupName = trim($_POST['groupName']);
-            $groupColor = trim($_POST['groupColor']);
-            
-            if (strlen($groupName) > 50) {
-                header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_name_too_long')) . '&type=warning');
-                exit;
-            }
-            if (!preg_match('/^[a-zA-Zа-яА-Я0-9\s\-_]+$/u', $groupName)) {
-                header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_invalid_chars')) . '&type=warning');
-                exit;
-            }
-            if (!preg_match('/^#[a-f0-9]{6}$/i', $groupColor)) {
-                header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_invalid_color')) . '&type=warning');
-                exit;
-            }
-            
-            if (!empty($groupName) && !isset($config['groupColors'][$groupName])) {
-                $config['groupColors'][$groupName] = $groupColor;
-                $config['devices'][$groupName] = [];
-                $messageText = __('msg_group_added') . " '$groupName'";
-                $messageType = 'success';
-            } else {
-                $messageText = __('msg_group_exists');
-                $messageType = 'warning';
-            }
-            
-            $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            header('Location: vlmcconf.php?section=groups&message=' . urlencode($messageText) . '&type=' . $messageType);
-            exit;
-        }
+		// Добавление группы
+		if ($_POST['action'] === 'add_group' && isset($_POST['groupName']) && isset($_POST['groupColor']) && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
+			$groupName = trim($_POST['groupName']);
+			$groupColor = trim($_POST['groupColor']);
+			$groupIcon = trim($_POST['groupIcon'] ?? '📁');
+			
+			if (strlen($groupName) > 50) {
+				header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_name_too_long')) . '&type=warning');
+				exit;
+			}
+			if (!preg_match('/^[a-zA-Zа-яА-Я0-9\s\-_]+$/u', $groupName)) {
+				header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_invalid_chars')) . '&type=warning');
+				exit;
+			}
+			if (!preg_match('/^#[a-f0-9]{6}$/i', $groupColor)) {
+				header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_invalid_color')) . '&type=warning');
+				exit;
+			}
+			
+			if (!empty($groupName) && !isset($config['groupColors'][$groupName])) {
+				$config['groupColors'][$groupName] = [
+					'color' => $groupColor,
+					'icon' => $groupIcon
+				];
+				$config['devices'][$groupName] = [];
+				$messageText = __('msg_group_added') . " '$groupName'";
+				$messageType = 'success';
+			} else {
+				$messageText = __('msg_group_exists');
+				$messageType = 'warning';
+			}
+			
+			$config['last_modified'] = date('Y-m-d H:i:s');
+			file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			header('Location: vlmcconf.php?section=groups&message=' . urlencode($messageText) . '&type=' . $messageType);
+			exit;
+		}
         
         // Удаление группы
         if ($_POST['action'] === 'delete_group' && isset($_POST['groupName']) && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
@@ -330,20 +428,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         
         // Сохранение цветов групп
-        if ($_POST['action'] === 'save_group_colors' && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
-            foreach ($config['groupColors'] as $group => $oldColor) {
-                if (isset($_POST['color_' . $group])) {
-                    $color = trim($_POST['color_' . $group]);
-                    if (preg_match('/^#[a-f0-9]{6}$/i', $color)) {
-                        $config['groupColors'][$group] = $color;
-                    }
-                }
-            }
-            $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_colors_saved')) . '&type=success');
-            exit;
-        }
+		if ($_POST['action'] === 'save_group_colors' && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
+			foreach ($config['groupColors'] as $group => $oldData) {
+				// Получаем текущие значения
+				$oldColor = is_array($oldData) ? $oldData['color'] : $oldData;
+				$oldIcon = (is_array($oldData) && isset($oldData['icon'])) ? $oldData['icon'] : '📁';
+				
+				// Обновляем цвет
+				if (isset($_POST['color_' . $group])) {
+					$color = trim($_POST['color_' . $group]);
+					if (preg_match('/^#[a-f0-9]{6}$/i', $color)) {
+						$oldColor = $color;
+					}
+				}
+				
+				// Обновляем иконку
+				if (isset($_POST['group_icon_' . $group])) {
+					$icon = trim($_POST['group_icon_' . $group]);
+					if (!empty($icon)) {
+						$oldIcon = $icon;
+					}
+				}
+				
+				$config['groupColors'][$group] = [
+					'color' => $oldColor,
+					'icon' => $oldIcon
+				];
+			}
+			$config['last_modified'] = date('Y-m-d H:i:s');
+			file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_colors_saved')) . '&type=success');
+			exit;
+		}
         
         // Добавление устройства
         if ($_POST['action'] === 'add_device' && isset($_POST['deviceName']) && isset($_POST['deviceGroup']) && hasPermission($currentUserPermissions, PERM_DEVICES_EDIT)) {
@@ -450,6 +566,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             $config['config_version'] = CONFIG_VERSION;
             $config['config_date'] = CONFIG_DATE;
             $config['last_modified'] = date('Y-m-d H:i:s');
+            
+            // Добавляем новые секции после сброса
+            $config['whitelist_ips'] = [];
+            $config['integrations'] = [
+                'ad' => [
+                    'enabled' => false,
+                    'auth_enabled' => false,
+                    'server' => '',
+                    'port' => 389,
+                    'use_ssl' => false,
+                    'base_dn' => '',
+                    'domain' => '',
+                    'service_user' => '',
+                    'service_password' => ''
+                ],
+                'webhook' => [
+                    'enabled' => false,
+                    'url' => '',
+                    'secret' => '',
+                    'events' => ['suspicious_ip', 'mass_activation']
+                ]
+            ];
+            $config['api'] = [
+                'enabled' => false,
+                'base_path' => '/api/v1',
+                'cors_origins' => ['*'],
+                'rate_limit' => 60,
+                'keys' => []
+            ];
+            
             file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             header('Location: vlmcconf.php?section=info&message=' . urlencode(__('msg_config_reset')) . '&type=warning');
             exit;
@@ -1543,11 +1689,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     </div>
     <?php endif; ?>
     
-    <!-- Документация - доступна всем -->
+    <!-- ============================================ -->
+    <!-- НОВЫЕ ПУНКТЫ МЕНЮ: ИНТЕГРАЦИИ И API -->
+    <!-- ============================================ -->
+    
+    <!-- Интеграции - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'integrations' ? 'active' : '' ?>" onclick="showSection('integrations', this)">
+        <span class="menu-item-icon">🔌</span>
+        <span><?= __('integrations') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- API - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_API_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'api' ? 'active' : '' ?>" onclick="showSection('api', this)">
+        <span class="menu-item-icon">🖥️</span>
+        <span><?= __('api') ?></span>
+    </div>
+	
+	<!-- Документация - доступна всем -->
     <div class="menu-item <?= $activeSection === 'documentation' ? 'active' : '' ?>" onclick="showSection('documentation', this)">
         <span class="menu-item-icon">📚</span>
         <span><?= __('menu_documentation') ?></span>
     </div>
+	
+    <?php endif; ?>
     
     <div style="flex: 1;"></div>
     
@@ -1558,15 +1725,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 </div>
             
             <div class="settings-content">
-				<?php include __DIR__ . '/sections/documentation.php'; ?>
                 <?php include __DIR__ . '/sections/general.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_GROUPS_VIEW)) include __DIR__ . '/sections/groups.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_DEVICES_VIEW)) include __DIR__ . '/sections/devices.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)) include __DIR__ . '/sections/security.php'; ?>
                 <?php include __DIR__ . '/sections/stats.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)) include __DIR__ . '/sections/info.php'; ?>
-				<?php include __DIR__ . '/sections/tools.php'; ?>
-		    </div>
+                <?php include __DIR__ . '/sections/tools.php'; ?>
+                <?php if (hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW)) include __DIR__ . '/sections/integrations.php'; ?>
+                <?php if (hasPermission($currentUserPermissions, PERM_API_VIEW)) include __DIR__ . '/sections/api.php'; ?>
+				<?php include __DIR__ . '/sections/documentation.php'; ?>
+            </div>
         </div>
         
         <div class="footer">

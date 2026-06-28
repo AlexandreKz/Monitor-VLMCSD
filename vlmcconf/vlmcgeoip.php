@@ -1,15 +1,21 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcgeoip.php
-// ВЕРСИЯ: 1.6.0
-// ДАТА: 2026-04-27
+// ВЕРСИЯ: 1.8.0
+// ДАТА: 2026-06-28
 // @description: Геолокация IP-адресов + флаги стран (только .txt кэш)
+// @description: GeoIP location + country flags (only .txt cache)
 // ============================================
 
 /**
  * Преобразование HEX в RGB
+ * Поддерживает как строку "#RRGGBB", так и массив вида {"color": "#RRGGBB", "icon": "🏠"}
  */
 function hex2rgb($hex) {
+    // Если пришёл массив (новый формат groupColors) — извлекаем color
+    if (is_array($hex)) {
+        $hex = $hex['color'] ?? '#888888';
+    }
     $hex = str_replace('#', '', $hex);
     if (strlen($hex) == 3) {
         $r = hexdec(str_repeat(substr($hex, 0, 1), 2));
@@ -79,42 +85,6 @@ function getIpRange($ip, $cidr) {
 }
 
 /**
- * Получение выделенных диапазонов провайдеров
- */
-function getProviderRanges($isp) {
-    $isp = strtolower($isp);
-    $ranges = [];
-    
-    if (strpos($isp, 'rostelecom') !== false || strpos($isp, 'rt') !== false) {
-        $ranges[] = ['range' => '188.16.0.0/12', 'desc' => 'Ростелеком (Центр)'];
-        $ranges[] = ['range' => '95.24.0.0/13', 'desc' => 'Ростелеком (Урал)'];
-        $ranges[] = ['range' => '95.128.0.0/12', 'desc' => 'Ростелеком (Сибирь)'];
-    }
-    if (strpos($isp, 'mts') !== false) {
-        $ranges[] = ['range' => '95.128.0.0/11', 'desc' => 'МТС (Центр)'];
-        $ranges[] = ['range' => '83.169.0.0/16', 'desc' => 'МТС (Юг)'];
-    }
-    if (strpos($isp, 'beeline') !== false || strpos($isp, 'vimpel') !== false) {
-        $ranges[] = ['range' => '95.24.0.0/13', 'desc' => 'Билайн (Москва)'];
-        $ranges[] = ['range' => '95.128.0.0/11', 'desc' => 'Билайн (Регионы)'];
-    }
-    if (strpos($isp, 'megafon') !== false) {
-        $ranges[] = ['range' => '95.128.0.0/12', 'desc' => 'Мегафон (Северо-Запад)'];
-        $ranges[] = ['range' => '83.169.0.0/16', 'desc' => 'Мегафон (Кавказ)'];
-    }
-    if (strpos($isp, 'google') !== false) {
-        $ranges[] = ['range' => '35.192.0.0/12', 'desc' => 'Google Cloud (US)'];
-        $ranges[] = ['range' => '34.0.0.0/15', 'desc' => 'Google Cloud (EU)'];
-    }
-    if (strpos($isp, 'amazon') !== false || strpos($isp, 'aws') !== false) {
-        $ranges[] = ['range' => '52.0.0.0/15', 'desc' => 'AWS (US East)'];
-        $ranges[] = ['range' => '18.0.0.0/8', 'desc' => 'AWS (Global)'];
-    }
-    
-    return $ranges;
-}
-
-/**
  * Получить директорию кэша геолокации (постоянная)
  */
 function getGeoCacheDir() {
@@ -144,7 +114,6 @@ function getGeoLocationDirect($ip) {
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         
         if ($httpCode === 200 && $response) {
             if (strpos($api, 'ip-api.com') !== false) {
@@ -215,7 +184,6 @@ function getDetailedGeoLocation($ip) {
             'timezone' => '—',
             'cidr' => ipToCidr($ip),
             'ip_range' => getIpRange($ip, ipToCidr($ip)),
-            'provider_ranges' => [],
             'success' => true
         ];
     }
@@ -236,7 +204,6 @@ function getDetailedGeoLocation($ip) {
         'asn' => '—',
         'cidr' => ipToCidr($ip),
         'ip_range' => getIpRange($ip, ipToCidr($ip)),
-        'provider_ranges' => [],
         'success' => false
     ];
     
@@ -253,7 +220,6 @@ function getDetailedGeoLocation($ip) {
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         
         if ($httpCode === 200 && $response) {
             $data = json_decode($response, true);
@@ -270,7 +236,6 @@ function getDetailedGeoLocation($ip) {
                     'asn' => $data['as'] ?? '—',
                     'cidr' => $cidr,
                     'ip_range' => getIpRange($ip, $cidr),
-                    'provider_ranges' => getProviderRanges($data['isp'] ?? ''),
                     'success' => true
                 ];
                 break;
@@ -288,7 +253,6 @@ function getDetailedGeoLocation($ip) {
                     'asn' => $data['asn'] ?? '—',
                     'cidr' => $cidr,
                     'ip_range' => getIpRange($ip, $cidr),
-                    'provider_ranges' => getProviderRanges($data['org'] ?? ''),
                     'success' => true
                 ];
                 break;
@@ -306,7 +270,6 @@ function getDetailedGeoLocation($ip) {
                     'asn' => $data['connection']['asn'] ?? '—',
                     'cidr' => $cidr,
                     'ip_range' => getIpRange($ip, $cidr),
-                    'provider_ranges' => getProviderRanges($data['connection']['isp'] ?? ''),
                     'success' => true
                 ];
                 break;

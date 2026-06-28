@@ -1,13 +1,39 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcloghandler.php
-// ВЕРСИЯ: 1.2.0
-// ДАТА: 2026-03-27
+// ВЕРСИЯ: 1.4.0
+// ДАТА: 2026-06-28
 // @description: Обработчик и форматирование логов KMS с поддержкой tooltip
+// @description: KMS log handler and formatter with tooltip support
 // ============================================
 
 // Подключаем geoip для функции hex2rgb
 require_once __DIR__ . '/vlmcgeoip.php';
+
+/**
+ * Получить дату первой записи в логе
+ * @param string $logFile Путь к лог-файлу
+ * @return string|null Дата в формате Y-m-d H:i:s или null, если лог пуст
+ */
+function getFirstLogDate($logFile) {
+    if (!file_exists($logFile)) {
+        return null;
+    }
+    
+    $content = file_get_contents($logFile);
+    if ($content === false || empty(trim($content))) {
+        return null;
+    }
+    
+    $lines = explode("\n", $content);
+    foreach ($lines as $line) {
+        if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
+            return $matches[1];
+        }
+    }
+    
+    return null;
+}
 
 /**
  * Обработка одной строки лога
@@ -80,11 +106,14 @@ function processLine($line, $devices, $deviceComments, $groups, $groupColors, $f
             $titleAttr = ' title="' . htmlspecialchars($foundDeviceComment) . '"';
         }
         
+        // Получаем цвет группы (поддержка нового формата)
+        $groupColor = isset($groupColors[$highlightGroup]['color']) ? $groupColors[$highlightGroup]['color'] : '#888888';
+        
         $lineWithHighlights = str_replace(
             $highlightTarget,
             sprintf(
                 '<span style="color:%s; font-weight:700; text-decoration:underline; text-underline-offset:2px; cursor:help;"%s data-group="%s">%s</span>',
-                $groupColors[$highlightGroup],
+                $groupColor,
                 $titleAttr,
                 $highlightGroup,
                 $highlightTarget
@@ -103,18 +132,21 @@ function processLine($line, $devices, $deviceComments, $groups, $groupColors, $f
     }
     
     if ($badgeGroup && isset($groupColors[$badgeGroup])) {
+        // Получаем цвет группы (поддержка нового формата)
+        $groupColor = isset($groupColors[$badgeGroup]['color']) ? $groupColors[$badgeGroup]['color'] : '#888888';
+        
         $groupBadge = sprintf(
             ' <span style="background:%s; color:%s; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:600; text-transform:uppercase; border:1px solid %s; margin-left:10px;">%s</span>',
-            "rgba(" . hex2rgb($groupColors[$badgeGroup]) . ", 0.15)",
-            $groupColors[$badgeGroup],
-            $groupColors[$badgeGroup],
+            "rgba(" . hex2rgb($groupColor) . ", 0.15)",
+            $groupColor,
+            $groupColor,
             strtoupper(__($badgeGroup))
         );
         
         $result .= sprintf(
             '<div style="background-color:%s; border-left: 6px solid %s; padding: 4px 0 4px 10px; margin: 0; border-radius: 0 4px 4px 0; display: flex; align-items: center; flex-wrap: wrap;">%s%s</div>',
-            "rgba(" . hex2rgb($groupColors[$badgeGroup]) . ", 0.15)",
-            $groupColors[$badgeGroup],
+            "rgba(" . hex2rgb($groupColor) . ", 0.15)",
+            $groupColor,
             $lineWithHighlights,
             $groupBadge
         );
@@ -161,3 +193,4 @@ function processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 
     
     return implode("\n", $processedLines);
 }
+?>

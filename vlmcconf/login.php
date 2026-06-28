@@ -1,12 +1,13 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 3.1.0
-// ДАТА: 2026-03-27
-// @description: Страница авторизации с полной локализацией
+// ВЕРСИЯ: 4.0.0
+// ДАТА: 2026-06-02
+// @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
 session_start();
 require_once __DIR__ . '/vlmcinc/users.php';
+require_once __DIR__ . '/vlmcinc/auth.php';
 
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
@@ -23,17 +24,26 @@ foreach ($protectedExtensions as $ext) {
 }
 
 // ============================================
-// ЗАГРУЗКА КОНФИГУРАЦИИ ДЛЯ ЯЗЫКА
+// ЗАГРУЗКА КОНФИГУРАЦИИ ДЛЯ ЯЗЫКА И AD
 // ============================================
 $configFile = __DIR__ . '/vlmcconf_config.json';
 $config = [
-    'language' => 'ru'
+    'language' => 'ru',
+    'integrations' => [
+        'ad' => [
+            'enabled' => false,
+            'auth_enabled' => false
+        ]
+    ]
 ];
 
 if (file_exists($configFile)) {
     $loaded = json_decode(file_get_contents($configFile), true);
-    if ($loaded && isset($loaded['language'])) {
-        $config['language'] = $loaded['language'];
+    if ($loaded) {
+        $config['language'] = $loaded['language'] ?? 'ru';
+        if (isset($loaded['integrations'])) {
+            $config['integrations'] = array_merge($config['integrations'], $loaded['integrations']);
+        }
     }
 }
 
@@ -102,12 +112,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
     $changePasswordMode = true;
 }
 
-// Обычная авторизация
+// ============================================
+// ОБЫЧНАЯ АВТОРИЗАЦИЯ (локальная + AD)
+// ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if (verifyUser($username, $password)) {
+    // 1. СНАЧАЛА ПРОВЕРЯЕМ ЛОКАЛЬНЫХ ПОЛЬЗОВАТЕЛЕЙ
+    if (authenticate_user($username, $password)) {
         $user = getUserByUsername($username);
         
         if (isset($user['must_change_password']) && $user['must_change_password'] === true) {
@@ -126,7 +139,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
             header('Location: vlmcconf.php');
             exit;
         }
-    } else {
+    }
+    // 2. ЕСЛИ ЛОКАЛЬНЫЙ ПОЛЬЗОВАТЕЛЬ НЕ НАЙДЕН — ПРОВЕРЯЕМ AD (если включено)
+    else {
+        $ad_user = authenticate_ad($username, $password);
+        if ($ad_user !== false) {
+            // Создаём или обновляем пользователя из AD
+            if (create_or_update_ad_user($ad_user)) {
+                $user = getUserByUsername($ad_user['username']);
+                
+                if ($user) {
+                    $_SESSION['vlmc_admin'] = true;
+                    $_SESSION['vlmc_user_id'] = $user['id'];
+                    $_SESSION['vlmc_username'] = $user['username'];
+                    $_SESSION['vlmc_permissions'] = $user['permissions'];
+                    $_SESSION['vlmc_login_time'] = time();
+                    
+                    updateLastLogin($ad_user['username']);
+                    
+                    header('Location: vlmcconf.php');
+                    exit;
+                }
+            }
+        }
+        
+        // Если ни локальная, ни AD-аутентификация не прошли
         $error = __('invalid_login');
     }
 }
@@ -312,6 +349,17 @@ if ($changePasswordMode && empty($username)) {
             cursor: not-allowed;
             background: rgba(17, 24, 39, 0.5) !important;
         }
+        
+        .ad-badge {
+            display: inline-block;
+            background: #3b82f620;
+            color: #3b82f6;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -319,6 +367,9 @@ if ($changePasswordMode && empty($username)) {
         <div class="logo">
             <h1>⚙️ KMS MONITOR</h1>
             <span><?= $changePasswordMode ? __('change_password_title') : __('control_panel') ?></span>
+            <?php if (!$changePasswordMode && ($config['integrations']['ad']['enabled'] ?? false) && ($config['integrations']['ad']['auth_enabled'] ?? false)): ?>
+            <div class="ad-badge">🔐 AD authentication enabled</div>
+            <?php endif; ?>
         </div>
         
         <?php if ($error): ?>
