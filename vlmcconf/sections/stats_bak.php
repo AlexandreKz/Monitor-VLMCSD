@@ -127,27 +127,23 @@ $totalGroups = count($groupStats);
     <div class="stats-detailed">
         
         <!-- Блок: По группам -->
-		<div class="stat-block">
-			<div class="stat-block-title">👥 <?= __('stats_by_groups') ?></div>
-			<div class="stat-list">
-				<?php if (empty($groupStats)): ?>
-					<div class="stat-list-empty"><?= __('stats_no_groups') ?></div>
-				<?php else: ?>
-					<?php foreach ($groupStats as $group => $count): 
-						$groupColor = is_array($config['groupColors'][$group]) 
-							? $config['groupColors'][$group]['color'] 
-							: $config['groupColors'][$group];
-					?>
-					<div class="stat-list-item">
-						<span class="stat-list-label" style="color: <?= htmlspecialchars($groupColor) ?>;">
-							<?= __($group) ?>
-						</span>
-						<span class="stat-list-value"><?= $count ?></span>
-					</div>
-					<?php endforeach; ?>
-				<?php endif; ?>
-			</div>
-		</div>
+        <div class="stat-block">
+            <div class="stat-block-title">👥 <?= __('stats_by_groups') ?></div>
+            <div class="stat-list">
+                <?php if (empty($groupStats)): ?>
+                    <div class="stat-list-empty"><?= __('stats_no_groups') ?></div>
+                <?php else: ?>
+                    <?php foreach ($groupStats as $group => $count): ?>
+                    <div class="stat-list-item">
+                        <span class="stat-list-label" style="color: <?= htmlspecialchars($config['groupColors'][$group]) ?>;">
+                            <?= __($group) ?>
+                        </span>
+                        <span class="stat-list-value"><?= $count ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
         
         <!-- Блок: Топ IP адресов -->
         <div class="stat-block">
