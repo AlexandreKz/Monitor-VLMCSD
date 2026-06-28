@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 3.9.0
-// ДАТА: 2026-06-01
-// @description: Управление пользователями с детальной валидацией
+// ВЕРСИЯ: 4.0.0
+// ДАТА: 2026-06-02
+// @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
 
 // Права доступа (битовые маски)
@@ -34,6 +34,14 @@ define('PERM_TOOLS_EDIT', 1024);
 // Право для управления белыми IP (исключения из подозрительных)
 define('PERM_IP_WHITELIST', 2048);
 
+// Права для интеграций
+define('PERM_INTEGRATIONS_VIEW', 4096);
+define('PERM_INTEGRATIONS_EDIT', 8192);
+
+// Права для API
+define('PERM_API_VIEW', 16384);
+define('PERM_API_EDIT', 32768);
+
 // Полные права администратора
 define('PERM_ADMIN_FULL', 
     PERM_GROUPS_VIEW | PERM_GROUPS_EDIT |
@@ -42,8 +50,65 @@ define('PERM_ADMIN_FULL',
     PERM_USERS_VIEW | PERM_USERS_EDIT |
     PERM_INFO_VIEW |
     PERM_TOOLS_EDIT |
-    PERM_IP_WHITELIST
+    PERM_IP_WHITELIST |
+    PERM_INTEGRATIONS_VIEW |
+    PERM_INTEGRATIONS_EDIT |
+    PERM_API_VIEW |
+    PERM_API_EDIT
 );
+
+// ============================================
+// АВТОМАТИЧЕСКАЯ МИГРАЦИЯ USERS.JSON (ОДИН РАЗ)
+// ============================================
+
+/**
+ * Автоматическая миграция users.json из старого формата {"users": [...]} в новый [...]
+ * Выполняется только один раз — при обнаружении старого формата
+ */
+function migrate_users_if_needed() {
+    $users_file = __DIR__ . '/../users.json';
+    if (!file_exists($users_file)) {
+        return false;
+    }
+    
+    $data = json_decode(file_get_contents($users_file), true);
+    if (!is_array($data)) {
+        return false;
+    }
+    
+    // Старый формат: есть ключ "users"
+    if (isset($data['users']) && is_array($data['users'])) {
+        $users = $data['users'];
+        $needSave = false;
+        
+        foreach ($users as &$user) {
+            // Обновляем права 4095 -> PERM_ADMIN_FULL
+            if (isset($user['permissions']) && $user['permissions'] === 4095) {
+                $user['permissions'] = PERM_ADMIN_FULL;
+                $needSave = true;
+            }
+            // Добавляем source если нет
+            if (!isset($user['source'])) {
+                $user['source'] = 'local';
+                $needSave = true;
+            }
+        }
+        
+        // Сохраняем в новом формате (прямой массив)
+        file_put_contents($users_file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        return true;
+    }
+    
+    // Новый формат — ничего не делаем
+    return false;
+}
+
+// Выполняем миграцию (проверка — лёгкая, после первой миграции условие не сработает)
+migrate_users_if_needed();
+
+// ============================================
+// ОСНОВНЫЕ ФУНКЦИИ
+// ============================================
 
 /**
  * Получить путь к файлу с пользователями
@@ -106,16 +171,15 @@ function initUsers() {
     
     $hash = password_hash('root', PASSWORD_DEFAULT);
     $data = [
-        'users' => [
-            [
-                'id' => 1,
-                'username' => 'root',
-                'password_hash' => $hash,
-                'permissions' => PERM_ADMIN_FULL,
-                'must_change_password' => true,
-                'created' => date('Y-m-d H:i:s'),
-                'last_login' => null
-            ]
+        [
+            'id' => 1,
+            'username' => 'root',
+            'password_hash' => $hash,
+            'permissions' => PERM_ADMIN_FULL,
+            'must_change_password' => true,
+            'source' => 'local',
+            'created' => date('Y-m-d H:i:s'),
+            'last_login' => null
         ]
     ];
     file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -130,7 +194,7 @@ function getAllUsers() {
     if (!file_exists($file)) return [];
     $content = file_get_contents($file);
     $data = json_decode($content, true);
-    return $data['users'] ?? [];
+    return is_array($data) ? $data : [];
 }
 
 function getUserById($id) {
@@ -155,6 +219,10 @@ function verifyUser($username, $password) {
     return password_verify($password, $user['password_hash']);
 }
 
+function authenticate_user($username, $password) {
+    return verifyUser($username, $password);
+}
+
 function updateUser($id, $data) {
     $users = getAllUsers();
     $found = false;
@@ -169,12 +237,15 @@ function updateUser($id, $data) {
             if (isset($data['must_change_password'])) $user['must_change_password'] = $data['must_change_password'];
             if (isset($data['last_login'])) $user['last_login'] = $data['last_login'];
             if (isset($data['username'])) $user['username'] = $data['username'];
+            if (isset($data['fullname'])) $user['fullname'] = $data['fullname'];
+            if (isset($data['email'])) $user['email'] = $data['email'];
+            if (isset($data['source'])) $user['source'] = $data['source'];
             break;
         }
     }
     if (!$found) return false;
     $file = getUsersFile();
-    file_put_contents($file, json_encode(['users' => $users], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    file_put_contents($file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     return true;
 }
 
@@ -219,13 +290,13 @@ function addUser($username, $password, $permissions = PERM_DEVICES_VIEW) {
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
         'permissions' => (int)$permissions,
         'must_change_password' => false,
+        'source' => 'local',
         'created' => date('Y-m-d H:i:s'),
         'last_login' => null
     ];
     
     $file = getUsersFile();
-    $data = ['users' => $users];
-    $result = file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $result = file_put_contents($file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     
     if ($result !== false) {
         return ['success' => true, 'message' => 'Пользователь добавлен'];
@@ -251,7 +322,7 @@ function deleteUser($id) {
         return ['success' => false, 'message' => 'Пользователь не найден'];
     }
     $file = getUsersFile();
-    $result = file_put_contents($file, json_encode(['users' => $newUsers], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $result = file_put_contents($file, json_encode($newUsers, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     if ($result !== false) {
         return ['success' => true, 'message' => 'Пользователь удален'];
     }
@@ -271,5 +342,21 @@ function changeUserPasswordAsAdmin($userId, $newPassword) {
         return ['success' => true, 'message' => 'Пароль пользователя изменен'];
     }
     return ['success' => false, 'message' => 'Ошибка при смене пароля'];
+}
+// ============================================
+// ФУНКЦИЯ ПРОВЕРКИ ПРАВ ДОСТУПА
+// ============================================
+
+/**
+ * Проверка наличия права у текущего пользователя
+ * @param int $permission Константа права (например, PERM_INTEGRATIONS_VIEW)
+ * @return bool
+ */
+function check_permission($permission) {
+    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        return false;
+    }
+    $user_permissions = $_SESSION['vlmc_permissions'] ?? 0;
+    return ($user_permissions & $permission) === $permission;
 }
 ?>

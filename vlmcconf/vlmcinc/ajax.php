@@ -738,6 +738,368 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
+	// ============================================
+	// AJAX: Управление кэшем эмодзи
+	// ============================================
+
+	if ($_POST['ajax'] === 'check_emoji_cache') {
+		require_once __DIR__ . '/emoji_manager.php';
+		
+		$exists = file_exists(EMOJI_CACHE_FILE);
+		$size = $exists ? filesize(EMOJI_CACHE_FILE) : 0;
+		
+		echo json_encode([
+			'success' => true,
+			'exists' => $exists,
+			'size' => $size,
+			'size_formatted' => $exists ? formatSize($size) : '0 B'
+		]);
+		exit;
+	}
+
+	if ($_POST['ajax'] === 'clear_emoji_cache') {
+		require_once __DIR__ . '/emoji_manager.php';
+		
+		if (clear_emoji_cache()) {
+			echo json_encode(['success' => true, 'message' => __('tools_cache_cleared')]);
+		} else {
+			echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+		}
+		exit;
+	}
+
+	if ($_POST['ajax'] === 'refresh_emoji_cache') {
+		require_once __DIR__ . '/emoji_manager.php';
+		
+		$result = refresh_emoji_cache();
+		echo json_encode($result);
+		exit;
+	}
+	
+	// ============================================
+	// AJAX: Переименование группы
+	// ============================================
+	if ($_POST['ajax'] === 'rename_group') {
+		if (!check_permission(PERM_GROUPS_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		
+		$oldName = trim($_POST['old_name'] ?? '');
+		$newName = trim($_POST['new_name'] ?? '');
+		
+		if (empty($oldName) || empty($newName)) {
+			echo json_encode(['success' => false, 'message' => __('msg_invalid_data')]);
+			exit;
+		}
+		
+		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$config = json_decode(file_get_contents($configFile), true);
+		
+		if (!isset($config['groupColors'][$oldName])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
+			exit;
+		}
+		
+		if (isset($config['groupColors'][$newName])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_exists')]);
+			exit;
+		}
+		
+		// Переименовываем группу
+		$config['groupColors'][$newName] = $config['groupColors'][$oldName];
+		unset($config['groupColors'][$oldName]);
+		
+		// Переименовываем устройства
+		if (isset($config['devices'][$oldName])) {
+			$config['devices'][$newName] = $config['devices'][$oldName];
+			unset($config['devices'][$oldName]);
+		}
+		
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		
+		echo json_encode(['success' => true, 'message' => __('msg_group_renamed')]);
+		exit;
+	}
+
+	// ============================================
+	// AJAX: Удаление группы
+	// ============================================
+	if ($_POST['ajax'] === 'delete_group') {
+		if (!check_permission(PERM_GROUPS_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		
+		$groupName = trim($_POST['group_name'] ?? '');
+		
+		if (empty($groupName)) {
+			echo json_encode(['success' => false, 'message' => __('msg_invalid_data')]);
+			exit;
+		}
+		
+		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$config = json_decode(file_get_contents($configFile), true);
+		
+		if (!isset($config['groupColors'][$groupName])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
+			exit;
+		}
+		
+		// Переносим устройства в группу-заглушку __orphaned__
+		if (isset($config['devices'][$groupName])) {
+			if (!isset($config['devices']['__orphaned__'])) {
+				$config['devices']['__orphaned__'] = [];
+			}
+			$config['devices']['__orphaned__'] = array_merge($config['devices']['__orphaned__'], $config['devices'][$groupName]);
+			unset($config['devices'][$groupName]);
+		}
+		
+		// Удаляем группу
+		unset($config['groupColors'][$groupName]);
+		
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		
+		echo json_encode(['success' => true, 'message' => __('msg_group_deleted')]);
+		exit;
+	}
+	
+	// ============================================
+	// AJAX: Сохранение изменений группы (имя, иконка, цвет)
+	// ============================================
+	if ($_POST['ajax'] === 'save_group_changes') {
+		if (!check_permission(PERM_GROUPS_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		
+		$oldName = trim($_POST['old_name'] ?? '');
+		$newName = trim($_POST['new_name'] ?? '');
+		$newIcon = trim($_POST['new_icon'] ?? '📁');
+		$newColor = trim($_POST['new_color'] ?? '#3498db');
+		
+		if (empty($oldName) || empty($newName)) {
+			echo json_encode(['success' => false, 'message' => __('msg_invalid_data')]);
+			exit;
+		}
+		
+		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$config = json_decode(file_get_contents($configFile), true);
+		
+		if (!isset($config['groupColors'][$oldName])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
+			exit;
+		}
+		
+		// Если имя изменилось, проверяем что новой группы нет
+		if ($newName !== $oldName && isset($config['groupColors'][$newName])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_exists')]);
+			exit;
+		}
+		
+		// Обновляем группу
+		if ($newName !== $oldName) {
+			// Переименовываем
+			$config['groupColors'][$newName] = $config['groupColors'][$oldName];
+			unset($config['groupColors'][$oldName]);
+			
+			// Переименовываем устройства
+			if (isset($config['devices'][$oldName])) {
+				$config['devices'][$newName] = $config['devices'][$oldName];
+				unset($config['devices'][$oldName]);
+			}
+		}
+		
+		// Обновляем иконку и цвет
+		$config['groupColors'][$newName]['icon'] = $newIcon;
+		$config['groupColors'][$newName]['color'] = $newColor;
+		
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		
+		echo json_encode(['success' => true, 'message' => __('msg_group_saved')]);
+		exit;
+	}
+	
+	// ============================================
+	// AJAX: Массовое перемещение устройств
+	// ============================================
+	if ($_POST['ajax'] === 'mass_move_devices') {
+		if (!check_permission(PERM_DEVICES_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		
+		$deviceNames = json_decode($_POST['device_names'] ?? '[]', true);
+		$targetGroup = trim($_POST['target_group'] ?? '');
+		
+		if (empty($deviceNames) || empty($targetGroup)) {
+			echo json_encode(['success' => false, 'message' => __('msg_invalid_data')]);
+			exit;
+		}
+		
+		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$config = json_decode(file_get_contents($configFile), true);
+		
+		if (!isset($config['groupColors'][$targetGroup])) {
+			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
+			exit;
+		}
+		
+		$moved = 0;
+		
+		foreach ($config['devices'] as $group => &$devices) {
+			foreach ($devices as $key => $device) {
+				if (in_array($device['name'], $deviceNames)) {
+					unset($devices[$key]);
+					if (!isset($config['devices'][$targetGroup])) {
+						$config['devices'][$targetGroup] = [];
+					}
+					$device['moved'] = date('Y-m-d H:i:s');
+					$config['devices'][$targetGroup][] = $device;
+					$moved++;
+				}
+			}
+			$devices = array_values($devices);
+		}
+		
+		if ($moved === 0) {
+			echo json_encode(['success' => false, 'message' => __('devices_no_selected')]);
+			exit;
+		}
+		
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		
+		echo json_encode(['success' => true, 'message' => sprintf(__('devices_moved'), $moved, $targetGroup)]);
+		exit;
+	}
+	
+	// ============================================
+	// AJAX: Проверка доступности GitHub
+	// ============================================
+	if ($_POST['ajax'] === 'check_github_access') {
+		$repo = 'AlexandreKz/Monitor-VLMCSD';
+		$url = "https://api.github.com/repos/{$repo}/releases/latest";
+		
+		$ch = curl_init();
+		curl_setopt_array($ch, [
+			CURLOPT_URL => $url,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_TIMEOUT => 10,
+			CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
+			CURLOPT_SSL_VERIFYPEER => false
+		]);
+		
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		
+		if ($httpCode === 200 && $response) {
+			$data = json_decode($response, true);
+			$tagName = ltrim($data['tag_name'] ?? '', 'v');
+			echo json_encode([
+				'success' => true,
+				'message' => 'GitHub API доступен',
+				'repository' => $repo,
+				'latest_version' => $tagName
+			]);
+		} else {
+			echo json_encode([
+				'success' => false,
+				'message' => 'GitHub API недоступен (HTTP ' . $httpCode . ')'
+			]);
+		}
+		exit;
+	}
+
+	// ============================================
+	// AJAX: Проверка обновлений (GitHub)
+	// ============================================
+	if ($_POST['ajax'] === 'check_updates') {
+    // Включаем вывод ошибок для этого запроса
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    $repo = 'AlexandreKz/Monitor-VLMCSD';
+    $url = "https://api.github.com/repos/{$repo}/releases/latest";
+    
+    // Проверяем, доступен ли curl
+    if (!function_exists('curl_init')) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'CURL не установлен'
+        ]);
+        exit;
+    }
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    $curlInfo = curl_getinfo($ch);
+    
+    // Если ответ пустой или ошибка
+    if ($response === false || !empty($curlError)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'CURL ошибка: ' . $curlError,
+            'debug' => $curlInfo
+        ]);
+        exit;
+    }
+    
+    // Если статус не 200
+    if ($httpCode !== 200) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'GitHub API вернул HTTP ' . $httpCode,
+            'debug' => [
+                'http_code' => $httpCode,
+                'response_preview' => substr($response, 0, 500)
+            ]
+        ]);
+        exit;
+    }
+    
+    // Парсим JSON
+    $data = json_decode($response, true);
+    if ($data === null) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Ошибка парсинга JSON: ' . json_last_error_msg(),
+            'debug' => [
+                'response_preview' => substr($response, 0, 500)
+            ]
+        ]);
+        exit;
+    }
+    
+    // Успешный ответ
+    $tagName = ltrim($data['tag_name'] ?? '', 'v');
+    $name = $data['name'] ?? '';
+    
+    echo json_encode([
+        'success' => true,
+        'latest_version' => $tagName,
+        'repository' => $repo,
+        'release_url' => $data['html_url'] ?? '',
+        'message' => 'OK'
+    ]);
+    exit;
+}
+
     echo json_encode(['success' => false]);
     exit;
 }

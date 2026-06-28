@@ -1,17 +1,13 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/analytics.php
-// ВЕРСИЯ: 1.0.0
-// ДАТА: 2026-03-24
+// ВЕРСИЯ: 1.2.0
+// ДАТА: 2026-06-27
 // @description: Функции для анализа лога и статистики
 // ============================================
 
 /**
  * Получение активности по датам (общая)
- * 
- * @param string $logFile Путь к файлу лога
- * @param string $period Период: 'day', 'week', 'month'
- * @return array Массив с датами и количеством запросов
  */
 function getActivityData($logFile, $period = 'day') {
     if (!file_exists($logFile)) return [];
@@ -60,11 +56,6 @@ function getActivityData($logFile, $period = 'day') {
 
 /**
  * Получение активности конкретного устройства по датам
- * 
- * @param string $logFile Путь к файлу лога
- * @param string $deviceName Имя устройства
- * @param string $period Период: 'day', 'week', 'month'
- * @return array Массив с датами и количеством запросов
  */
 function getDeviceActivity($logFile, $deviceName, $period = 'day') {
     if (!file_exists($logFile)) return [];
@@ -115,9 +106,6 @@ function getDeviceActivity($logFile, $deviceName, $period = 'day') {
 
 /**
  * Получение статистики по устройствам из лога (топ-20)
- * 
- * @param string $logFile Путь к файлу лога
- * @return array Массив устройств с количеством запросов
  */
 function getDeviceRequests($logFile) {
     $deviceRequests = [];
@@ -144,9 +132,6 @@ function getDeviceRequests($logFile) {
 
 /**
  * Получение uptime сервера из лога
- * 
- * @param string $logFile Путь к файлу лога
- * @return array Статус, дни, часы, минуты, время запуска
  */
 function getUptime($logFile) {
     if (!file_exists($logFile)) {
@@ -209,9 +194,6 @@ function getUptime($logFile) {
 
 /**
  * Получение самого старого и самого нового устройства из лога
- * 
- * @param string $logFile Путь к файлу лога
- * @return array Старое и новое устройство с датами
  */
 function getOldestNewestDevice($logFile) {
     $oldestDevice = null;
@@ -265,9 +247,7 @@ function getOldestNewestDevice($logFile) {
 }
 
 /**
- * Получение информации о сервере
- * 
- * @return array Информация о сервере
+ * Получение информации о сервере (исправлено для Ubuntu 26.04)
  */
 function getServerInfo() {
     if (file_exists('/etc/os-release')) {
@@ -282,15 +262,48 @@ function getServerInfo() {
     $phpVersion = phpversion();
     $serverSoftware = $_SERVER['SERVER_SOFTWARE'] ?? 'не определен';
     
-    $uptime = file_exists('/proc/uptime') ? file_get_contents('/proc/uptime') : false;
-    if ($uptime) {
-        $uptimeSeconds = (int)explode(' ', $uptime)[0];
-        $days = floor($uptimeSeconds / 86400);
-        $hours = floor(($uptimeSeconds % 86400) / 3600);
-        $minutes = floor(($uptimeSeconds % 3600) / 60);
-        $uptimeFormatted = "{$days}д {$hours}ч {$minutes}м";
-    } else {
-        $uptimeFormatted = '—';
+    // ============================================
+    // UPTIME — через sysctl -n kern.boottime
+    // ============================================
+    $uptimeFormatted = '—';
+    
+    $boottimeRaw = @shell_exec('sysctl -n kern.boottime 2>/dev/null');
+    if ($boottimeRaw && preg_match('/sec = (\d+)/', $boottimeRaw, $matches)) {
+        $bootTime = (int)$matches[1];
+        if ($bootTime > 0) {
+            $uptimeSeconds = time() - $bootTime;
+            if ($uptimeSeconds > 0) {
+                $days = floor($uptimeSeconds / 86400);
+                $hours = floor(($uptimeSeconds % 86400) / 3600);
+                $minutes = floor(($uptimeSeconds % 3600) / 60);
+                if ($days > 0) {
+                    $uptimeFormatted = "{$days}д {$hours}ч {$minutes}м";
+                } else {
+                    $uptimeFormatted = "{$hours}ч {$minutes}м";
+                }
+            }
+        }
+    }
+    
+    // Запасной вариант: /proc/stat (если sysctl не сработал)
+    if ($uptimeFormatted === '—') {
+        $statContent = @file_get_contents('/proc/stat');
+        if ($statContent !== false && preg_match('/btime (\d+)/', $statContent, $matches)) {
+            $bootTime = (int)$matches[1];
+            if ($bootTime > 0) {
+                $uptimeSeconds = time() - $bootTime;
+                if ($uptimeSeconds > 0) {
+                    $days = floor($uptimeSeconds / 86400);
+                    $hours = floor(($uptimeSeconds % 86400) / 3600);
+                    $minutes = floor(($uptimeSeconds % 3600) / 60);
+                    if ($days > 0) {
+                        $uptimeFormatted = "{$days}д {$hours}ч {$minutes}м";
+                    } else {
+                        $uptimeFormatted = "{$hours}ч {$minutes}м";
+                    }
+                }
+            }
+        }
     }
     
     return [
@@ -305,9 +318,6 @@ function getServerInfo() {
 
 /**
  * Подсчёт устройств с комментариями и средней длины комментария
- * 
- * @param array $config Конфигурация
- * @return array Количество устройств с комментариями и средняя длина
  */
 function getCommentsStats($config) {
     $devicesWithComments = 0;
@@ -329,3 +339,4 @@ function getCommentsStats($config) {
         'avgCommentLength' => $avgCommentLength
     ];
 }
+?>
