@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 1.9.0
-// ДАТА: 2026-06-01
+// ВЕРСИЯ: 5.0.0
+// ДАТА: 2026-06-02
 // @description: English translations
 // ============================================
 
@@ -19,6 +19,11 @@ return [
     'menu_logout_confirm' => 'Are you sure you want to logout?',
     'menu_tools' => 'Tools',
     'menu_documentation' => 'Documentation',
+    'tooltip_server_uptime' => 'Server uptime',
+	
+    // New menu items
+    'integrations' => 'Integrations',
+    'api' => 'API',
     
     // General settings
     'general_title' => 'General Settings',
@@ -59,10 +64,10 @@ return [
     'theme_corporate_blue' => '🔷 Corporate Blue',
     
     // Group names
-    'Домашние' => '🏠 Home',
-    'Рабочие' => '💼 Work',
-    'Знакомые' => '👥 Acquaintances',
-    'Клиенты' => '🤝 Clients',
+    'Домашние' => 'Home',
+    'Рабочие' => 'Work',
+    'Знакомые' => 'Acquaintances',
+    'Клиенты' => 'Clients',
     
     // Groups
     'groups_title' => 'Manage Groups',
@@ -71,7 +76,9 @@ return [
     'groups_name_placeholder' => 'Group name',
     'groups_devices_count' => 'devices',
     'groups_delete_confirm' => 'Delete group? Devices in this group will also be deleted.',
-    
+    'msg_group_saved' => 'Group saved',
+	'edit_group' => 'Edit group',
+	
     // Devices
     'devices_title' => 'Manage Devices',
     'devices_add' => 'Add Device',
@@ -89,6 +96,18 @@ return [
     'devices_sort' => 'Sort:',
     'devices_sort_name' => 'By name',
     'devices_sort_group' => 'By group',
+	'devices_added_date' => 'Added date',
+	'devices_select_all' => 'Select all',
+	'devices_move_to' => 'Move to...',
+	'devices_move_selected' => 'Move',
+	'devices_selected' => 'Selected',
+	'devices_deselect_all' => 'Deselect all',
+	'devices_no_selected' => 'No devices selected',
+	'devices_select_group' => 'Select target group',
+	'devices_confirm_move' => 'Move {count} device(s) to group "{group}"?',
+	'devices_moved' => 'Moved devices: %d to group "%s"',
+	'devices_sort_date_asc' => 'By date (oldest first)',
+	'devices_sort_date_desc' => 'By date (newest first)',
     
     // Security
     'security_title' => 'Security',
@@ -106,7 +125,11 @@ return [
     'security_clear_date_confirm' => 'Delete records from %s to %s?',
     'security_log_backup' => 'Log Backup',
     'security_backup_confirm' => 'Create a backup of the log file?',
-    
+    'security_first_event' => 'First event',
+	'security_clear_confirm_title' => 'Confirm Log Clear',
+	'security_clear_date_range_details' => 'Records for the selected period will be deleted',
+	'security_clear_all_details' => 'The entire log will be deleted. This action is irreversible.',
+	
     // Statistics
     'stats_title' => 'Statistics',
     'stats_total_devices' => 'Total devices',
@@ -193,6 +216,11 @@ return [
     'tools_cache_result_title' => 'Cache Update Result',
     'tools_cache_result_ok' => 'Close',
     'tools_cache_resetting' => 'Resetting settings...',
+	'tools_tab_project' => 'Project Management',
+	'tools_tab_log' => 'Log Management',
+	'tools_tab_cache' => 'Cache Management',
+	'tools_tab_update' => 'Обновление',
+	'update_confirm_desc' => 'A backup will be created before the update. The process may take a few minutes.',
     
     // Permissions
     'permissions_tools' => '🛠️ Tools',
@@ -200,6 +228,18 @@ return [
     'permissions_whitelist' => '⚪ Whitelist IPs',
     'permissions_whitelist_hint' => 'Manage whitelist IPs (add/remove from list)',
     'permissions_enabled' => '✅ Enabled',
+    
+    // Permissions for new sections
+    'perm_integrations_view' => 'Integrations: view',
+    'perm_integrations_view_desc' => 'View integrations section and connection settings',
+    'perm_integrations_edit' => 'Integrations: edit',
+    'perm_integrations_edit_desc' => 'Modify AD settings, sync users, manage webhooks',
+    'perm_api_view' => 'API: view',
+    'perm_api_view_desc' => 'View API section and documentation',
+    'perm_api_edit' => 'API: edit',
+    'perm_api_edit_desc' => 'Manage API keys and settings',
+    'perm_ip_whitelist' => 'IP Whitelist: manage',
+    'perm_ip_whitelist_desc' => 'Manage IP whitelist (exceptions from suspicious IPs)',
     
     // Export project
     'export_title' => 'Export Project',
@@ -244,6 +284,7 @@ return [
     'edit' => 'Edit',
     'delete' => 'Delete',
     'close' => 'Close',
+	'cancel' => 'Cancel',
     'back' => 'Back',
     'refresh' => 'Refresh',
     'search' => 'Search',
@@ -258,7 +299,12 @@ return [
     'readonly' => 'Read only',
     'loading' => 'Loading...',
     'error_loading' => 'Loading error',
-	'actions' => 'Actions',
+    'actions' => 'Actions',
+	'no_devices_found' => 'No device data available',
+	'unknown_actions' => 'Actions',
+	'unknown_copy_ip' => 'Copy IP',
+	'suspicious_copy_ip' => 'Copy IP',
+	'suspicious_actions' => 'Actions',
     
     // Messages
     'msg_theme_saved' => '✅ Theme applied',
@@ -401,6 +447,12 @@ return [
     'tooltip_products' => 'Products',
     'none' => 'none',
     'never' => 'never',
+    'toast_copied' => 'Copied!',
+    'toast_copy_error' => 'Copy error',
+    'add_device_error_name' => 'Device name is required',
+    'add_device_loading' => 'Adding...',
+    'add_device_error' => 'Error adding device',
+    'whitelist_auth_required' => 'Login to add IP to whitelist',
     
     // Add device modal
     'add_device_title' => '➕ Add Device',
@@ -478,5 +530,119 @@ return [
     'label_device_name' => 'Device name',
     'label_device_group' => 'Group',
     'label_device_comment' => 'Comment',
+    
+    // Integrations section
+    'active_directory' => 'Active Directory',
+    'sync_log' => 'Sync Log',
+    'enable_ad_integration' => 'Enable Active Directory Integration',
+    'enable_ad_integration_desc' => 'Configure AD domain connection for user synchronization',
+    'enable_ad_auth' => 'Enable AD Authentication',
+    'enable_ad_auth_desc' => 'Allow domain users to log in (password is not stored in the system)',
+    'ad_auth_info' => '✅ AD authentication is enabled. Domain users can log in with their passwords. Permissions are assigned manually in the Security section. User is automatically created on first login.',
+    'ldap_server' => 'LDAP Server',
+    'ldap_server_hint' => 'Full domain name or IP address of the domain controller (e.g., dc1.example.com)',
+    'port' => 'Port',
+    'use_ssl_tls' => 'Use SSL/TLS (LDAPS)',
+    'base_dn' => 'Base DN',
+    'base_dn_hint' => 'AD directory search base (e.g., dc=example,dc=com)',
+    'domain' => 'Domain (NetBIOS)',
+    'domain_hint' => 'Short domain name (e.g., EXAMPLE) - optional, used for user@domain format',
+    'service_account' => 'Search Account',
+    'service_account_hint' => 'Service account for searching users in AD. Leave empty for anonymous connection. Format: cn=user,cn=Users,dc=example,dc=com',
+    'service_password' => 'Account Password',
+    'password_leave_empty' => 'Leave empty to keep unchanged',
+    'test_connection' => 'Test Connection',
+    'sync_now' => 'Sync Now',
+    'sync_confirm' => 'Are you sure? Synchronization may take some time with a large number of users.',
+    'ldap_extension_missing' => '❌ PHP LDAP extension is not installed. Install php-ldap.',
+    'ad_config_incomplete' => '❌ Required fields are empty: LDAP Server and Base DN.',
+    'ad_connect_failed' => '❌ Failed to connect to LDAP server. Check address and port.',
+    'ad_bind_failed' => '❌ LDAP authentication failed',
+    'ad_search_failed' => '❌ AD directory search failed',
+    'ad_connected_users' => '✅ Connection successful! Users found in directory: %d.',
+    'ad_sync_completed' => '✅ Synchronization completed. New users imported: %d, existing updated: %d.',
+    'ad_sync_failed' => '❌ Synchronization failed: %s',
+    'no_sync_logs' => 'Sync log is empty. Run synchronization to see records.',
+    'ad_sync' => 'AD Sync',
+    'date' => 'Date',
+    'type' => 'Type',
+    'details' => 'Details',
+	'section_under_development' => 'Section under development',
+	'section_under_development_info' => 'Synchronization functionality will be available in future versions.',
+	'integrations_coming_soon' => 'Integrations with external systems will be available in future versions.',
+    
+    // API section (skeleton)
+    'api_coming_soon' => 'API under development. REST API for external integrations will be available in future versions.',
+    'api_keys_management' => 'Key management',
+    'api_keys_management_desc' => 'Create and revoke API keys with permission restrictions',
+    'api_documentation' => 'Documentation',
+    'api_documentation_desc' => 'Swagger/OpenAPI specification and request examples',
+    'integrations_coming_soon' => 'Integrations under development. Connections to external systems will be available in future versions.',
+    'ad_integration_desc' => 'Active Directory — user and group synchronization',
+    'webhook_integration_desc' => 'Webhook — send events to external systems',
+    'more_integrations' => 'More integrations',
+    'more_integrations_desc' => 'LDAP, Telegram, Slack and others',
+
+	// ============================================
+	// ADDED 2026-06-05 - EMOJI FOR GROUPS
+	// ============================================
+
+	// Groups section
+	'label_group_icon' => 'Icon',
+	'select_emoji' => 'Select icon',
+
+	// Tools section (emoji cache)
+	'tools_emoji_cache' => 'Emoji Cache',
+	'tools_emoji_cache_refresh' => 'Refresh Cache',
+	'tools_emoji_cache_refresh_desc' => 'Download latest emoji list from the internet',
+	'tools_emoji_cache_refresh_btn' => 'Refresh Cache',
+	'tools_emoji_cache_clear' => 'Clear Cache',
+	'tools_emoji_cache_clear_desc' => 'Delete emoji cache file',
+	'tools_emoji_cache_clear_btn' => 'Clear Cache',
+	'tools_cache_status' => 'Cache status',
+	'emoji_refresh_success' => 'Emoji cache updated',
+	'emoji_refresh_failed' => 'Failed to download emoji list',
+	'emoji_cache_write_error' => 'Failed to write cache',
+	'yes' => 'Yes',
+	'no' => 'No',
+	
+	// Project update
+	'update_title' => 'Project Update',
+	'update_current_version' => 'Current version',
+	'update_latest_version' => 'Latest version',
+	'update_status' => 'Status',
+	'update_checking' => 'Checking...',
+	'update_check_btn' => 'Check for updates',
+	'update_run_btn' => 'Update project',
+	'update_available' => 'New version available',
+	'update_not_available' => 'You have the latest version',
+	'update_success' => 'Update completed',
+	'update_error' => 'Update error',
+	'update_backup_created' => 'Backup created',
+	'update_service' => 'Update service',
+	'update_custom_server' => 'Custom server',
+	'update_repository' => 'Repository',
+	'update_branch' => 'Branch',
+	'update_server_url' => 'Server URL',
+	'update_version_path' => 'Version.json path',
+	'update_check_mode' => 'Check mode',
+	'update_mode_version' => 'By version (single number)',
+	'update_mode_files' => 'By files (list)',
+	'update_auth_type' => 'Authentication',
+	'update_auth_none' => 'No authentication',
+	'update_username' => 'Username',
+	'update_password' => 'Password',
+	'update_token' => 'Token',
+	'update_not_checked' => 'Not checked',
+	'update_in_progress' => 'Updating...',
+	'update_no_files' => 'No files to update',
+	'update_files_to_update' => 'Files to update',
+	'update_checking' => 'Checking for updates',
+	'update_checking_github' => 'Checking GitHub API availability',
+	'update_ready' => 'Update system ready',
+	'update_available' => 'New version available',
+	'update_not_available' => 'You have the latest version',
+	'update_check_github' => 'Check GitHub',
+
 ];
 ?>

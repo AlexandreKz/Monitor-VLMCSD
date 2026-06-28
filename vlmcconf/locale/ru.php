@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 1.9.0
-// ДАТА: 2026-06-01
+// ВЕРСИЯ: 5.0.0
+// ДАТА: 2026-06-02
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -19,6 +19,11 @@ return [
     'menu_logout_confirm' => 'Вы уверены, что хотите выйти?',
     'menu_tools' => 'Инструменты',
     'menu_documentation' => 'Документация',
+	'tooltip_server_uptime' => 'Время работы сервера',
+    
+    // Новые пункты меню
+    'integrations' => 'Интеграции',
+    'api' => 'API',
     
     // Общие настройки
     'general_title' => 'Общие настройки',
@@ -59,10 +64,10 @@ return [
     'theme_corporate_blue' => '🔷 Корпоративный синий',
     
     // Названия групп
-    'Домашние' => '🏠 Домашние',
-    'Рабочие' => '💼 Рабочие',
-    'Знакомые' => '👥 Знакомые',
-    'Клиенты' => '🤝 Клиенты',
+    'Домашние' => 'Домашние',
+    'Рабочие' => 'Рабочие',
+    'Знакомые' => 'Знакомые',
+    'Клиенты' => 'Клиенты',
     
     // Группы
     'groups_title' => 'Управление группами',
@@ -71,6 +76,8 @@ return [
     'groups_name_placeholder' => 'Название группы',
     'groups_devices_count' => 'устройств',
     'groups_delete_confirm' => 'Удалить группу? Устройства группы также будут удалены.',
+	'msg_group_saved' => 'Группа сохранена',
+	'edit_group' => 'Редактирование группы',
     
     // Устройства
     'devices_title' => 'Управление устройствами',
@@ -89,6 +96,19 @@ return [
     'devices_sort' => 'Сортировка:',
     'devices_sort_name' => 'По имени',
     'devices_sort_group' => 'По группе',
+	'devices_added_date' => 'Дата добавления',
+	'devices_select_all' => 'Выделить всё',
+	'devices_deselect_all' => 'Снять всё',
+	'devices_move_to' => 'Переместить в...',
+	'devices_move_selected' => 'Переместить',
+	'devices_selected' => 'Выбрано',
+	'devices_no_selected' => 'Не выбрано ни одного устройства',
+	'devices_select_group' => 'Выберите целевую группу',
+	'devices_confirm_move' => 'Переместить {count} устройство(а) в группу "{group}"?',
+	'devices_moved' => 'Перемещено устройств: %d в группу "%s"',
+	'devices_sort_date_asc' => 'По дате (старые сначала)',
+	'devices_sort_date_desc' => 'По дате (новые сначала)',
+	
     
     // Безопасность
     'security_title' => 'Безопасность',
@@ -106,7 +126,11 @@ return [
     'security_clear_date_confirm' => 'Удалить записи с %s по %s?',
     'security_log_backup' => 'Резервная копия',
     'security_backup_confirm' => 'Создать резервную копию лог файла?',
-    
+	'security_first_event' => 'Первое событие',
+	'security_clear_confirm_title' => 'Подтверждение очистки лога',
+	'security_clear_date_range_details' => 'Будут удалены записи за указанный период',
+	'security_clear_all_details' => 'Будет удалён весь лог. Это действие необратимо.',
+
     // Статистика
     'stats_title' => 'Статистика',
     'stats_total_devices' => 'Всего устройств',
@@ -144,6 +168,7 @@ return [
     'info_reset' => 'Сбросить настройки',
     'info_reset_confirm' => 'Сбросить все настройки? Это удалит все добавленные группы и устройства.',
     'info_reset_desc' => 'Сбросить все настройки к значениям по умолчанию (тема, язык, группы, устройства)',
+	
     
     // Инструменты
     'tools_title' => 'Инструменты',
@@ -193,6 +218,11 @@ return [
     'tools_cache_result_title' => 'Результат обновления кэша',
     'tools_cache_result_ok' => 'Закрыть',
     'tools_cache_resetting' => 'Сброс настроек...',
+	'tools_tab_project' => 'Управление проектом',
+	'tools_tab_log' => 'Управление логом',
+	'tools_tab_cache' => 'Управление кэшем',
+	'tools_tab_update' => 'Обновление',
+	'update_confirm_desc' => 'Перед обновлением будет создана резервная копия. Процесс может занять несколько минут.',
     
     // Права доступа
     'permissions_tools' => '🛠️ Инструменты',
@@ -200,6 +230,18 @@ return [
     'permissions_whitelist' => '⚪ Белые IP',
     'permissions_whitelist_hint' => 'Управление белыми IP (добавление/удаление из списка)',
     'permissions_enabled' => '✅ Включено',
+    
+    // Права доступа для новых разделов
+    'perm_integrations_view' => 'Интеграции: просмотр',
+    'perm_integrations_view_desc' => 'Просмотр раздела интеграций и настроек подключения',
+    'perm_integrations_edit' => 'Интеграции: редактирование',
+    'perm_integrations_edit_desc' => 'Изменение настроек AD, синхронизация пользователей, управление webhook',
+    'perm_api_view' => 'API: просмотр',
+    'perm_api_view_desc' => 'Просмотр раздела API и документации',
+    'perm_api_edit' => 'API: редактирование',
+    'perm_api_edit_desc' => 'Управление API-ключами и настройками',
+    'perm_ip_whitelist' => 'IP Whitelist: управление',
+    'perm_ip_whitelist_desc' => 'Управление белым списком IP (исключения из подозрительных)',
     
     // Экспорт проекта
     'export_title' => 'Экспорт проекта',
@@ -244,6 +286,7 @@ return [
     'edit' => 'Редактировать',
     'delete' => 'Удалить',
     'close' => 'Закрыть',
+	'cancel' => 'Отмена',
     'back' => 'Назад',
     'refresh' => 'Обновить',
     'search' => 'Поиск',
@@ -258,11 +301,16 @@ return [
     'readonly' => 'Только чтение',
     'loading' => 'Загрузка...',
     'error_loading' => 'Ошибка загрузки',
-	'actions' => 'Действия',
+    'actions' => 'Действия',
+	'no_devices_found' => 'Нет данных об устройствах',
+	'unknown_actions' => 'Действия',
+	'unknown_copy_ip' => 'Копировать IP',
+	'suspicious_copy_ip' => 'Копировать IP',
+	'suspicious_actions' => 'Действия',
     
     // Сообщения
     'msg_theme_saved' => '✅ Тема оформления изменена',
-    'msg_language_saved' => '✅ Язык интерфейса изменён на русский',
+    'msg_language_saved' => '✅ Язык интерфейса изменён',
     'msg_log_path_saved' => '✅ Путь к логу сохранён',
     'msg_group_added' => '✅ Группа добавлена',
     'msg_group_deleted' => '✅ Группа удалена',
@@ -401,6 +449,12 @@ return [
     'tooltip_products' => 'Продукты',
     'none' => 'нет',
     'never' => 'никогда',
+    'toast_copied' => 'Скопировано!',
+    'toast_copy_error' => 'Ошибка копирования',
+    'add_device_error_name' => 'Имя устройства обязательно',
+    'add_device_loading' => 'Добавление...',
+    'add_device_error' => 'Ошибка добавления устройства',
+    'whitelist_auth_required' => 'Авторизуйтесь для добавления IP в белый список',
     
     // Модальное окно добавления устройства
     'add_device_title' => '➕ Добавить устройство',
@@ -478,5 +532,119 @@ return [
     'label_device_name' => 'Имя устройства',
     'label_device_group' => 'Группа',
     'label_device_comment' => 'Комментарий',
+    
+    // Раздел интеграций
+    'active_directory' => 'Active Directory',
+    'sync_log' => 'Журнал синхронизации',
+    'enable_ad_integration' => 'Включить интеграцию с Active Directory',
+    'enable_ad_integration_desc' => 'Настройка подключения к домену AD для синхронизации пользователей',
+    'enable_ad_auth' => 'Включить AD-аутентификацию',
+    'enable_ad_auth_desc' => 'Разрешить вход под доменными пользователями (пароль не хранится в системе)',
+    'ad_auth_info' => '✅ AD-аутентификация включена. Пользователи домена могут входить со своими паролями. Права назначаются вручную в разделе "Безопасность". При первом входе пользователь автоматически создаётся в системе.',
+    'ldap_server' => 'LDAP сервер',
+    'ldap_server_hint' => 'Полное доменное имя или IP-адрес контроллера домена (например: dc1.example.com)',
+    'port' => 'Порт',
+    'use_ssl_tls' => 'Использовать SSL/TLS (LDAPS)',
+    'base_dn' => 'Base DN',
+    'base_dn_hint' => 'База поиска в каталоге AD (например: dc=example,dc=com)',
+    'domain' => 'Домен (NetBIOS)',
+    'domain_hint' => 'Короткое имя домена (например: EXAMPLE) — опционально, используется для формата user@domain',
+    'service_account' => 'Учётная запись для поиска',
+    'service_account_hint' => 'Учётная запись для поиска пользователей в AD. Оставьте пустым для анонимного подключения. Формат: cn=user,cn=Users,dc=example,dc=com',
+    'service_password' => 'Пароль учётной записи',
+    'password_leave_empty' => 'Оставьте пустым, чтобы не менять',
+    'test_connection' => 'Проверить подключение',
+    'sync_now' => 'Синхронизировать сейчас',
+    'sync_confirm' => 'Вы уверены? Синхронизация может занять некоторое время при большом количестве пользователей.',
+    'ldap_extension_missing' => '❌ PHP-расширение LDAP не установлено. Установите php-ldap.',
+    'ad_config_incomplete' => '❌ Не заполнены обязательные поля: LDAP сервер и Base DN.',
+    'ad_connect_failed' => '❌ Не удалось подключиться к LDAP серверу. Проверьте адрес и порт.',
+    'ad_bind_failed' => '❌ Ошибка аутентификации на LDAP сервере',
+    'ad_search_failed' => '❌ Ошибка поиска в каталоге AD',
+    'ad_connected_users' => '✅ Подключение успешно! Найдено пользователей в каталоге: %d.',
+    'ad_sync_completed' => '✅ Синхронизация завершена. Импортировано новых: %d, обновлено существующих: %d.',
+    'ad_sync_failed' => '❌ Ошибка синхронизации: %s',
+    'no_sync_logs' => 'Журнал синхронизации пуст. Выполните синхронизацию, чтобы увидеть записи.',
+    'ad_sync' => 'Синхронизация AD',
+    'date' => 'Дата',
+    'type' => 'Тип',
+    'details' => 'Детали',
+	'section_under_development' => 'Раздел в разработке',
+	'section_under_development_info' => 'Функционал синхронизации будет доступен в следующих версиях.',
+	'integrations_coming_soon' => 'Интеграции с внешними системами будут доступны в следующих версиях.',
+    
+    // Раздел API (каркас)
+    'api_coming_soon' => 'API в разработке. REST API для внешних интеграций будет доступен в следующих версиях.',
+    'api_keys_management' => 'Управление ключами',
+    'api_keys_management_desc' => 'Создание и отзыв API-ключей с ограничением прав',
+    'api_documentation' => 'Документация',
+    'api_documentation_desc' => 'Swagger/OpenAPI спецификация и примеры запросов',
+    'integrations_coming_soon' => 'Интеграции в разработке. Подключение к внешним системам будет доступно в следующих версиях.',
+    'ad_integration_desc' => 'Active Directory — синхронизация пользователей и групп',
+    'webhook_integration_desc' => 'Webhook — отправка событий на внешние системы',
+    'more_integrations' => 'Другие интеграции',
+    'more_integrations_desc' => 'LDAP, Telegram, Slack и другие',
+
+	// ============================================
+	// ДОБАВЛЕНО 05.06.2026 - ЭМОДЗИ ДЛЯ ГРУПП
+	// ============================================
+
+	// Раздел групп
+	'label_group_icon' => 'Иконка',
+	'select_emoji' => 'Выберите иконку',
+
+	// Раздел инструментов (кэш эмодзи)
+	'tools_emoji_cache' => 'Кэш эмодзи',
+	'tools_emoji_cache_refresh' => 'Обновление кэша',
+	'tools_emoji_cache_refresh_desc' => 'Загрузить актуальный список эмодзи из интернета',
+	'tools_emoji_cache_refresh_btn' => 'Обновить кэш',
+	'tools_emoji_cache_clear' => 'Очистка кэша',
+	'tools_emoji_cache_clear_desc' => 'Удалить файл кэша эмодзи',
+	'tools_emoji_cache_clear_btn' => 'Очистить кэш',
+	'tools_cache_status' => 'Статус кэша',
+	'emoji_refresh_success' => 'Кэш эмодзи обновлён',
+	'emoji_refresh_failed' => 'Не удалось загрузить список эмодзи',
+	'emoji_cache_write_error' => 'Ошибка записи кэша',
+	'yes' => 'Да',
+	'no' => 'Нет',
+
+	// Обновление проекта
+	'update_title' => 'Обновление проекта',
+	'update_current_version' => 'Текущая версия',
+	'update_latest_version' => 'Последняя версия',
+	'update_status' => 'Статус',
+	'update_checking' => 'Проверка...',
+	'update_check_btn' => 'Проверить обновления',
+	'update_run_btn' => 'Обновить проект',
+	'update_available' => 'Доступна новая версия',
+	'update_not_available' => 'У вас последняя версия',
+	'update_success' => 'Обновление завершено',
+	'update_error' => 'Ошибка обновления',
+	'update_backup_created' => 'Резервная копия создана',
+	'update_service' => 'Сервис обновлений',
+	'update_custom_server' => 'Собственный сервер',
+	'update_repository' => 'Репозиторий',
+	'update_branch' => 'Ветка',
+	'update_server_url' => 'URL сервера',
+	'update_version_path' => 'Путь к version.json',
+	'update_check_mode' => 'Способ проверки',
+	'update_mode_version' => 'По версии (одно число)',
+	'update_mode_files' => 'По файлам (список)',
+	'update_auth_type' => 'Аутентификация',
+	'update_auth_none' => 'Без аутентификации',
+	'update_username' => 'Логин',
+	'update_password' => 'Пароль',
+	'update_token' => 'Токен',
+	'update_not_checked' => 'Не проверялось',
+	'update_in_progress' => 'Обновление...',
+	'update_no_files' => 'Нет файлов для обновления',
+	'update_files_to_update' => 'Файлы для обновления',
+	'update_checking' => 'Проверка обновлений',
+	'update_checking_github' => 'Проверка доступности GitHub API',
+	'update_ready' => 'Система обновлений готова к работе',
+	'update_available' => 'Доступна новая версия',
+	'update_not_available' => 'У вас последняя версия',
+	'update_check_github' => 'Проверить GitHub',
+
 ];
 ?>
