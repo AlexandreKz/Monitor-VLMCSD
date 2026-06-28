@@ -1,13 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.1.0
-// ДАТА: 2026-06-01
-// @description: Главный файл мониторинга KMS сервера
+// ВЕРСИЯ: 5.4.2
+// ДАТА: 2026-06-28
+// @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
+// @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.1.0
+ * Version: 5.4.2
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -16,6 +17,8 @@
  * Copyright (c) 2026 AlexandreKz
  */
 
+session_start();
+
 // ============================================
 // ПОДКЛЮЧЕНИЕ ВНЕШНИХ ФАЙЛОВ
 // ============================================
@@ -23,6 +26,7 @@ require_once __DIR__ . '/vlmcconf/vlmctheme.php';
 require_once __DIR__ . '/vlmcconf/vlmcgeoip.php';
 require_once __DIR__ . '/vlmcconf/vlmcloghandler.php';
 require_once __DIR__ . '/vlmcconf/vlmcinc/config.php';
+require_once __DIR__ . '/vlmcconf/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcconf/flags.php';
 
 // ============================================
@@ -51,8 +55,26 @@ if (file_exists($configFile)) {
     }
 }
 
+// ============================================
+// ОБРАБОТКА ПЕРЕКЛЮЧЕНИЯ ЯЗЫКА (сессия)
+// ============================================
+if (isset($_GET['lang'])) {
+    $newLang = $_GET['lang'] === 'en' ? 'en' : 'ru';
+    $_SESSION['vlmc_language'] = $newLang;
+    $redirectUrl = strtok($_SERVER['REQUEST_URI'], '?');
+    header('Location: ' . $redirectUrl);
+    exit;
+}
+
+// Определение текущего языка (приоритет: сессия > конфиг > ru)
+$currentLanguage = 'ru';
+if (isset($_SESSION['vlmc_language'])) {
+    $currentLanguage = $_SESSION['vlmc_language'];
+} elseif (isset($config['language'])) {
+    $currentLanguage = $config['language'];
+}
+
 // Загрузка переводов
-$currentLanguage = $config['language'] ?? 'ru';
 $localeFile = __DIR__ . '/vlmcconf/locale/' . $currentLanguage . '.php';
 if (file_exists($localeFile)) {
     $translations = include $localeFile;
@@ -72,9 +94,10 @@ if (strpos($logFile, '/') !== 0 && strpos($logFile, ':') === false) {
 $groups = [];
 $groupColors = [];
 
-foreach ($config['groupColors'] as $group => $color) {
+foreach ($config['groupColors'] as $group => $data) {
+    $color = is_array($data) ? $data['color'] : $data;
     $groups[$group] = 'rgba(' . hex2rgb($color) . ', 0.15)';
-    $groupColors[$group] = $color;
+    $groupColors[$group] = $data;
 }
 
 // Загружаем устройства из конфига
@@ -97,7 +120,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_log') {
     $groupFilter = $_GET['group'] ?? 'all';
     header('Content-Type: text/html; charset=utf-8');
     
-    // Собираем комментарии устройств
     $deviceComments = [];
     foreach ($config['devices'] as $group => $deviceList) {
         foreach ($deviceList as $device) {
@@ -127,18 +149,15 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'geo') {
 if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
     header('Content-Type: application/json');
     
-    // Запускаем сессию для проверки прав
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
     
-    // Проверка авторизации
     if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
         echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
         exit;
     }
     
-    // Проверка права на редактирование устройств (8 = PERM_DEVICES_EDIT)
     $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
     if (!($userPermissions & 8)) {
         echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
@@ -186,18 +205,15 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
 if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
     header('Content-Type: application/json');
     
-    // Запускаем сессию для проверки прав
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
     
-    // Проверка авторизации
     if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
         echo json_encode(['success' => false, 'message' => __('access_denied')]);
         exit;
     }
     
-    // Проверка права PERM_IP_WHITELIST (2048)
     $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
     if (!($userPermissions & 2048)) {
         echo json_encode(['success' => false, 'message' => __('access_denied')]);
@@ -216,7 +232,6 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
         exit;
     }
     
-    // Получаем текущий список белых IP из конфига
     $whitelistIps = $config['whitelist_ips'] ?? [];
     
     if (in_array($ip, $whitelistIps)) {
@@ -242,65 +257,6 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
 
 $cacheStatus = true;
 $cacheMessage = '';
-
-function getUptime($logFile) {
-    if (!file_exists($logFile)) {
-        return ['status' => __('status_file_not_found'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
-    }
-    
-    $content = file_get_contents($logFile);
-    if ($content === false) {
-        return ['status' => __('status_read_error'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
-    }
-    
-    $lines = explode("\n", $content);
-    $startTime = null;
-    
-    foreach ($lines as $line) {
-        if (strpos($line, 'started successfully') !== false) {
-            if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
-                $startTime = strtotime($matches[1]);
-                break;
-            }
-        }
-    }
-    
-    if (!$startTime) {
-        $oldestTime = null;
-        foreach ($lines as $line) {
-            if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
-                $time = strtotime($matches[1]);
-                if ($oldestTime === null || $time < $oldestTime) {
-                    $oldestTime = $time;
-                }
-            }
-        }
-        $startTime = $oldestTime;
-    }
-    
-    if (!$startTime) {
-        return ['status' => __('status_no_data'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
-    }
-    
-    $now = time();
-    $diff = $now - $startTime;
-    
-    $days = floor($diff / 86400);
-    $hours = floor(($diff % 86400) / 3600);
-    $minutes = floor(($diff % 3600) / 60);
-    
-    if ($days > 30) $status = __('status_stable');
-    elseif ($days < 1) $status = __('status_recent');
-    else $status = __('status_active');
-    
-    return [
-        'status' => $status,
-        'days' => $days,
-        'hours' => $hours,
-        'minutes' => $minutes,
-        'start_time' => $startTime
-    ];
-}
 
 function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelistIps = []) {
     if (!file_exists($logFile)) return null;
@@ -388,7 +344,6 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelis
             }
         }
         
-        // Подсчёт продуктов по уникальным устройствам
         if (preg_match('/KMS v[46]\.0 request from (\S+?) for (.+)$/', $line, $matches)) {
             $device = $matches[1];
             $product = trim($matches[2]);
@@ -411,7 +366,6 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelis
         }
     }
     
-    // Преобразование уникальных устройств в количество
     $stats['products'] = [];
     foreach ($stats['products_unique'] as $product => $devices) {
         $stats['products'][$product] = count($devices);
@@ -426,9 +380,7 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelis
         }
     }
     
-    // Анализ подозрительных IP
     foreach ($ipTimes as $ip => $times) {
-        // Пропускаем IP из белого списка
         if (in_array($ip, $whitelistIps)) {
             continue;
         }
@@ -455,12 +407,10 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelis
                 
                 if ($fastCount >= 2 || $duration < 300) {
                     $country = getGeoLocation($ip, $cacheStatus, $cacheMessage);
-                    $cidr = ipToCidr($ip);
                     $stats['suspicious_ips'][$ip] = [
                         'count' => count($times),
                         'duration' => $duration,
-                        'country' => $country,
-                        'cidr' => $cidr
+                        'country' => $country
                     ];
                 }
             }
@@ -474,8 +424,28 @@ $whitelistIps = $config['whitelist_ips'] ?? [];
 $stats = analyzeLog($logFile, $devices, $cacheStatus, $cacheMessage, $whitelistIps);
 
 $deviceStats = array_count_values($devices);
-$uptime = getUptime($logFile);
 
+// ============================================
+// ИНФОРМАЦИЯ О СЕРВЕРЕ (UPTIME)
+// ============================================
+$serverInfo = getServerInfo();
+$uptimeFormatted = $serverInfo['uptime'] ?? '—';
+
+// Определяем статус на основе uptime
+if ($uptimeFormatted !== '—') {
+    if (preg_match('/(\d+)д/', $uptimeFormatted, $matches)) {
+        $days = (int)$matches[1];
+        if ($days > 30) $uptimeStatus = __('status_stable');
+        elseif ($days < 1) $uptimeStatus = __('status_recent');
+        else $uptimeStatus = __('status_active');
+    } else {
+        $uptimeStatus = __('status_active');
+    }
+} else {
+    $uptimeStatus = __('status_no_data');
+}
+
+// Статистика KMS
 $v4Count = $stats['kms_versions'][4] ?? 0;
 $v6Count = $stats['kms_versions'][6] ?? 0;
 $totalRequests = $v4Count + $v6Count;
@@ -525,8 +495,7 @@ if (!empty($stats['suspicious_ips'])) {
             'count' => $data['count'],
             'duration' => $data['duration'],
             'country_code' => $countryCode,
-            'country_name' => $countryName,
-            'cidr' => $data['cidr']
+            'country_name' => $countryName
         ];
     }
 }
@@ -541,7 +510,7 @@ foreach ($config['devices'] as $group => $deviceList) {
     }
 }
 
-$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors);
+$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 'all', 'all');
 
 ?>
 <!DOCTYPE html>
@@ -568,13 +537,72 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         }
         .header-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         h1 { color: #ffffff; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-        .settings-button {
-            display: inline-flex; align-items: center; justify-content: center; height: 44px; width: 44px;
-            background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px;
-            color: <?= $themeCSS['text'] ?>; text-decoration: none; font-size: 22px; transition: all 0.2s;
-            flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        
+        /* ============================================ */
+        /* ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА И ШЕСТЕРЁНКА */
+        /* ============================================ */
+        .settings-button-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: <?= $themeCSS['card'] ?>;
+            border: 1px solid <?= $themeCSS['border'] ?>;
+            border-radius: 6px;
+            padding: 0 8px;
+            height: 41px;
+            min-height: 41px;
+            max-height: 41px;
+            box-sizing: border-box;
         }
-        .settings-button:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['primary'] ?>; color: #ffffff; transform: scale(1.05); }
+        .lang-flag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 8px;
+            height: 32px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+            opacity: 0.7;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .lang-flag:hover {
+            opacity: 1;
+            background: <?= $themeCSS['hover'] ?>;
+            color: #ffffff;
+        }
+        .lang-flag.active {
+            opacity: 1;
+            background: <?= $themeCSS['primary'] ?>20;
+            border: 1px solid <?= $themeCSS['primary'] ?>;
+            color: #ffffff;
+        }
+        .settings-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 18px;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+        .settings-button:hover {
+            opacity: 1;
+            background: <?= $themeCSS['hover'] ?>;
+            transform: scale(1.05);
+        }
+        /* ============================================ */
+        
         .add-device-btn, .add-whitelist-btn { background: transparent; border: none; color: #4ade80; cursor: pointer; padding: 0 2px; border-radius: 3px; font-size: 12px; transition: all 0.2s; }
         .add-device-btn:hover, .add-whitelist-btn:hover { color: #6ee7b7; transform: scale(1.1); }
         .add-whitelist-lock, .add-device-lock { color: #8aa0bb; font-size: 12px; cursor: help; }
@@ -630,17 +658,20 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .unknown-title { color: #95a5a6; font-weight: 600; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .unknown-count-badge { background: <?= $themeCSS['card'] ?>; color: #95a5a6; padding: 1px 6px; border-radius: 10px; font-size: 9px; border: 1px solid #95a5a6; }
         .unknown-list { overflow-y: auto; flex: 1; padding-right: 4px; }
-        .unknown-header { display: grid; grid-template-columns: 1fr 0.9fr 0.1fr 0.3fr; padding: 3px 8px; margin-bottom: 3px; color: #8aa0bb; font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; flex-shrink: 0; cursor: pointer; user-select: none; }
+        .unknown-header { display: grid; grid-template-columns: 1fr 0.1fr 0.9fr 0.15fr 0.3fr; padding: 3px 8px; margin-bottom: 3px; color: #8aa0bb; font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; flex-shrink: 0; cursor: pointer; user-select: none; }
         .unknown-header span { transition: color 0.2s; padding: 2px 0; }
         .unknown-header span:hover { color: <?= $themeCSS['text'] ?>; }
         .unknown-header .sort-arrow { display: inline-block; margin-left: 3px; font-size: 8px; }
-        .unknown-item { background: <?= $themeCSS['card'] ?>; border-radius: 12px; padding: 4px 8px; margin-bottom: 4px; font-size: 10px; border: 1px solid #95a5a6; display: grid; grid-template-columns: 1fr 0.9fr 0.1fr 0.3fr; align-items: center; gap: 4px; transition: all 0.2s; min-height: 26px; }
+        .unknown-item { background: <?= $themeCSS['card'] ?>; border-radius: 12px; padding: 4px 8px; margin-bottom: 4px; font-size: 10px; border: 1px solid #95a5a6; display: grid; grid-template-columns: 1fr 0.1fr 0.9fr 0.15fr 0.3fr; align-items: center; gap: 4px; transition: all 0.2s; min-height: 26px; }
         .unknown-item:hover { background: <?= $themeCSS['hover'] ?>; border-left: 3px solid #95a5a6; }
         .unknown-device { color: <?= $themeCSS['text'] ?>; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
         .unknown-ip { color: #95a5a6; font-family: 'JetBrains Mono', monospace; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline dotted; }
         .unknown-ip:hover { color: #b0c4de; }
-        .unknown-add { text-align: center; font-size: 10px; }
+        .unknown-actions { display: flex; justify-content: center; }
         .unknown-count { color: #8aa0bb; font-size: 9px; text-align: right; }
+        .copy-ip-btn { background: transparent; border: none; color: #8aa0bb; cursor: pointer; padding: 0px 2px; border-radius: 3px; font-size: 11px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .copy-ip-btn:hover { color: <?= $themeCSS['text'] ?>; background: <?= $themeCSS['hover'] ?>; }
+        .copy-ip-btn:active { transform: scale(0.9); }
         .suspicious-block { background: rgba(231, 76, 60, 0.1); border: 1px solid <?= $themeCSS['danger'] ?>; border-radius: 6px; padding: 8px; height: 100%; display: flex; flex-direction: column; min-height: 0; }
         .suspicious-title { color: <?= $themeCSS['danger'] ?>; font-weight: 600; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .suspicious-count-badge { background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['danger'] ?>; padding: 1px 6px; border-radius: 10px; font-size: 9px; border: 1px solid <?= $themeCSS['danger'] ?>; }
@@ -650,7 +681,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-header .sort-arrow { display: inline-block; margin-left: 3px; font-size: 8px; }
         .suspicious-header {
             display: grid;
-            grid-template-columns: 1fr 0.5fr 1.2fr 1.2fr;
+            grid-template-columns: 0.1fr 1fr 0.5fr 0.15fr 1.1fr;
             padding: 3px 8px;
             margin-bottom: 3px;
             color: #8aa0bb;
@@ -671,7 +702,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             font-size: 10px;
             border: 1px solid <?= $themeCSS['danger'] ?>;
             display: grid;
-            grid-template-columns: 1fr 0.5fr 0.8fr 1.2fr;
+            grid-template-columns: 0.1fr 1fr 0.5fr 0.15fr 1.1fr;
             align-items: center;
             gap: 4px;
             border-left: 3px solid <?= $themeCSS['danger'] ?>;
@@ -682,45 +713,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-ip { color: <?= $themeCSS['danger'] ?>; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline dotted; }
         .suspicious-ip:hover { color: #ff6b6b; }
         .suspicious-count { color: <?= $themeCSS['warning'] ?>; font-weight: 600; font-size: 10px; text-align: center; }
-        .suspicious-cidr-container {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            overflow: hidden;
-            width: 100%;
-        }
-        .suspicious-cidr {
-            color: #b0c4de;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            min-width: 0;
-        }
-        .suspicious-actions {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-        }
-        .copy-cidr-btn {
-            background: transparent;
-            border: none;
-            color: #8aa0bb;
-            cursor: pointer;
-            padding: 0px 2px;
-            border-radius: 3px;
-            font-size: 11px;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-        .copy-cidr-btn:hover { color: <?= $themeCSS['text'] ?>; background: <?= $themeCSS['hover'] ?>; }
-        .copy-cidr-btn:active { transform: scale(0.9); }
+        .suspicious-actions { display: flex; justify-content: center; gap: 4px; }
         .suspicious-country { color: <?= $themeCSS['text'] ?>; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
         .filter-bar { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-shrink: 0; }
         .search-box { display: flex; gap: 6px; flex: 1; }
@@ -779,7 +772,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         ::-webkit-scrollbar-track { background: <?= $themeCSS['bg'] ?>; border-radius: 2px; }
         ::-webkit-scrollbar-thumb { background: <?= $themeCSS['border'] ?>; border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: <?= $themeCSS['primary'] ?>; }
-        @media (max-width: 768px) { .version-badge .tooltip-text { width: 180px; font-size: 10px; padding: 8px 10px; } .unknown-header { grid-template-columns: 1fr 0.8fr 0.1fr 0.3fr; } .unknown-item { grid-template-columns: 1fr 0.8fr 0.1fr 0.3fr; } }
+        @media (max-width: 768px) { .version-badge .tooltip-text { width: 180px; font-size: 10px; padding: 8px 10px; } }
     </style>
 </head>
 <body>
@@ -787,10 +780,10 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         <div class="header-container">
             <div class="header">
                 <div class="header-left">
-                    <h1>📊 KMS MONITOR <span class="live-indicator"><span class="dot"></span>LIVE</span></h1>
-                    <div class="uptime-info" title="<?= __('tooltip_server_started') . date('Y-m-d H:i:s', $uptime['start_time']) ?>">
-                        <span class="uptime-status"><?= $uptime['status'] ?></span>
-                        <span class="uptime-value"><?= $uptime['days'] ?>д <?= $uptime['hours'] ?>ч <?= $uptime['minutes'] ?>м</span>
+                    <h1>🌐 KMS MONITOR <span class="live-indicator"><span class="dot"></span>LIVE</span></h1>
+                    <div class="uptime-info" title="<?= __('tooltip_server_uptime') ?>">
+                        <span class="uptime-status"><?= $uptimeStatus ?></span>
+                        <span class="uptime-value"><?= $uptimeFormatted ?></span>
                     </div>
                     <?php if (!$cacheStatus && !empty($cacheMessage)): ?>
                     <div class="cache-warning" title="<?= __('tooltip_cache_warning') ?>"><?= $cacheMessage ?></div>
@@ -800,7 +793,12 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 <div class="time-display" id="clientTime">--:--:--</div>
             </div>
             
-            <a href="vlmcconf/vlmcconf.php" class="settings-button" title="<?= __('tooltip_settings') ?>">⚙️</a>
+            <!-- Блок: переключатель языка + шестерёнка -->
+            <div class="settings-button-group">
+                <a href="?lang=ru" class="lang-flag <?= $currentLanguage === 'ru' ? 'active' : '' ?>" title="Русский">🇷🇺</a>
+                <a href="?lang=en" class="lang-flag <?= $currentLanguage === 'en' ? 'active' : '' ?>" title="English">🇺🇸</a>
+                <a href="vlmcconf/vlmcconf.php" class="settings-button" title="<?= __('tooltip_settings') ?>">⚙️</a>
+            </div>
         </div>
         
         <div class="columns">
@@ -866,10 +864,13 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 
                 <div class="legend">
                     <div class="legend-items">
-                        <?php foreach ($groupColors as $groupName => $color): ?>
+                        <?php foreach ($config['groupColors'] as $groupName => $groupData): 
+                            $color = is_array($groupData) ? $groupData['color'] : $groupData;
+                            $icon = (is_array($groupData) && isset($groupData['icon'])) ? $groupData['icon'] : '📁';
+                        ?>
                         <div class="legend-item">
                             <div class="legend-color" style="background: <?= $color ?>"></div>
-                            <span><?= __($groupName) ?></span>
+                            <span><?= $icon ?> <?= __($groupName) ?></span>
                             <span class="legend-stats"><span style="color: <?= $color ?>;">●</span> <?= $deviceStats[$groupName] ?? 0 ?></span>
                         </div>
                         <?php endforeach; ?>
@@ -882,8 +883,9 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     <div class="unknown-title">❓ <?= __('unknown_title') ?> <span class="unknown-count-badge"><?= count($stats['unknown_devices'] ?? []) ?></span></div>
                     <div class="unknown-header" id="unknownHeader">
                         <span data-sort="device"><?= __('unknown_device') ?> <span class="sort-arrow" id="unknownSortDevice">▼</span></span>
+                        <span style="text-align: center;">📋</span>
                         <span data-sort="ip"><?= __('unknown_ip') ?> <span class="sort-arrow" id="unknownSortIp"></span></span>
-                        <span style="text-align: center;"></span>
+                        <span style="text-align: center;"><?= __('unknown_actions') ?></span>
                         <span style="text-align: right;" data-sort="count"><?= __('unknown_requests') ?> <span class="sort-arrow" id="unknownSortCount"></span></span>
                     </div>
                     <div class="unknown-list" id="unknownList"></div>
@@ -894,9 +896,10 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 <div class="suspicious-block">
                     <div class="suspicious-title">⚠️ <?= __('suspicious_title') ?> <span class="suspicious-count-badge"><?= count($stats['suspicious_ips'] ?? []) ?></span></div>
                     <div class="suspicious-header" id="suspiciousHeader">
+                        <span style="text-align: center;">📋</span>
                         <span data-sort="ip">IP <span class="sort-arrow" id="suspiciousSortIp">▼</span></span>
                         <span data-sort="count"><?= __('suspicious_connections') ?> <span class="sort-arrow" id="suspiciousSortCount"></span></span>
-                        <span data-sort="cidr">CIDR <span class="sort-arrow" id="suspiciousSortCidr"></span></span>
+                        <span style="text-align: center;"><?= __('suspicious_actions') ?></span>
                         <span style="text-align: right;" data-sort="country"><?= __('suspicious_country') ?> <span class="sort-arrow" id="suspiciousSortCountry"></span></span>
                     </div>
                     <div class="suspicious-list" id="suspiciousList"></div>
@@ -917,8 +920,8 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             </select>
             <select class="filter-select" id="groupFilter">
                 <option value="all"><?= __('filter_all_groups') ?></option>
-                <?php foreach ($groupColors as $groupName => $color): ?>
-                <option value="<?= $groupName ?>" style="color: <?= $color ?>;"><?= __($groupName) ?></option>
+                <?php foreach ($config['groupColors'] as $groupName => $groupData): ?>
+                <option value="<?= $groupName ?>" style="color: <?= is_array($groupData) ? $groupData['color'] : $groupData ?>;"><?= __($groupName) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -931,11 +934,11 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         <button class="scroll-bottom-btn" id="scrollBottomBtn">↓</button>
     </div>
     
-    <div class="footer">KMS Log Monitor • <?= __('version') ?> 5.1.0 • <?= __('footer_copyright') ?></div>
+    <div class="footer">KMS Log Monitor • <?= __('version') ?> 5.4.2 • <?= __('footer_copyright') ?></div>
     
     <div id="geoModal" class="modal"><div class="modal-content" id="geoModalContent"><div class="modal-header" id="geoModalHeader"><h2>🌍 <?= __('geo_title') ?></h2><span class="modal-close" onclick="closeGeoModal()">&times;</span></div><div class="modal-body" id="geoModalBody"><div class="modal-loading">⏳ <?= __('geo_loading') ?></div></div></div></div>
     
-    <div id="addDeviceModal" class="modal"><div class="modal-content add-device-modal"><div class="modal-header"><h2>➕ <?= __('add_device_title') ?></h2><span class="modal-close" onclick="closeAddDeviceModal()">&times;</span></div><div class="modal-body"><div id="addDeviceMessage" class="modal-message"></div><form id="addDeviceForm"><div class="modal-form-group"><label><?= __('add_device_name') ?></label><input type="text" id="deviceName" class="modal-form-control" required></div><div class="modal-form-group"><label><?= __('add_device_group') ?></label><select id="deviceGroup" class="modal-form-control"><?php foreach ($groupColors as $groupName => $color): ?><option value="<?= $groupName ?>"><?= __($groupName) ?></option><?php endforeach; ?></select></div><div class="modal-form-group"><label><?= __('add_device_comment') ?></label><input type="text" id="deviceComment" class="modal-form-control" placeholder="<?= __('add_device_comment_placeholder') ?>"></div><input type="hidden" id="deviceIp" value=""><button type="submit" class="modal-btn modal-btn-success" id="submitAddDevice"><?= __('add_device_btn') ?></button></form></div></div></div>
+    <div id="addDeviceModal" class="modal"><div class="modal-content add-device-modal"><div class="modal-header"><h2>➕ <?= __('add_device_title') ?></h2><span class="modal-close" onclick="closeAddDeviceModal()">&times;</span></div><div class="modal-body"><div id="addDeviceMessage" class="modal-message"></div><form id="addDeviceForm"><div class="modal-form-group"><label><?= __('add_device_name') ?></label><input type="text" id="deviceName" class="modal-form-control" required></div><div class="modal-form-group"><label><?= __('add_device_group') ?></label><select id="deviceGroup" class="modal-form-control"><?php foreach ($config['groupColors'] as $groupName => $groupData): ?><option value="<?= $groupName ?>"><?= __($groupName) ?></option><?php endforeach; ?></select></div><div class="modal-form-group"><label><?= __('add_device_comment') ?></label><input type="text" id="deviceComment" class="modal-form-control" placeholder="<?= __('add_device_comment_placeholder') ?>"></div><input type="hidden" id="deviceIp" value=""><button type="submit" class="modal-btn modal-btn-success" id="submitAddDevice"><?= __('add_device_btn') ?></button></form></div></div></div>
     
     <div id="toast" class="toast">📋 <?= __('toast_copied') ?></div>
     
@@ -953,7 +956,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     let currentEventFilter = 'all';
     let currentGroupFilter = 'all';
     
-    // Переменные для прав
     let canAddToWhitelist = false;
     
     function positionTooltips() {
@@ -1014,13 +1016,13 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
         textarea.select();
-        try { document.execCommand('copy'); showToast('📋 CIDR ' + text); } catch(err) { showToast('❌ <?= __('toast_copy_error') ?>'); }
+        try { document.execCommand('copy'); showToast('📋 ' + text); } catch(err) { showToast('❌ <?= __('toast_copy_error') ?>'); }
         document.body.removeChild(textarea);
     }
     
     function copyToClipboard(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => showToast('📋 CIDR ' + text)).catch(err => fallbackCopy(text));
+            navigator.clipboard.writeText(text).then(() => showToast('📋 ' + text)).catch(err => fallbackCopy(text));
         } else { fallbackCopy(text); }
     }
     
@@ -1050,13 +1052,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     <div class="geo-row"><span class="geo-label"><?= __('geo_city') ?>:</span><span class="geo-value">${data.city || '—'}</span></div>
                     <div class="geo-row"><span class="geo-label"><?= __('geo_isp') ?>:</span><span class="geo-value">${data.isp || '—'}</span></div>
                     <div class="geo-row"><span class="geo-label"><?= __('geo_org') ?>:</span><span class="geo-value">${data.org || '—'}</span></div>
-                    <div class="geo-row"><span class="geo-label"><?= __('geo_timezone') ?>:</span><span class="geo-value">${data.timezone || '—'}</span></div>
-                    <div class="geo-row"><span class="geo-label">CIDR:</span><span class="geo-value">${data.cidr || '—'}</span></div>
-                    <div class="geo-row"><span class="geo-label"><?= __('geo_range') ?>:</span><span class="geo-value">${data.ip_range || '—'}</span></div>`;
-                if (data.provider_ranges && data.provider_ranges.length > 0) {
-                    html += `<div class="geo-row" style="border-bottom: none;"><span class="geo-label"><?= __('geo_provider_ranges') ?> ${data.isp}:</span></div>`;
-                    data.provider_ranges.forEach(range => { html += `<div class="geo-row" style="padding-left: 90px;"><span class="geo-value" style="font-family: 'JetBrains Mono', monospace;">${range.range}</span><span class="geo-value" style="text-align: right;">${range.desc}</span></div>`; });
-                }
+                    <div class="geo-row"><span class="geo-label"><?= __('geo_timezone') ?>:</span><span class="geo-value">${data.timezone || '—'}</span></div>`;
                 modalBody.innerHTML = html;
             })
             .catch(error => { clearTimeout(timeoutId); modalBody.innerHTML = '<div class="geo-row" style="color: #e74c3c;">❌ <?= __('geo_error') ?><br><span style="font-size: 10px;">' + error.message + '</span></div>'; });
@@ -1150,7 +1146,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         else { suspiciousSort.field = field; suspiciousSort.direction = 'asc'; }
         document.getElementById('suspiciousSortIp').innerHTML = suspiciousSort.field === 'ip' ? (suspiciousSort.direction === 'asc' ? '▲' : '▼') : '';
         document.getElementById('suspiciousSortCount').innerHTML = suspiciousSort.field === 'count' ? (suspiciousSort.direction === 'asc' ? '▲' : '▼') : '';
-        document.getElementById('suspiciousSortCidr').innerHTML = suspiciousSort.field === 'cidr' ? (suspiciousSort.direction === 'asc' ? '▲' : '▼') : '';
         document.getElementById('suspiciousSortCountry').innerHTML = suspiciousSort.field === 'country' ? (suspiciousSort.direction === 'asc' ? '▲' : '▼') : '';
         renderSuspiciousList();
     }
@@ -1202,8 +1197,13 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 
                 html += `<div class="unknown-item" title="<?= __('unknown_first_seen') ?> ${new Date(item.first_seen * 1000).toLocaleString()}\n<?= __('unknown_last_seen') ?> ${new Date(item.last_seen * 1000).toLocaleString()}">
                     <span class="unknown-device">${escapedDevice}</span>
+                    <span class="unknown-actions">
+                        <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('unknown_copy_ip') ?>">📋</button>
+                    </span>
                     <span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>
-                    <span class="unknown-add">${addButton}</span>
+                    <span class="unknown-actions">
+                        ${addButton}
+                    </span>
                     <span class="unknown-count">${item.count}</span>
                 </div>`;
             });
@@ -1241,7 +1241,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 switch(suspiciousSort.field) {
                     case 'ip': valA = a.ip; valB = b.ip; break;
                     case 'count': valA = a.count; valB = b.count; break;
-                    case 'cidr': valA = a.cidr; valB = b.cidr; break;
                     case 'country': valA = (a.country_name || a.country).toLowerCase(); valB = (b.country_name || b.country).toLowerCase(); break;
                     default: valA = a.ip; valB = b.ip;
                 }
@@ -1253,7 +1252,6 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             let html = '';
             sorted.forEach(item => {
                 const escapedIp = escapeHtml(item.ip);
-                const escapedCidr = escapeHtml(item.cidr);
                 const countryCode = item.country_code || '';
                 const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
                 const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
@@ -1263,16 +1261,15 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     : `<span class="add-whitelist-lock" title="<?= __('whitelist_auth_required') ?>">🔒</span>`;
                 
                 html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
+                    <span class="suspicious-actions">
+                        <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>
+                    </span>
                     <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
                     <span class="suspicious-count">${item.count}</span>
-                    <div class="suspicious-cidr-container">
-                        <span class="suspicious-cidr">${escapedCidr}</span>
-                        <button class="copy-cidr-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedCidr}')" title="<?= __('suspicious_copy_cidr') ?>">📋</button>
-                    </div>
-                    <div class="suspicious-actions">
+                    <span class="suspicious-actions">
                         ${whitelistButton}
-                        <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 4px; vertical-align: middle;">` : ''}${countryName}</span>
-                    </div>
+                    </span>
+                    <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 4px; vertical-align: middle;">` : ''}${countryName}</span>
                 </div>`;
             });
             list.innerHTML = html;
