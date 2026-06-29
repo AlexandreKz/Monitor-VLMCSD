@@ -1,9 +1,10 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 2.6.0
-// ДАТА: 2026-06-10
-// @description: Секция обновления проекта
+// ВЕРСИЯ: 3.0.0
+// ДАТА: 2026-06-29
+// @description: Секция обновления проекта (интерфейс + вызовы Updater через ajax.php)
+// @description: Project update section (interface + Updater calls via ajax.php)
 // ============================================
 
 if (!defined('VLMCS_CONF')) {
@@ -13,6 +14,7 @@ if (!defined('VLMCS_CONF')) {
 
 <div id="toolsTabUpdate" class="tools-tab-content <?= $activeTab === 'update' ? 'active' : '' ?>">
     
+    <!-- Заголовок с элементами управления / Header with controls -->
     <div class="update-header" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
         <div style="width: 200px;">
             <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;"><?= __('update_service') ?></label>
@@ -31,6 +33,7 @@ if (!defined('VLMCS_CONF')) {
         </div>
     </div>
     
+    <!-- Настройки GitHub / GitHub settings -->
     <div id="updateGithubSettings" class="update-info-panel" style="background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px;">
         <div style="display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
             <div><span style="color: #8aa0bb;">📦 <?= __('update_repository') ?>:</span> <code style="font-size: 11px;">AlexandreKz/Monitor-VLMCSD</code></div>
@@ -38,6 +41,7 @@ if (!defined('VLMCS_CONF')) {
         </div>
     </div>
     
+    <!-- Настройки кастомного сервера / Custom server settings -->
     <div id="updateCustomSettings" style="display: none; background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 12px; margin-bottom: 15px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div><label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;">🌐 <?= __('update_server_url') ?></label><input type="text" id="updateServerUrl" class="form-control" placeholder="https://updates.mycompany.com"></div>
@@ -56,27 +60,41 @@ if (!defined('VLMCS_CONF')) {
         </div>
     </div>
     
+    <!-- Статус-бар / Status bar -->
     <div class="update-status-bar" style="background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
         <div><span style="color: #8aa0bb;">📌 <?= __('update_current_version') ?>:</span> <strong><span id="currentVersion"><?= CONFIG_VERSION ?></span></strong></div>
         <div><span style="color: #8aa0bb;">🆕 <?= __('update_latest_version') ?>:</span> <strong><span id="latestVersion">—</span></strong></div>
         <div><span style="color: #8aa0bb;">📊 <?= __('update_status') ?>:</span> <span id="updateStatusText"><?= __('update_not_checked') ?></span></div>
     </div>
     
+    <!-- Консоль вывода / Output console -->
     <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 6px; height: 250px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
         <div>> <?= __('update_ready') ?></div>
     </div>
     
+    <!-- Кнопка проверки GitHub / GitHub check button -->
     <div style="margin-top: 15px; text-align: right;">
         <button class="btn btn-secondary btn-small" id="checkGitHubBtn" style="opacity: 0.6; font-size: 10px; padding: 2px 8px;">🌐 <?= __('update_check_github') ?></button>
     </div>
     
 </div>
 
+<!-- Модальное окно подтверждения обновления / Update confirmation modal -->
 <div id="updateConfirmModal" class="tools-modal" style="display: none;">
     <div class="tools-modal-content">
-        <div class="tools-modal-header"><h2>⚠️ <?= __('update_confirm_title') ?></h2><span class="tools-modal-close" onclick="closeUpdateConfirmModal()">&times;</span></div>
-        <div class="tools-modal-body"><p><?= __('update_confirm_warning') ?></p><p class="tools-modal-estimate"><?= __('update_confirm_desc') ?></p><div id="updateFilesList" style="margin-top: 10px; max-height: 200px; overflow-y: auto; font-size: 11px;"></div></div>
-        <div class="tools-modal-footer"><button class="btn btn-secondary" onclick="closeUpdateConfirmModal()">❌ <?= __('update_confirm_no') ?></button><button class="btn btn-primary" id="startUpdateBtn">✅ <?= __('update_confirm_yes') ?></button></div>
+        <div class="tools-modal-header">
+            <h2>⚠️ <?= __('update_confirm_title') ?></h2>
+            <span class="tools-modal-close" onclick="closeUpdateConfirmModal()">&times;</span>
+        </div>
+        <div class="tools-modal-body">
+            <p><?= __('update_confirm_warning') ?></p>
+            <p class="tools-modal-estimate"><?= __('update_confirm_desc') ?></p>
+            <div id="updateFilesList" style="margin-top: 10px; max-height: 200px; overflow-y: auto; font-size: 11px;"></div>
+        </div>
+        <div class="tools-modal-footer">
+            <button class="btn btn-secondary" onclick="closeUpdateConfirmModal()">❌ <?= __('cancel') ?></button>
+            <button class="btn btn-primary" id="startUpdateBtn" disabled>✅ <?= __('update_confirm_yes') ?></button>
+        </div>
     </div>
 </div>
 
@@ -90,8 +108,19 @@ if (!defined('VLMCS_CONF')) {
 <script>
 console.log('update.php script loaded');
 
+// ============================================
+// ПЕРЕМЕННЫЕ / VARIABLES
+// ============================================
 let updateConsoleLines = [];
+let updateFilesList = [];
 
+// ============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ / HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Извлечение версии из тега / Extract version from tag
+ */
 function extractVersionFromTag(tagName) {
     let version = tagName.replace(/^v/, '');
     const match = version.match(/(\d+\.\d+\.\d+)/);
@@ -99,8 +128,18 @@ function extractVersionFromTag(tagName) {
     return version;
 }
 
-function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+/**
+ * Экранирование HTML / Escape HTML
+ */
+function escapeHtml(text) { 
+    const div = document.createElement('div'); 
+    div.textContent = text; 
+    return div.innerHTML; 
+}
 
+/**
+ * Логирование в консоль с временной меткой / Log to console with timestamp
+ */
 function consoleLog(message, type = 'info') {
     const consoleDiv = document.getElementById('updateConsole');
     if (!consoleDiv) return;
@@ -115,6 +154,13 @@ function consoleLog(message, type = 'info') {
     consoleDiv.scrollTop = consoleDiv.scrollHeight;
 }
 
+// ============================================
+// УПРАВЛЕНИЕ НАСТРОЙКАМИ / SETTINGS MANAGEMENT
+// ============================================
+
+/**
+ * Переключение между GitHub и кастомным сервером / Toggle between GitHub and custom server
+ */
 function toggleUpdateService() {
     const service = document.getElementById('updateService');
     if (!service) return;
@@ -129,6 +175,9 @@ function toggleUpdateService() {
     }
 }
 
+/**
+ * Переключение типа аутентификации / Toggle authentication type
+ */
 function toggleUpdateAuth() {
     const authType = document.getElementById('updateAuthType');
     const authBasic = document.getElementById('updateAuthBasic');
@@ -139,8 +188,21 @@ function toggleUpdateAuth() {
     else if (authType && authType.value === 'bearer' && authBearer) authBearer.style.display = 'block';
 }
 
-function closeUpdateConfirmModal() { const modal = document.getElementById('updateConfirmModal'); if (modal) modal.style.display = 'none'; }
+/**
+ * Закрытие модального окна подтверждения / Close confirmation modal
+ */
+function closeUpdateConfirmModal() { 
+    const modal = document.getElementById('updateConfirmModal'); 
+    if (modal) modal.style.display = 'none'; 
+}
 
+// ============================================
+// ОСНОВНЫЕ ФУНКЦИИ / MAIN FUNCTIONS
+// ============================================
+
+/**
+ * Проверка обновлений через ajax.php / Check for updates via ajax.php
+ */
 function checkForUpdates() {
     const checkBtn = document.getElementById('checkUpdatesBtn');
     const statusSpan = document.getElementById('updateStatusText');
@@ -190,6 +252,9 @@ function checkForUpdates() {
         });
 }
 
+/**
+ * Проверка доступности GitHub API / Check GitHub API availability
+ */
 function checkGitHubAccess() {
     const currentVersion = '<?= CONFIG_VERSION ?>';
     consoleLog('🔍 ' + '<?= __('update_checking_github') ?>...', 'info');
@@ -216,23 +281,155 @@ function checkGitHubAccess() {
         .catch(error => { consoleLog('❌ Connection error: ' + error.message, 'error'); });
 }
 
+/**
+ * Открытие модального окна с загрузкой списка файлов / Open modal with file list loading
+ */
 function runUpdate() {
     const modal = document.getElementById('updateConfirmModal');
     const filesList = document.getElementById('updateFilesList');
-    if (filesList) filesList.innerHTML = '<div style="text-align: center;">⏳ <?= __('loading') ?></div>';
-    if (modal) modal.style.display = 'flex';
-    setTimeout(() => {
-        if (filesList) filesList.innerHTML = '<div style="text-align: center;"><?= __('update_no_files') ?></div>';
-        setTimeout(() => closeUpdateConfirmModal(), 1500);
-    }, 1000);
+    const startBtn = document.getElementById('startUpdateBtn');
+    const latestVersion = document.getElementById('latestVersion')?.textContent || '';
+    
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    if (filesList) {
+        filesList.innerHTML = '<div style="text-align: center; color: #8aa0bb;">⏳ <?= __('loading') ?>...</div>';
+    }
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = '⏳ <?= __('loading') ?>';
+    }
+    
+    const fd = new FormData();
+    fd.append('ajax', 'get_update_files');
+    fd.append('version', latestVersion);
+    
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => {
+            // Небольшая задержка перед обновлением DOM, чтобы избежать race condition
+            setTimeout(function() {
+                if (data.success && data.files && data.files.length > 0) {
+                    updateFilesList = data.files;
+                    let html = '<div style="font-size: 11px; margin-bottom: 8px; color: #8aa0bb;">📦 ' + data.files.length + ' файлов для обновления:</div>';
+                    data.files.forEach(file => {
+                        html += '<div style="padding: 2px 0; border-bottom: 1px dashed <?= $themeCSS['border'] ?>; font-size: 11px;">📄 ' + escapeHtml(file) + '</div>';
+                    });
+                    if (filesList) filesList.innerHTML = html;
+                    if (startBtn) {
+                        startBtn.disabled = false;
+                        startBtn.textContent = '✅ <?= __('update_confirm_yes') ?>';
+                    }
+                } else {
+                    if (filesList) filesList.innerHTML = '<div style="text-align: center; color: #8aa0bb;"><?= __('update_no_files') ?></div>';
+                    if (startBtn) {
+                        startBtn.disabled = true;
+                        startBtn.textContent = '❌ <?= __('update_no_files') ?>';
+                    }
+                }
+            }, 50);
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            setTimeout(function() {
+                if (filesList) filesList.innerHTML = '<div style="text-align: center; color: #e74c3c;">❌ <?= __('error_loading') ?></div>';
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '❌ <?= __('update_error') ?>';
+                }
+            }, 50);
+        });
 }
 
+/**
+ * Запуск процесса обновления через ajax.php / Start update process via ajax.php
+ */
 function startUpdate() {
-    closeUpdateConfirmModal();
-    consoleLog('🔄 ' + '<?= __('update_in_progress') ?>...', 'info');
-    setTimeout(() => { consoleLog('✅ ' + '<?= __('update_success') ?>', 'success'); }, 2000);
+    const startBtn = document.getElementById('startUpdateBtn');
+    const modal = document.getElementById('updateConfirmModal');
+    const latestVersion = document.getElementById('latestVersion')?.textContent || '';
+    
+    if (!startBtn) return;
+    
+    startBtn.disabled = true;
+    startBtn.textContent = '⏳ <?= __('update_in_progress') ?>...';
+    if (modal) modal.style.display = 'none';
+    
+    const consoleDiv = document.getElementById('updateConsole');
+    if (consoleDiv) {
+        consoleDiv.innerHTML = '';
+    }
+    
+    consoleLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    consoleLog('🔄 ' + '<?= __('update_started') ?>', 'info');
+    consoleLog('📌 ' + '<?= __('update_target_version') ?>: ' + latestVersion, 'info');
+    
+    const fd = new FormData();
+    fd.append('ajax', 'perform_update');
+    fd.append('version', latestVersion);
+    fd.append('files', JSON.stringify(updateFilesList));
+    
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => {
+            // Выводим детальный лог
+            if (data.log && data.log.length > 0) {
+                data.log.forEach(line => {
+                    if (line.includes('✅')) {
+                        consoleLog(line, 'success');
+                    } else if (line.includes('❌')) {
+                        consoleLog(line, 'error');
+                    } else if (line.includes('⚠️')) {
+                        consoleLog(line, 'warning');
+                    } else {
+                        consoleLog(line, 'info');
+                    }
+                });
+            }
+            
+            if (data.success) {
+                consoleLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                consoleLog('✅ ' + data.message, 'success');
+                
+                const reloadBtn = document.createElement('button');
+                reloadBtn.className = 'btn btn-primary';
+                reloadBtn.innerHTML = '🔄 <?= __('update_reload_now') ?>';
+                reloadBtn.onclick = function() { location.reload(); };
+                reloadBtn.style.marginTop = '10px';
+                reloadBtn.style.padding = '8px 20px';
+                
+                const consoleDiv = document.getElementById('updateConsole');
+                if (consoleDiv) {
+                    const reloadContainer = document.createElement('div');
+                    reloadContainer.style.marginTop = '15px';
+                    reloadContainer.appendChild(reloadBtn);
+                    consoleDiv.appendChild(reloadContainer);
+                    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                }
+                
+                startBtn.disabled = false;
+                startBtn.textContent = '✅ <?= __('update_confirm_yes') ?>';
+            } else {
+                consoleLog('❌ ' + data.message, 'error');
+                startBtn.disabled = false;
+                startBtn.textContent = '❌ <?= __('update_error') ?>';
+            }
+        })
+        .catch(error => {
+            consoleLog('❌ ' + '<?= __('update_error') ?>: ' + error.message, 'error');
+            startBtn.disabled = false;
+            startBtn.textContent = '❌ <?= __('update_error') ?>';
+        });
 }
 
+// ============================================
+// ИНИЦИАЛИЗАЦИЯ / INITIALIZATION
+// ============================================
+
+/**
+ * Инициализация вкладки обновления / Initialize update tab
+ */
 function initUpdateTab() {
     console.log('initUpdateTab called');
     const checkBtn = document.getElementById('checkUpdatesBtn');
@@ -241,9 +438,6 @@ function initUpdateTab() {
     const startUpdateBtn = document.getElementById('startUpdateBtn');
     const updateService = document.getElementById('updateService');
     const updateAuthType = document.getElementById('updateAuthType');
-    
-    console.log('checkUpdatesBtn found:', checkBtn);
-    console.log('checkGitHubBtn found:', gitHubBtn);
     
     if (checkBtn) checkBtn.onclick = checkForUpdates;
     if (gitHubBtn) gitHubBtn.onclick = checkGitHubAccess;
@@ -254,10 +448,9 @@ function initUpdateTab() {
     
     toggleUpdateService();
     toggleUpdateAuth();
-    // consoleLog('✅ ' + '<?= __('update_ready') ?>', 'success');
 }
 
-// Экспорт в глобальную область
+// Экспорт в глобальную область / Export to global scope
 window.initUpdateTab = initUpdateTab;
 window.checkForUpdates = checkForUpdates;
 window.checkGitHubAccess = checkGitHubAccess;
@@ -267,7 +460,7 @@ window.toggleUpdateService = toggleUpdateService;
 window.toggleUpdateAuth = toggleUpdateAuth;
 window.closeUpdateConfirmModal = closeUpdateConfirmModal;
 
-// Наблюдатель за активацией вкладки
+// Наблюдатель за активацией вкладки / Observer for tab activation
 (function() {
     function checkAndInit() {
         const updateTab = document.getElementById('toolsTabUpdate');
@@ -295,7 +488,6 @@ window.closeUpdateConfirmModal = closeUpdateConfirmModal;
     }
 })();
 
-// Ждём полной загрузки DOM
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const updateTab = document.getElementById('toolsTabUpdate');
