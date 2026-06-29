@@ -977,126 +977,87 @@ if (isset($_POST['ajax'])) {
 		exit;
 	}
 	
-	// ============================================
-	// AJAX: Проверка доступности GitHub
-	// ============================================
-	if ($_POST['ajax'] === 'check_github_access') {
-		$repo = 'AlexandreKz/Monitor-VLMCSD';
-		$url = "https://api.github.com/repos/{$repo}/releases/latest";
-		
-		$ch = curl_init();
-		curl_setopt_array($ch, [
-			CURLOPT_URL => $url,
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_TIMEOUT => 10,
-			CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
-			CURLOPT_SSL_VERIFYPEER => false
-		]);
-		
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		
-		if ($httpCode === 200 && $response) {
-			$data = json_decode($response, true);
-			$tagName = ltrim($data['tag_name'] ?? '', 'v');
-			echo json_encode([
-				'success' => true,
-				'message' => 'GitHub API доступен',
-				'repository' => $repo,
-				'latest_version' => $tagName
-			]);
-		} else {
-			echo json_encode([
-				'success' => false,
-				'message' => 'GitHub API недоступен (HTTP ' . $httpCode . ')'
-			]);
-		}
-		exit;
-	}
+// ============================================
+// AJAX: Проверка доступности GitHub
+// ============================================
+if ($_POST['ajax'] === 'check_github_access') {
+    require_once __DIR__ . '/updater.php';
+    $updater = new Updater();
+    $result = $updater->checkGitHubAccess();
+    echo json_encode($result);
+    exit;
+}
 
-	// ============================================
-	// AJAX: Проверка обновлений (GitHub)
-	// ============================================
-	if ($_POST['ajax'] === 'check_updates') {
-    // Включаем вывод ошибок для этого запроса
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
+// ============================================
+// AJAX: Проверка обновлений
+// ============================================
+if ($_POST['ajax'] === 'check_updates') {
+    require_once __DIR__ . '/updater.php';
+    $updater = new Updater();
+    $result = $updater->checkUpdates();
+    echo json_encode($result);
+    exit;
+}
+
+// ============================================
+// AJAX: Получение списка файлов для обновления
+// ============================================
+if ($_POST['ajax'] === 'get_update_files') {
+    require_once __DIR__ . '/updater.php';
+    $updater = new Updater();
+    $result = $updater->getFilesToUpdate();
+    echo json_encode($result);
+    exit;
+}
+
+// ============================================
+// AJAX: Выполнение обновления
+// ============================================
+if ($_POST['ajax'] === 'perform_update') {
+    // Перехватываем весь вывод
+    ob_start();
     
-    $repo = 'AlexandreKz/Monitor-VLMCSD';
-    $url = "https://api.github.com/repos/{$repo}/releases/latest";
+    $files = json_decode($_POST['files'] ?? '[]', true);
     
-    // Проверяем, доступен ли curl
-    if (!function_exists('curl_init')) {
+    require_once __DIR__ . '/updater.php';
+    $updater = new Updater();
+    $result = $updater->performUpdate($files);
+    
+    // Проверяем, что было выведено
+    $output = ob_get_clean();
+    if (!empty($output)) {
+        // Логируем и отправляем ошибку
+        error_log("Update output: " . $output);
         echo json_encode([
             'success' => false,
-            'message' => 'CURL не установлен'
+            'message' => '⚠️ ' . strip_tags(substr($output, 0, 500))
         ]);
         exit;
     }
     
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_FOLLOWLOCATION => true
-    ]);
+    echo json_encode($result);
+    exit;
+}
+
+// ============================================
+// AJAX: Сохранение настроек в Обновлении
+// ============================================
+if ($_POST['ajax'] === 'save_update_settings') {
+    $configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+    $config = json_decode(file_get_contents($configFile), true);
     
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    $curlInfo = curl_getinfo($ch);
+    $config['update']['type'] = $_POST['type'] ?? 'release';
+    $config['update']['mode'] = $_POST['mode'] ?? 'manual';
+    $config['update']['schedule']['enabled'] = $_POST['schedule_enabled'] === 'true';
+    $config['update']['schedule']['time'] = $_POST['schedule_time'] ?? '03:00';
+    $config['update']['schedule']['days'] = isset($_POST['schedule_days']) ? json_decode($_POST['schedule_days'], true) : [1,2,3,4,5,6,7];
+    $config['update']['notifications']['enabled'] = $_POST['notify_enabled'] === 'true';
+    $config['update']['notifications']['email'] = $_POST['notify_email'] ?? '';
+    $config['update']['notifications']['telegram'] = $_POST['notify_telegram'] ?? '';
     
-    // Если ответ пустой или ошибка
-    if ($response === false || !empty($curlError)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'CURL ошибка: ' . $curlError,
-            'debug' => $curlInfo
-        ]);
-        exit;
-    }
+    file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     
-    // Если статус не 200
-    if ($httpCode !== 200) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'GitHub API вернул HTTP ' . $httpCode,
-            'debug' => [
-                'http_code' => $httpCode,
-                'response_preview' => substr($response, 0, 500)
-            ]
-        ]);
-        exit;
-    }
-    
-    // Парсим JSON
-    $data = json_decode($response, true);
-    if ($data === null) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Ошибка парсинга JSON: ' . json_last_error_msg(),
-            'debug' => [
-                'response_preview' => substr($response, 0, 500)
-            ]
-        ]);
-        exit;
-    }
-    
-    // Успешный ответ
-    $tagName = ltrim($data['tag_name'] ?? '', 'v');
-    $name = $data['name'] ?? '';
-    
-    echo json_encode([
-        'success' => true,
-        'latest_version' => $tagName,
-        'repository' => $repo,
-        'release_url' => $data['html_url'] ?? '',
-        'message' => 'OK'
-    ]);
+    echo json_encode(['success' => true, 'message' => __('settings_saved')]);
     exit;
 }
 
