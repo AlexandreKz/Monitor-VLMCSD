@@ -652,6 +652,20 @@ return [
 	'update_reload_now' => '🔄 Reload page',
 	'update_failed_files' => '❌ Failed to update files',
 	'update_files_count' => '📦 Files to update',
+	'update_settings_title' => 'Update Settings',
+	'update_type_label' => 'Update type',
+	'update_type_release' => 'Release (stable)',
+	'update_type_early' => 'Early access (by SHA)',
+	'update_mode_label' => 'Update mode',
+	'update_mode_manual' => 'Manual',
+	'update_mode_auto' => 'Automatic',
+	'update_schedule_enable' => 'Enable schedule',
+	'update_schedule_time' => 'Check time',
+	'update_schedule_days' => 'Days of week',
+	'update_notifications_label' => 'Notifications',
+	'update_notify_enable' => 'Enable notifications',
+	'update_notify_email' => 'Notification email',
+	'update_notify_telegram' => 'Telegram (token:chat_id)',
 	
 ];
 ?>

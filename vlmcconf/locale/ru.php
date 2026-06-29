@@ -654,6 +654,20 @@ return [
 	'update_reload_now' => '🔄 Перезагрузить страницу',
 	'update_failed_files' => '❌ Ошибки при обновлении файлов',
 	'update_files_count' => '📦 Файлов для обновления',
+	'update_settings_title' => 'Настройки обновлений',
+	'update_type_label' => 'Тип обновления',
+	'update_type_release' => 'Релиз (стабильный)',
+	'update_type_early' => 'Ранний доступ (по SHA)',
+	'update_mode_label' => 'Режим обновления',
+	'update_mode_manual' => 'Ручное',
+	'update_mode_auto' => 'Автоматическое',
+	'update_schedule_enable' => 'Включить расписание',
+	'update_schedule_time' => 'Время проверки',
+	'update_schedule_days' => 'Дни недели',
+	'update_notifications_label' => 'Уведомления',
+	'update_notify_enable' => 'Включить уведомления',
+	'update_notify_email' => 'Email для уведомлений',
+	'update_notify_telegram' => 'Telegram (token:chat_id)',
 	
 ];
 ?>
