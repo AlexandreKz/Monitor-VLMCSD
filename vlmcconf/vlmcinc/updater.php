@@ -1,19 +1,25 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 1.0.0
-// ДАТА: 2026-06-09
+// ВЕРСИЯ: 2.0.0
+// ДАТА: 2026-06-29
 // @description: Логика обновления проекта
+// @description: Project update logic
 // ============================================
 
 class Updater {
     
-    // GitHub репозиторий
-    private $repo = 'AlexandreKz/kms-monitor';
+    // GitHub репозиторий / GitHub repository
+    private $repo = 'AlexandreKz/Monitor-VLMCSD';
     private $branch = 'main';
+    private $baseDir;
+    
+    public function __construct() {
+        $this->baseDir = dirname(__DIR__, 2);
+    }
     
     /**
-     * Проверка наличия обновлений
+     * Проверка наличия обновлений / Check for updates
      * @return array
      */
     public function checkUpdates() {
@@ -23,8 +29,10 @@ class Updater {
         if ($latestVersion === null) {
             return [
                 'success' => false,
-                'message' => __('update_check_failed'),
-                'update_available' => false
+                'message' => 'Не удалось проверить обновления',
+                'update_available' => false,
+                'current_version' => $currentVersion,
+                'latest_version' => '—'
             ];
         }
         
@@ -34,12 +42,60 @@ class Updater {
             'success' => true,
             'current_version' => $currentVersion,
             'latest_version' => $latestVersion,
-            'update_available' => $updateAvailable
+            'update_available' => $updateAvailable,
+            'message' => $updateAvailable ? 'Доступна новая версия' : 'У вас последняя версия'
         ];
     }
     
     /**
-     * Получение последней версии с GitHub
+     * Проверка доступности GitHub API / Check GitHub API availability
+     * @return array
+     */
+    public function checkGitHubAccess() {
+        $url = "https://api.github.com/repos/{$this->repo}/releases/latest";
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/2.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        
+        if ($curlError) {
+            return [
+                'success' => false,
+                'message' => 'CURL ошибка: ' . $curlError
+            ];
+        }
+        
+        if ($httpCode !== 200) {
+            return [
+                'success' => false,
+                'message' => 'GitHub API вернул HTTP ' . $httpCode
+            ];
+        }
+        
+        $data = json_decode($response, true);
+        $tagName = ltrim($data['tag_name'] ?? '', 'v');
+        
+        return [
+            'success' => true,
+            'message' => 'GitHub API доступен',
+            'repository' => $this->repo,
+            'latest_version' => $tagName,
+            'release_url' => $data['html_url'] ?? ''
+        ];
+    }
+    
+    /**
+     * Получение последней версии с GitHub / Get latest version from GitHub
      * @return string|null
      */
     private function getLatestVersion() {
@@ -50,13 +106,13 @@ class Updater {
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
-            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
-            CURLOPT_SSL_VERIFYPEER => false
+            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/2.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true
         ]);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         
         if ($httpCode !== 200 || !$response) {
             return null;
@@ -65,196 +121,275 @@ class Updater {
         $data = json_decode($response, true);
         $tagName = $data['tag_name'] ?? '';
         
-        // Убираем 'v' из начала тега, если есть
         return ltrim($tagName, 'v');
     }
     
     /**
-     * Получение списка файлов для обновления
+     * Получение списка файлов для обновления (сравнение по размеру)
+     * Get files to update (compare by size)
      * @return array
      */
     public function getFilesToUpdate() {
-        $files = [];
-        
-        // Список файлов, которые могут обновляться
-        $checkFiles = [
-            'vlmc.php',
-            'vlmcconf/vlmcconf.php',
-            'vlmcconf/login.php',
-            'vlmcconf/logout.php',
-            'vlmcconf/vlmctheme.php',
-            'vlmcconf/vlmcgeoip.php',
-            'vlmcconf/vlmcloghandler.php',
-            'vlmcconf/flags.php',
-            'vlmcconf/sections/general.php',
-            'vlmcconf/sections/groups.php',
-            'vlmcconf/sections/devices.php',
-            'vlmcconf/sections/security.php',
-            'vlmcconf/sections/stats.php',
-            'vlmcconf/sections/info.php',
-            'vlmcconf/sections/tools.php',
-            'vlmcconf/sections/documentation.php',
-            'vlmcconf/sections/integrations.php',
-            'vlmcconf/sections/api.php',
-            'vlmcconf/vlmcinc/config.php',
-            'vlmcconf/vlmcinc/users.php',
-            'vlmcconf/vlmcinc/auth.php',
-            'vlmcconf/vlmcinc/analytics.php',
-            'vlmcconf/vlmcinc/ajax.php',
-            'vlmcconf/vlmcinc/geo_cache.php',
-            'vlmcconf/vlmcinc/emoji_manager.php',
-            'vlmcconf/locale/ru.php',
-            'vlmcconf/locale/en.php',
-            'vlmcconf/locale/emoji.php'
+        $excludePaths = [
+            '.git', '.gitignore', '.github', 'README.md', 'LICENSE',
+            'backups', 'cache', 'screen', 'pic',
+            'vlmcconf/cache', 'vlmcconf/backups'
         ];
         
-        foreach ($checkFiles as $file) {
-            $localVersion = $this->getLocalFileVersion($file);
-            $remoteVersion = $this->getRemoteFileVersion($file);
+        $repoFiles = $this->getRepoFilesWithSize('', $excludePaths);
+        $filesToUpdate = [];
+        
+        foreach ($repoFiles as $filePath => $repoSize) {
+            $localPath = $this->baseDir . '/' . $filePath;
             
-            if ($remoteVersion && version_compare($localVersion, $remoteVersion) < 0) {
-                $files[] = $file;
+            if (file_exists($localPath)) {
+                $localSize = filesize($localPath);
+                // Сравниваем размер файла / Compare file size
+                if ($localSize !== $repoSize) {
+                    $filesToUpdate[] = $filePath;
+                }
+            } else {
+                // Новый файл / New file
+                $filesToUpdate[] = $filePath . ' (новый)';
             }
         }
         
-        return $files;
+        sort($filesToUpdate);
+        
+        return [
+            'success' => true,
+            'files' => $filesToUpdate,
+            'total' => count($filesToUpdate)
+        ];
     }
     
     /**
-     * Получение версии локального файла
-     * @param string $file
-     * @return string
+     * Получение файлов из репозитория с их размером
+     * Get files from repository with their size
      */
-    private function getLocalFileVersion($file) {
-        $fullPath = dirname(__DIR__, 2) . '/' . $file;
-        if (!file_exists($fullPath)) {
-            return '0.0.0';
-        }
-        
-        $content = file_get_contents($fullPath);
-        if (preg_match('/\/\/ ВЕРСИЯ:\s*([0-9.]+)/', $content, $matches)) {
-            return $matches[1];
-        }
-        
-        return '0.0.0';
-    }
-    
-    /**
-     * Получение версии удалённого файла
-     * @param string $file
-     * @return string|null
-     */
-    private function getRemoteFileVersion($file) {
-        $url = "https://raw.githubusercontent.com/{$this->repo}/{$this->branch}/{$file}";
+    private function getRepoFilesWithSize($path = '', $excludePaths = [], &$allFiles = []) {
+        $url = "https://api.github.com/repos/{$this->repo}/contents/{$path}?ref={$this->branch}";
         
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
-            CURLOPT_SSL_VERIFYPEER => false
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/2.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true
         ]);
         
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         
         if ($httpCode !== 200 || !$response) {
-            return null;
+            return $allFiles;
         }
         
-        if (preg_match('/\/\/ ВЕРСИЯ:\s*([0-9.]+)/', $response, $matches)) {
-            return $matches[1];
+        $items = json_decode($response, true);
+        if (!is_array($items)) {
+            return $allFiles;
         }
         
-        return null;
-    }
-    
-    /**
-     * Создание резервной копии файлов
-     * @param array $files
-     * @return bool
-     */
-    public function backupFiles($files) {
-        $backupDir = dirname(__DIR__, 2) . '/vlmcconf/backups/update_' . date('Y-m-d_H-i-s');
-        if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0755, true);
-        }
-        
-        foreach ($files as $file) {
-            $source = dirname(__DIR__, 2) . '/' . $file;
-            $target = $backupDir . '/' . dirname($file);
+        foreach ($items as $item) {
+            $name = $item['name'];
+            $fullPath = $item['path'];
             
-            if (!is_dir($target)) {
-                mkdir($target, 0755, true);
-            }
-            
-            if (file_exists($source)) {
-                copy($source, $target . '/' . basename($file));
-            }
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Обновление файлов
-     * @param array $files
-     * @return array
-     */
-    public function updateFiles($files) {
-        $updated = [];
-        $failed = [];
-        
-        foreach ($files as $file) {
-            $url = "https://raw.githubusercontent.com/{$this->repo}/{$this->branch}/{$file}";
-            $targetPath = dirname(__DIR__, 2) . '/' . $file;
-            $targetDir = dirname($targetPath);
-            
-            if (!is_dir($targetDir)) {
-                mkdir($targetDir, 0755, true);
-            }
-            
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_USERAGENT => 'KMS-Monitor-Updater/1.0',
-                CURLOPT_SSL_VERIFYPEER => false
-            ]);
-            
-            $content = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            
-            if ($httpCode === 200 && $content) {
-                if (file_put_contents($targetPath, $content)) {
-                    $updated[] = $file;
-                } else {
-                    $failed[] = $file;
+            // Проверяем исключения / Check excludes
+            $skip = false;
+            foreach ($excludePaths as $ex) {
+                if ($fullPath === $ex || strpos($fullPath, $ex . '/') === 0 || $name === $ex) {
+                    $skip = true;
+                    break;
                 }
-            } else {
-                $failed[] = $file;
+            }
+            if ($skip) continue;
+            
+            if ($item['type'] === 'file') {
+                $allFiles[$fullPath] = $item['size'];
+            } elseif ($item['type'] === 'dir') {
+                $this->getRepoFilesWithSize($fullPath, $excludePaths, $allFiles);
             }
         }
         
+        return $allFiles;
+    }
+    
+ /**
+ * Создание резервной копии файлов с детальным логом
+ * @param array $files
+ * @return array
+ */
+public function backupFiles($files) {
+    $backupDir = $this->baseDir . '/vlmcconf/backups/update_' . date('Y-m-d_H-i-s');
+    if (!is_dir($backupDir)) {
+        mkdir($backupDir, 0755, true);
+    }
+    
+    $backedUp = [];
+    $failed = [];
+    $log = [];
+    
+    foreach ($files as $file) {
+        $cleanFile = trim($file);
+        if (strpos($cleanFile, ' (') !== false) {
+            $cleanFile = substr($cleanFile, 0, strpos($cleanFile, ' ('));
+        }
+        
+        $source = $this->baseDir . '/' . $cleanFile;
+        $target = $backupDir . '/' . $cleanFile;
+        $targetDir = dirname($target);
+        
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+        
+        if (file_exists($source)) {
+            if (copy($source, $target)) {
+                $backedUp[] = $cleanFile;
+                $log[] = '✅ ' . basename($cleanFile) . ' — backup created';
+            } else {
+                $failed[] = $cleanFile;
+                $log[] = '❌ ' . basename($cleanFile) . ' — backup FAILED (copy error)';
+            }
+        } else {
+            $log[] = '⚠️ ' . basename($cleanFile) . ' — file not found (skip backup)';
+        }
+    }
+    
+    return [
+        'success' => empty($failed),
+        'backup_dir' => $backupDir,
+        'backed_up' => $backedUp,
+        'failed' => $failed,
+        'count' => count($backedUp),
+        'log' => $log
+    ];
+}
+
+/**
+ * Обновление файлов с детальным логом
+ * @param array $files
+ * @return array
+ */
+public function updateFiles($files) {
+    $updated = [];
+    $failed = [];
+    $log = [];
+    
+    foreach ($files as $file) {
+        $cleanFile = trim($file);
+        if (strpos($cleanFile, ' (') !== false) {
+            $cleanFile = substr($cleanFile, 0, strpos($cleanFile, ' ('));
+        }
+        
+        $url = "https://raw.githubusercontent.com/{$this->repo}/{$this->branch}/{$cleanFile}";
+        $targetPath = $this->baseDir . '/' . $cleanFile;
+        $targetDir = dirname($targetPath);
+        
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+        
+        $log[] = '📥 ' . basename($cleanFile) . ' — downloading...';
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'KMS-Monitor-Updater/2.0',
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true
+        ]);
+        
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        
+        if ($curlError) {
+            $failed[] = $cleanFile . ': CURL error - ' . $curlError;
+            $log[] = '❌ ' . basename($cleanFile) . ' — download FAILED (CURL: ' . $curlError . ')';
+            continue;
+        }
+        
+        if ($httpCode !== 200) {
+            $failed[] = $cleanFile . ': HTTP ' . $httpCode;
+            $log[] = '❌ ' . basename($cleanFile) . ' — download FAILED (HTTP ' . $httpCode . ')';
+            continue;
+        }
+        
+        $log[] = '✅ ' . basename($cleanFile) . ' — downloaded (' . strlen($content) . ' bytes)';
+        
+        if (file_put_contents($targetPath, $content) !== false) {
+            $updated[] = $cleanFile;
+            $log[] = '✅ ' . basename($cleanFile) . ' — installed successfully';
+        } else {
+            $failed[] = $cleanFile . ': cannot write file';
+            $log[] = '❌ ' . basename($cleanFile) . ' — installation FAILED (write error)';
+        }
+    }
+    
+    return [
+        'success' => empty($failed),
+        'updated' => $updated,
+        'failed' => $failed,
+        'updated_count' => count($updated),
+        'failed_count' => count($failed),
+        'log' => $log
+    ];
+}
+    
+public function performUpdate($files) {
+    if (empty($files)) {
         return [
-            'success' => empty($failed),
-            'updated' => $updated,
-            'failed' => $failed
+            'success' => false,
+            'message' => 'Нет файлов для обновления'
         ];
     }
     
-    /**
-     * Восстановление из резервной копии
-     * @param string $backupDir
-     * @return bool
-     */
-    public function rollback($backupDir) {
-        // Логика восстановления
-        return false;
+    $allLog = [];
+    $allLog[] = '📦 Creating backup...';
+    
+    $backupResult = $this->backupFiles($files);
+    $allLog = array_merge($allLog, $backupResult['log']);
+    
+    $allLog[] = '📥 Downloading new files...';
+    
+    $updateResult = $this->updateFiles($files);
+    $allLog = array_merge($allLog, $updateResult['log']);
+    
+    $allLog[] = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    $allLog[] = '✅ Updated: ' . $updateResult['updated_count'] . ' files';
+    if ($updateResult['failed_count'] > 0) {
+        $allLog[] = '❌ Failed: ' . $updateResult['failed_count'] . ' files';
     }
+    
+    // === ЗАПИСЬ ЛОГА ПЕРЕД RETURN ===
+    $logFile = $this->baseDir . '/vlmcconf/backups/update_log_' . date('Y-m-d_H-i-s') . '.txt';
+    file_put_contents($logFile, implode("\n", $allLog));
+    // =================================
+    
+    if ($updateResult['success']) {
+        return [
+            'success' => true,
+            'message' => 'Обновлено ' . $updateResult['updated_count'] . ' файлов. Бэкап: ' . basename($backupResult['backup_dir']),
+            'backup_dir' => $backupResult['backup_dir'],
+            'updated' => $updateResult['updated'],
+            'failed' => $updateResult['failed'],
+            'log' => $allLog
+        ];
+    } else {
+        return [
+            'success' => false,
+            'message' => 'Обновлено ' . $updateResult['updated_count'] . ' файлов, ошибок: ' . $updateResult['failed_count'],
+            'backup_dir' => $backupResult['backup_dir'],
+            'updated' => $updateResult['updated'],
+            'failed' => $updateResult['failed'],
+            'log' => $allLog
+        ];
+    }
+}
 }
 ?>
