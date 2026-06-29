@@ -220,8 +220,7 @@ return [
 	'tools_tab_log' => 'Log Management',
 	'tools_tab_cache' => 'Cache Management',
 	'tools_tab_update' => 'Обновление',
-	'update_confirm_desc' => 'A backup will be created before the update. The process may take a few minutes.',
-    
+	    
     // Permissions
     'permissions_tools' => '🛠️ Tools',
     'permissions_tools_hint' => 'Access to Tools section (log management, export, cache)',
@@ -624,7 +623,7 @@ return [
 	'update_repository' => 'Repository',
 	'update_branch' => 'Branch',
 	'update_server_url' => 'Server URL',
-	'update_version_path' => 'Version.json path',
+	'update_version_path' => 'Path to version.json',
 	'update_check_mode' => 'Check mode',
 	'update_mode_version' => 'By version (single number)',
 	'update_mode_files' => 'By files (list)',
@@ -637,12 +636,22 @@ return [
 	'update_in_progress' => 'Updating...',
 	'update_no_files' => 'No files to update',
 	'update_files_to_update' => 'Files to update',
-	'update_checking' => 'Checking for updates',
 	'update_checking_github' => 'Checking GitHub API availability',
 	'update_ready' => 'Update system ready',
-	'update_available' => 'New version available',
-	'update_not_available' => 'You have the latest version',
 	'update_check_github' => 'Check GitHub',
-
+	'update_confirm_title' => 'Confirm Update',
+	'update_confirm_warning' => 'A backup will be created before the update. The process may take a few minutes.',
+	'update_confirm_desc' => 'A backup of all modified files will be created. It is recommended to make a full project backup before updating.',
+	'update_confirm_no' => 'No, cancel',
+	'update_confirm_yes' => 'Yes, update',
+	'update_started' => 'Update started',
+	'update_target_version' => 'Target version',
+	'update_backup_start' => 'Creating backup',
+	'update_backup_saved' => 'Backup saved',
+	'update_complete' => 'Update completed!',
+	'update_reload_now' => '🔄 Reload page',
+	'update_failed_files' => '❌ Failed to update files',
+	'update_files_count' => '📦 Files to update',
+	
 ];
 ?>

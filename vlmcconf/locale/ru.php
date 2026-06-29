@@ -222,7 +222,6 @@ return [
 	'tools_tab_log' => 'Управление логом',
 	'tools_tab_cache' => 'Управление кэшем',
 	'tools_tab_update' => 'Обновление',
-	'update_confirm_desc' => 'Перед обновлением будет создана резервная копия. Процесс может занять несколько минут.',
     
     // Права доступа
     'permissions_tools' => '🛠️ Инструменты',
@@ -639,12 +638,22 @@ return [
 	'update_in_progress' => 'Обновление...',
 	'update_no_files' => 'Нет файлов для обновления',
 	'update_files_to_update' => 'Файлы для обновления',
-	'update_checking' => 'Проверка обновлений',
 	'update_checking_github' => 'Проверка доступности GitHub API',
 	'update_ready' => 'Система обновлений готова к работе',
-	'update_available' => 'Доступна новая версия',
-	'update_not_available' => 'У вас последняя версия',
 	'update_check_github' => 'Проверить GitHub',
-
+	'update_confirm_title' => 'Подтверждение обновления',
+	'update_confirm_warning' => 'Перед обновлением будет создана резервная копия. Процесс может занять несколько минут.',
+	'update_confirm_desc' => 'Будет создана резервная копия всех изменяемых файлов. Рекомендуется сделать полный бэкап проекта перед обновлением.',
+	'update_confirm_no' => 'Нет, отмена',
+	'update_confirm_yes' => 'Да, обновить',
+	'update_started' => 'Обновление запущено',
+	'update_target_version' => 'Целевая версия',
+	'update_backup_start' => 'Создание резервной копии',
+	'update_backup_saved' => 'Бэкап сохранён',
+	'update_complete' => 'Обновление завершено!',
+	'update_reload_now' => '🔄 Перезагрузить страницу',
+	'update_failed_files' => '❌ Ошибки при обновлении файлов',
+	'update_files_count' => '📦 Файлов для обновления',
+	
 ];
 ?>
