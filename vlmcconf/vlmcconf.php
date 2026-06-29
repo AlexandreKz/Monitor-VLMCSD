@@ -2,7 +2,7 @@
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
 // ВЕРСИЯ: 5.4.0
-// ДАТА: 2026-06-02
+// ДАТА: 2026-06-29
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -78,8 +78,8 @@ if ($currentUserPermissions == 0 && isset($_SESSION['vlmc_username']) && $_SESSI
 // Для обратной совместимости
 $isAdmin = hasPermission($currentUserPermissions, PERM_USERS_EDIT);
 
-define('CONFIG_VERSION', '5.0.0');
-define('CONFIG_DATE', '2026-05-31');
+define('CONFIG_VERSION', '5.4.0');
+define('CONFIG_DATE', '2026-06-29');
 
 $configFile = __DIR__ . '/vlmcconf_config.json';
 $logFile = dirname(__DIR__) . '/vlmcsd.log';
