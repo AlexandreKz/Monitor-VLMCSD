@@ -406,7 +406,8 @@ function analyzeLog($logFile, $devices, &$cacheStatus, &$cacheMessage, $whitelis
                 }
                 
                 if ($fastCount >= 2 || $duration < 300) {
-                    $country = getGeoLocation($ip, $cacheStatus, $cacheMessage);
+                    // Только кэш: сетевых запросов при открытии страницы нет (кэш наполняется из панели)
+                    $country = getGeoCachedCountry($ip) ?? __('geo_unknown');
                     $stats['suspicious_ips'][$ip] = [
                         'count' => count($times),
                         'duration' => $duration,
