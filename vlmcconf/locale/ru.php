@@ -141,6 +141,8 @@ return [
     'stats_top_countries' => 'Топ стран',
     'stats_no_data_ips' => 'Нет данных об IP',
     'stats_no_data_countries' => 'Нет данных о странах',
+    'stats_geo_pending' => 'Определяю страны для новых IP: %d…',
+    'stats_geo_done' => 'Страны определены — обновите страницу (F5), чтобы увидеть топ стран',
     'stats_no_groups' => 'Нет созданных групп',
     'stats_activity' => 'Активность подключений',
     'stats_days' => 'Дни',
@@ -456,7 +458,7 @@ return [
     'whitelist_auth_required' => 'Авторизуйтесь для добавления IP в белый список',
     
     // Модальное окно добавления устройства
-    'add_device_title' => '➕ Добавить устройство',
+    'add_device_title' => 'Добавить устройство',
     'add_device_name' => 'Имя устройства',
     'add_device_name_placeholder' => 'Введите имя устройства',
     'add_device_group' => 'Группа',
@@ -512,6 +514,7 @@ return [
     'password_requirements' => 'Требования: минимум 8 символов, заглавные и строчные буквы, хотя бы одна цифра (только латиница)',
     'invalid_login' => 'Неверный логин или пароль',
     'user_not_found' => 'Пользователь не найден',
+    'change_password_session_expired' => 'Сессия смены пароля истекла. Войдите заново.',
     'password_change_error' => 'Ошибка при смене пароля',
     
     // Валидация

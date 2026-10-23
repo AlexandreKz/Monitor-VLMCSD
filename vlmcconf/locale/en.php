@@ -140,6 +140,8 @@ return [
     'stats_top_countries' => 'Top countries',
     'stats_no_data_ips' => 'No IP data available',
     'stats_no_data_countries' => 'No country data available',
+    'stats_geo_pending' => 'Resolving countries for new IPs: %d…',
+    'stats_geo_done' => 'Countries resolved — reload the page (F5) to see the top countries',
     'stats_no_groups' => 'No groups created',
     'stats_activity' => 'Connection activity',
     'stats_days' => 'Days',
@@ -454,7 +456,7 @@ return [
     'whitelist_auth_required' => 'Login to add IP to whitelist',
     
     // Add device modal
-    'add_device_title' => '➕ Add Device',
+    'add_device_title' => 'Add Device',
     'add_device_name' => 'Device name',
     'add_device_name_placeholder' => 'Enter device name',
     'add_device_group' => 'Group',
@@ -510,6 +512,7 @@ return [
     'password_requirements' => 'Requirements: minimum 8 characters, uppercase and lowercase letters, at least one digit (Latin only)',
     'invalid_login' => 'Invalid username or password',
     'user_not_found' => 'User not found',
+    'change_password_session_expired' => 'Password change session expired. Please sign in again.',
     'password_change_error' => 'Error changing password',
     
     // Validation
