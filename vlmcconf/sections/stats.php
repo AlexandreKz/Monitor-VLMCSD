@@ -11,83 +11,33 @@ if (basename($_SERVER['PHP_SELF']) === 'stats.php') {
     exit('Access denied');
 }
 
-// Функция для получения ТОП IP адресов из лога
-function getTopIps($logFile, $limit = 4) {
-    $ips = [];
-    
-    if (!file_exists($logFile)) {
-        return [];
-    }
-    
-    $content = file_get_contents($logFile);
-    if ($content === false) {
-        return [];
-    }
-    
-    // Собираем IP из строк "connection accepted"
-    if (preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches)) {
-        foreach ($matches[1] as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $ips[$ip] = ($ips[$ip] ?? 0) + 1;
-            }
+// Один потоковый проход по логу: ip => число подключений
+$ipCounts = getLogIpCounts($fullLogPath);
+$totalRequests = array_sum($ipCounts);
+
+// ТОП IP
+$topIps = $ipCounts;
+arsort($topIps);
+$topIps = array_slice($topIps, 0, 4, true);
+
+// ТОП стран: данные ТОЛЬКО из кэша, сетевых запросов при отрисовке страницы нет.
+// IP без кэша определяются в фоне через AJAX (см. скрипт ниже).
+$countryCounts = [];
+$geoPending = 0;
+foreach ($ipCounts as $ip => $cnt) {
+    $country = getGeoCachedCountry($ip);
+    if ($country === null) {
+        if (geoLookupFailedRecently($ip)) {
+            $country = __('geo_unknown');
+        } else {
+            $geoPending++;
+            continue;
         }
     }
-    
-    // Сортируем по убыванию и берем TOP $limit
-    arsort($ips);
-    return array_slice($ips, 0, $limit, true);
+    $countryCounts[$country] = ($countryCounts[$country] ?? 0) + $cnt;
 }
-
-// Функция для получения ТОП стран из кэша геолокации
-function getTopCountries($logFile, $limit = 4) {
-    $countries = [];
-    
-    if (!file_exists($logFile)) {
-        return [];
-    }
-    
-    $content = file_get_contents($logFile);
-    if ($content === false) {
-        return [];
-    }
-    
-    // Собираем IP из строк "connection accepted"
-    if (preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches)) {
-        foreach ($matches[1] as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                // Получаем страну из кэша или API
-                $cacheStatus = true;
-                $cacheMessage = '';
-                $country = getGeoLocation($ip, $cacheStatus, $cacheMessage);
-                $countries[$country] = ($countries[$country] ?? 0) + 1;
-            }
-        }
-    }
-    
-    // Сортируем по убыванию и берем TOP $limit
-    arsort($countries);
-    return array_slice($countries, 0, $limit, true);
-}
-
-// Функция для получения общего количества запросов
-function getTotalRequests($logFile) {
-    if (!file_exists($logFile)) {
-        return 0;
-    }
-    
-    $content = file_get_contents($logFile);
-    if ($content === false) {
-        return 0;
-    }
-    
-    preg_match_all('/connection accepted: ([\d\.]+):/', $content, $matches);
-    return count($matches[0]);
-}
-
-// Получаем данные для статистики
-$totalRequests = getTotalRequests($fullLogPath);
-$topIps = getTopIps($fullLogPath, 4);
-$topCountries = getTopCountries($fullLogPath, 4);
+arsort($countryCounts);
+$topCountries = array_slice($countryCounts, 0, 4, true);
 
 // Статистика по группам (устройства из конфига)
 $groupStats = [];
@@ -169,6 +119,37 @@ $totalGroups = count($groupStats);
         <!-- Блок: Топ стран -->
         <div class="stat-block">
             <div class="stat-block-title">🌍 <?= __('stats_top_countries') ?></div>
+            <?php if ($geoPending > 0): ?>
+            <div class="stat-list-empty" id="geo-pending-hint">🌐 <?= sprintf(__('stats_geo_pending'), $geoPending) ?></div>
+            <script>
+            (function () {
+                var rounds = 0, resolvedTotal = 0;
+                function finish() {
+                    var el = document.getElementById('geo-pending-hint');
+                    if (!el) return;
+                    if (resolvedTotal > 0) {
+                        el.textContent = <?= json_encode('🌐 ' . __('stats_geo_done')) ?>;
+                    } else {
+                        el.remove();
+                    }
+                }
+                function step() {
+                    if (rounds++ >= 100) { finish(); return; }
+                    var fd = new FormData();
+                    fd.append('ajax', 'geo_resolve_portion');
+                    fetch('', { method: 'POST', body: fd, credentials: 'same-origin' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            if (!d || !d.success) { finish(); return; }
+                            resolvedTotal += d.resolved;
+                            if (d.remaining > 0 && (d.resolved + d.failed) > 0) { step(); } else { finish(); }
+                        })
+                        .catch(finish);
+                }
+                window.addEventListener('load', function () { setTimeout(step, 500); });
+            })();
+            </script>
+            <?php endif; ?>
             <div class="stat-list">
                 <?php if (empty($topCountries)): ?>
                     <div class="stat-list-empty"><?= __('stats_no_data_countries') ?></div>
