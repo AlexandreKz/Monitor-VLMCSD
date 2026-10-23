@@ -81,7 +81,10 @@ if (isset($_POST['ajax'])) {
     // Получаем активность по датам
     if ($_POST['ajax'] === 'get_activity') {
         $period = $_POST['period'] ?? 'day';
-        $activity = getActivityData($GLOBALS['fullLogPath'], $period);
+        $activityLog = $GLOBALS['fullLogPath'];
+        $activity = logAggCached('activity', $activityLog, function () use ($activityLog, $period) {
+            return getActivityData($activityLog, $period);
+        }, (string)$period);
         echo json_encode(['success' => true, 'data' => $activity]);
         exit;
     }
@@ -468,45 +471,50 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
-    // Принудительное обновление кэша геолокации
+    // Определение стран для новых IP порциями (вызывается со страницы статистики, не блокирует рендер)
+    if ($_POST['ajax'] === 'geo_resolve_portion') {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            exit;
+        }
+        session_write_close(); // не держим блокировку сессии, пока идут сетевые запросы
+        set_time_limit(60);
+        require_once __DIR__ . '/../vlmcinc/geo_cache.php';
+        echo json_encode(resolveGeoPortion($GLOBALS['fullLogPath'], 5));
+        exit;
+    }
+    
+    // Принудительное обновление кэша геолокации (порциями — формат ответа ожидает sections/tools.php)
     if ($_POST['ajax'] === 'refresh_geo_cache') {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+            echo json_encode(['success' => false, 'message' => 'Access denied']);
+            exit;
+        }
+        session_write_close();
         require_once __DIR__ . '/../vlmcinc/geo_cache.php';
         
-        $fullLogPath = $GLOBALS['fullLogPath'];
-        $allIps = getAllIpsFromMonitor($fullLogPath, $config);
+        $offset = max(0, (int)($_POST['offset'] ?? 0));
+        $limit  = max(1, min(50, (int)($_POST['limit'] ?? 10)));
+        
+        $allIps = getAllIpsFromMonitor($GLOBALS['fullLogPath'], $config);
         
         if (empty($allIps)) {
             echo json_encode([
-                'success' => true, 
-                'updated' => 0, 
-                'failed' => 0, 
-                'total' => 0, 
+                'success' => true,
+                'processed' => 0,
+                'updated' => 0,
+                'failed' => 0,
+                'total_all' => 0,
+                'has_more' => false,
+                'next_offset' => 0,
                 'message' => __('tools_cache_no_ips')
             ]);
             exit;
         }
         
-        if (function_exists('pcntl_fork')) {
-            $pid = pcntl_fork();
-            
-            if ($pid == -1) {
-                $result = refreshGeoCacheForIpsFast($allIps);
-                echo json_encode($result);
-            } elseif ($pid == 0) {
-                refreshGeoCacheForIpsBackground($allIps);
-                exit;
-            } else {
-                echo json_encode([
-                    'success' => true, 
-                    'async' => true,
-                    'total' => count($allIps),
-                    'message' => __('tools_cache_background')
-                ]);
-            }
-        } else {
-            $result = refreshGeoCacheForIpsFast($allIps);
-            echo json_encode($result);
-        }
+        echo json_encode(refreshGeoCacheByPortion($allIps, $offset, $limit));
         exit;
     }
     

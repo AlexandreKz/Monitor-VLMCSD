@@ -34,7 +34,7 @@ function getGeoCacheStats() {
 
 function clearGeoCache() {
     $cacheDir = getGeoCacheDir();
-    $files = glob($cacheDir . '/*.txt');
+    $files = array_merge(glob($cacheDir . '/*.txt') ?: [], glob($cacheDir . '/*.fail') ?: []);
     $deleted = 0;
     
     foreach ($files as $file) {
@@ -133,5 +133,86 @@ function getAllIpsFromMonitor($logFile, $config) {
     }
     
     return array_keys($ips);
+}
+
+// ============================================
+// Геолокация без сетевых запросов при рендере страницы
+// (кэш-хелперы getGeoCachedCountry/geoLookupFailedRecently — в vlmcgeoip.php)
+// ============================================
+
+/**
+ * Число подключений по каждому IP: один потоковый проход по логу
+ * (без загрузки файла целиком в память). Результат запоминается на время запроса.
+ * @return array ip => количество подключений
+ */
+function getLogIpCounts($logFile) {
+    static $memo = [];
+    if (!is_string($logFile) || !is_file($logFile)) {
+        return [];
+    }
+    $key = $logFile . '|' . filemtime($logFile) . '|' . filesize($logFile);
+    if (isset($memo[$key])) {
+        return $memo[$key];
+    }
+    $counts = [];
+    $fh = @fopen($logFile, 'rb');
+    if ($fh === false) {
+        return [];
+    }
+    while (($line = fgets($fh)) !== false) {
+        if (strpos($line, 'connection accepted: ') === false) {
+            continue;
+        }
+        if (preg_match('/connection accepted: ([\d\.]+):/', $line, $m) && filter_var($m[1], FILTER_VALIDATE_IP)) {
+            $counts[$m[1]] = ($counts[$m[1]] ?? 0) + 1;
+        }
+    }
+    fclose($fh);
+    return $memo[$key] = $counts;
+}
+
+/** IP, для которых страну ещё нужно определить (порядок: самые активные первыми). */
+function getPendingGeoIps(array $ipCounts) {
+    arsort($ipCounts);
+    $pending = [];
+    foreach ($ipCounts as $ip => $cnt) {
+        if (getGeoCachedCountry($ip) === null && !geoLookupFailedRecently($ip)) {
+            $pending[] = $ip;
+        }
+    }
+    return $pending;
+}
+
+/**
+ * Определить страны для очередной порции новых IP (вызывается из AJAX, не при рендере).
+ * Успех -> файл кэша, неудача -> маркер .fail на час.
+ */
+function resolveGeoPortion($logFile, $limit = 5) {
+    $limit = max(1, min(20, (int)$limit));
+    $pending = getPendingGeoIps(getLogIpCounts($logFile));
+    $resolved = 0;
+    $failed = 0;
+
+    foreach (array_slice($pending, 0, $limit) as $ip) {
+        $country = getGeoLocationDirect($ip);
+        if ($country && $country !== __('geo_unknown')) {
+            $file = geoCacheFile($ip);
+            $tmp = $file . '.tmp';
+            if (@file_put_contents($tmp, $country) !== false) {
+                @rename($tmp, $file);
+            }
+            $resolved++;
+        } else {
+            @touch(geoCacheFile($ip, 'fail'));
+            $failed++;
+        }
+    }
+
+    return [
+        'success'   => true,
+        'resolved'  => $resolved,
+        'failed'    => $failed,
+        'remaining' => max(0, count($pending) - $resolved - $failed)
+    ];
 }
 ?>

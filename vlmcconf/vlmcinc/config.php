@@ -14,21 +14,21 @@ function getFirstLogEvent($logFile) {
         return ['date' => '—', 'event' => 'Файл не найден'];
     }
     
-    $content = file_get_contents($logFile);
-    if ($content === false) {
+    // Читаем потоково только до первой строки с датой, а не весь лог
+    $fh = @fopen($logFile, 'rb');
+    if ($fh === false) {
         return ['date' => '—', 'event' => 'Ошибка чтения'];
     }
     
-    $lines = explode("\n", $content);
     $firstLine = null;
-    
-    foreach ($lines as $line) {
+    while (($line = fgets($fh)) !== false) {
         $line = trim($line);
-        if (!empty($line) && preg_match('/\d{4}-\d{2}-\d{2}/', $line)) {
+        if ($line !== '' && preg_match('/\d{4}-\d{2}-\d{2}/', $line)) {
             $firstLine = $line;
             break;
         }
     }
+    fclose($fh);
     
     if (!$firstLine) {
         return ['date' => '—', 'event' => 'Лог пуст'];

@@ -6,6 +6,8 @@
 // @description: Функции для анализа лога и статистики
 // ============================================
 
+require_once __DIR__ . '/log_cache.php';
+
 /**
  * Получение активности по датам (общая)
  */
@@ -138,35 +140,29 @@ function getUptime($logFile) {
         return ['status' => __('status_file_not_found'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
     }
     
-    $content = file_get_contents($logFile);
-    if ($content === false) {
-        return ['status' => __('status_read_error'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
-    }
-    
-    $lines = explode("\n", $content);
-    $startTime = null;
-    
-    foreach ($lines as $line) {
-        if (strpos($line, 'started successfully') !== false) {
-            if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
-                $startTime = strtotime($matches[1]);
-                break;
-            }
+    // Время старта сервиса: потоково и с кэшем по подписи лога
+    $startTime = logAggCached('uptime_start', $logFile, function () use ($logFile) {
+        $fh = @fopen($logFile, 'rb');
+        if ($fh === false) {
+            return null;
         }
-    }
-    
-    if (!$startTime) {
         $oldestTime = null;
-        foreach ($lines as $line) {
-            if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
-                $time = strtotime($matches[1]);
-                if ($oldestTime === null || $time < $oldestTime) {
-                    $oldestTime = $time;
-                }
+        while (($line = fgets($fh)) !== false) {
+            if (!preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
+                continue;
+            }
+            $time = strtotime($matches[1]);
+            if (strpos($line, 'started successfully') !== false) {
+                fclose($fh);
+                return $time ?: null;
+            }
+            if ($oldestTime === null || $time < $oldestTime) {
+                $oldestTime = $time;
             }
         }
-        $startTime = $oldestTime;
-    }
+        fclose($fh);
+        return $oldestTime ?: null;
+    });
     
     if (!$startTime) {
         return ['status' => __('status_no_data'), 'days' => 0, 'hours' => 0, 'minutes' => 0];
