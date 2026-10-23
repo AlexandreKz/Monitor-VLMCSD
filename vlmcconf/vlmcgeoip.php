@@ -96,40 +96,107 @@ function getGeoCacheDir() {
 }
 
 /**
+ * HTTP GET с короткими тайм-аутами. Работает и без расширения curl
+ * (fallback на file_get_contents). Возвращает тело ответа или null.
+ */
+function geoHttpGet($url, $timeout = 2) {
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 1,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0',
+            CURLOPT_FOLLOWLOCATION => true
+        ]);
+        $response = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        return ($code === 200 && is_string($response) && $response !== '') ? $response : null;
+    }
+
+    // curl не включён в php.ini — пробуем штатные потоки PHP
+    if (!ini_get('allow_url_fopen')) {
+        return null;
+    }
+    if (stripos($url, 'https://') === 0 && !extension_loaded('openssl')) {
+        return null;
+    }
+    $context = stream_context_create(['http' => [
+        'timeout' => $timeout,
+        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0'
+    ]]);
+    $response = @file_get_contents($url, false, $context);
+    return ($response !== false && $response !== '') ? $response : null;
+}
+
+if (!defined('GEO_CACHE_TTL')) define('GEO_CACHE_TTL', 2592000); // 30 дней
+if (!defined('GEO_FAIL_TTL'))  define('GEO_FAIL_TTL', 3600);     // 1 час: после неудачи API не дёргаем
+
+function geoIsPublicIp($ip) {
+    return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+}
+
+function geoCacheFile($ip, $ext = 'txt') {
+    return getGeoCacheDir() . '/' . md5($ip) . '.' . $ext;
+}
+
+/**
+ * Страна ТОЛЬКО из кэша. null — в кэше нет (сетевой запрос не выполняется).
+ */
+function getGeoCachedCountry($ip) {
+    if (!geoIsPublicIp($ip)) {
+        return __('geo_local');
+    }
+    $file = geoCacheFile($ip);
+    if (is_file($file) && (time() - filemtime($file) < GEO_CACHE_TTL)) {
+        $country = @file_get_contents($file);
+        if ($country !== false && $country !== '') {
+            return $country;
+        }
+    }
+    return null;
+}
+
+/** Недавняя неудача определения страны (маркер .fail живёт GEO_FAIL_TTL секунд). */
+function geoLookupFailedRecently($ip) {
+    $file = geoCacheFile($ip, 'fail');
+    return is_file($file) && (time() - filemtime($file) < GEO_FAIL_TTL);
+}
+
+/**
  * Прямой запрос к API (только страна)
  */
 function getGeoLocationDirect($ip) {
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return __('geo_unknown');
+    }
+
     $apis = [
         "http://ip-api.com/json/{$ip}?fields=country",
         "https://ipapi.co/{$ip}/country_name/"
     ];
-    
+
     foreach ($apis as $api) {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $api);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0');
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
-        if ($httpCode === 200 && $response) {
-            if (strpos($api, 'ip-api.com') !== false) {
-                $data = json_decode($response, true);
-                if (isset($data['country'])) {
-                    return $data['country'];
-                }
-            } else {
-                $country = trim($response);
-                if (!empty($country) && $country !== 'Undefined') {
-                    return $country;
-                }
+        $response = geoHttpGet($api, 2);
+        if ($response === null) {
+            continue;
+        }
+
+        if (strpos($api, 'ip-api.com') !== false) {
+            $data = json_decode($response, true);
+            if (isset($data['country'])) {
+                return $data['country'];
+            }
+        } else {
+            $country = trim($response);
+            if ($country !== '' && $country !== 'Undefined' && $country[0] !== '{' && strlen($country) < 64) {
+                return $country;
             }
         }
     }
-    
+
     return __('geo_unknown');
 }
 
@@ -160,6 +227,11 @@ function getGeoLocation($ip, &$cacheStatus, &$cacheMessage) {
     }
     
     $country = getGeoLocationDirect($ip);
+    
+    // Неудачный запрос не кэшируем на 30 дней
+    if ($country === __('geo_unknown')) {
+        return $country;
+    }
     
     if (!@file_put_contents($cacheFile, $country)) {
         $cacheStatus = false;
@@ -208,20 +280,9 @@ function getDetailedGeoLocation($ip) {
     ];
     
     foreach ($apis as $api) {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $api['url'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 3,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT => 'KMS Monitor GeoIP/1.0',
-            CURLOPT_FOLLOWLOCATION => true
-        ]);
+        $response = geoHttpGet($api['url'], 3);
         
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
-        if ($httpCode === 200 && $response) {
+        if ($response !== null) {
             $data = json_decode($response, true);
             
             if ($api['type'] === 'ip-api' && isset($data['status']) && $data['status'] === 'success') {

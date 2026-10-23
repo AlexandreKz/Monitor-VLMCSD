@@ -53,6 +53,7 @@ require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/geo_cache.php';
+require_once __DIR__ . '/vlmcinc/log_cache.php';
 require_once __DIR__ . '/vlmcinc/emoji_manager.php';
 
 // ============================================
@@ -242,8 +243,12 @@ $firstEvent = getFirstLogEvent($fullLogPath);
 // СТАТИСТИКА
 // ============================================
 
-$deviceRequests = getDeviceRequests($fullLogPath);
-list($oldestDevice, $newestDevice, $oldestDate, $newestDate) = getOldestNewestDevice($fullLogPath);
+$deviceRequests = logAggCached('device_requests', $fullLogPath, function () use ($fullLogPath) {
+    return getDeviceRequests($fullLogPath);
+});
+list($oldestDevice, $newestDevice, $oldestDate, $newestDate) = logAggCached('oldest_newest', $fullLogPath, function () use ($fullLogPath) {
+    return getOldestNewestDevice($fullLogPath);
+});
 $serverInfo = getServerInfo();
 $osName = $serverInfo['osName'];
 $hostname = $serverInfo['hostname'];

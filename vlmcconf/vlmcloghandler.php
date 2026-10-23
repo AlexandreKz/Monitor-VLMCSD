@@ -20,17 +20,18 @@ function getFirstLogDate($logFile) {
         return null;
     }
     
-    $content = file_get_contents($logFile);
-    if ($content === false || empty(trim($content))) {
+    // Читаем потоково только до первой строки с датой, а не весь лог
+    $fh = @fopen($logFile, 'rb');
+    if ($fh === false) {
         return null;
     }
-    
-    $lines = explode("\n", $content);
-    foreach ($lines as $line) {
+    while (($line = fgets($fh)) !== false) {
         if (preg_match('/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
+            fclose($fh);
             return $matches[1];
         }
     }
+    fclose($fh);
     
     return null;
 }

@@ -75,41 +75,51 @@ $changePasswordMode = false;
 $username = '';
 
 // Обработка смены пароля
+// Допустима ТОЛЬКО сразу после успешного ввода старого пароля на шаге входа:
+// тогда в сессии лежит pending_user. Имя пользователя из запроса НЕ используется,
+// иначе любой мог бы сменить пароль чужой учётной записи (например, root) без входа.
 if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
-    $username = $_POST['username'] ?? '';
     $newPassword = $_POST['new_password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
     
-    $user = getUserByUsername($username);
+    $pendingId = $_SESSION['pending_user'] ?? null;
+    $pendingAge = time() - (int)($_SESSION['pending_time'] ?? 0);
+    $user = ($pendingId !== null && $pendingAge <= 600) ? getUserById($pendingId) : null;
     
-    if (!$user) {
-        $error = __('user_not_found');
+    if (!$user || empty($user['must_change_password'])) {
+        // Нет подтверждённого шага входа (или он устарел) — отказ, пароль не меняем
+        unset($_SESSION['pending_user'], $_SESSION['pending_time']);
+        $error = __('change_password_session_expired');
+        $changePasswordMode = false;
     } elseif ($newPassword !== $confirmPassword) {
         $error = __('passwords_do_not_match');
+        $changePasswordMode = true;
     } else {
         $errors = checkPasswordStrength($newPassword);
         if (!empty($errors)) {
             $error = implode('<br>', $errors);
+            $changePasswordMode = true;
+        } elseif (updateUser($user['id'], ['password' => $newPassword])) {
+            $user = getUserById($user['id']);
+            
+            unset($_SESSION['pending_user'], $_SESSION['pending_time']);
+            session_regenerate_id(true);
+            
+            $_SESSION['vlmc_admin'] = true;
+            $_SESSION['vlmc_user_id'] = $user['id'];
+            $_SESSION['vlmc_username'] = $user['username'];
+            $_SESSION['vlmc_permissions'] = $user['permissions'];
+            $_SESSION['vlmc_login_time'] = time();
+            
+            updateLastLogin($user['username']);
+            
+            header('Location: vlmcconf.php');
+            exit;
         } else {
-            if (updateUser($user['id'], ['password' => $newPassword])) {
-                $user = getUserById($user['id']);
-                
-                $_SESSION['vlmc_admin'] = true;
-                $_SESSION['vlmc_user_id'] = $user['id'];
-                $_SESSION['vlmc_username'] = $user['username'];
-                $_SESSION['vlmc_permissions'] = $user['permissions'];
-                $_SESSION['vlmc_login_time'] = time();
-                
-                updateLastLogin($username);
-                
-                header('Location: vlmcconf.php');
-                exit;
-            } else {
-                $error = __('password_change_error');
-            }
+            $error = __('password_change_error');
+            $changePasswordMode = true;
         }
     }
-    $changePasswordMode = true;
 }
 
 // ============================================
@@ -124,7 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         $user = getUserByUsername($username);
         
         if (isset($user['must_change_password']) && $user['must_change_password'] === true) {
+            session_regenerate_id(true);
             $_SESSION['pending_user'] = $user['id'];
+            $_SESSION['pending_time'] = time();
             $changePasswordMode = true;
             $error = '';
         } else {
