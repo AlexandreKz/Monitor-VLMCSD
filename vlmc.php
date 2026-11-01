@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.4.2
-// ДАТА: 2026-06-28
+// ВЕРСИЯ: 5.5.0
+// ДАТА: 2026-11-01
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.4.2
+ * Version: 5.5.0
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -17,7 +17,18 @@
  * Copyright (c) 2026 AlexandreKz
  */
 
-session_start();
+require_once __DIR__ . '/vlmcconf/vlmcinc/csrf.php';
+require_once __DIR__ . '/vlmcconf/vlmcinc/paths.php';
+vlmcSessionStart();
+csrfEnsureToken(); // для вошедшего администратора создаёт CSRF-токен, если его ещё нет
+
+// Страница и её фоновые запросы (опрос лога каждые 2 с, геолокация) сессию только читают.
+// Снимаем блокировку сразу: иначе вход в админку и любые другие запросы этого браузера
+// стоят в очереди, пока идёт разбор лога. $_SESSION остаётся доступной для чтения.
+// Пишем в сессию только при переключении языка (?lang=).
+if (!isset($_GET['lang'])) {
+    session_write_close();
+}
 
 // ============================================
 // ПОДКЛЮЧЕНИЕ ВНЕШНИХ ФАЙЛОВ
@@ -32,7 +43,7 @@ require_once __DIR__ . '/vlmcconf/flags.php';
 // ============================================
 // ЗАГРУЗКА КОНФИГУРАЦИИ
 // ============================================
-$configFile = __DIR__ . '/vlmcconf/vlmcconf_config.json';
+$configFile = vlmcConfigFile(); // вне веб-папки (см. vlmcconf/vlmcinc/paths.php), при недоступности — vlmcconf/
 $theme = 'dark';
 $config = [
     'logPath' => 'vlmcsd.log',
@@ -150,13 +161,14 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
     header('Content-Type: application/json');
     
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        vlmcSessionStart();
     }
     
     if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
         echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
         exit;
     }
+    csrfVerifyOrDie();
     
     $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
     if (!($userPermissions & 8)) {
@@ -206,13 +218,14 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
     header('Content-Type: application/json');
     
     if (session_status() === PHP_SESSION_NONE) {
-        session_start();
+        vlmcSessionStart();
     }
     
     if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
         echo json_encode(['success' => false, 'message' => __('access_denied')]);
         exit;
     }
+    csrfVerifyOrDie();
     
     $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
     if (!($userPermissions & 2048)) {
@@ -517,6 +530,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
 <!DOCTYPE html>
 <html>
 <head>
+    <?= csrfClientScript() ?>
     <link rel="shortcut icon" href="/pic/favicon.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/css/flag-icons.min.css">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
