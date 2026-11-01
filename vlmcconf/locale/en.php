@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.0.0
-// ДАТА: 2026-06-02
+// ВЕРСИЯ: 5.5.0
+// ДАТА: 2026-11-01
 // @description: English translations
 // ============================================
 
@@ -456,7 +456,7 @@ return [
     'whitelist_auth_required' => 'Login to add IP to whitelist',
     
     // Add device modal
-    'add_device_title' => 'Add Device',
+    'add_device_title' => '➕ Add Device',
     'add_device_name' => 'Device name',
     'add_device_name_placeholder' => 'Enter device name',
     'add_device_group' => 'Group',
@@ -513,6 +513,64 @@ return [
     'invalid_login' => 'Invalid username or password',
     'user_not_found' => 'User not found',
     'change_password_session_expired' => 'Password change session expired. Please sign in again.',
+    'csrf_error' => 'Security error: invalid request token. Reload the page and try again.',
+    'login_too_many_attempts' => 'Too many login attempts. Try again in %d min.',
+    'data_dir_legacy_warning' => 'Panel data (users.json, vlmcconf_config.json) is stored inside the web folder. Move it outside: create the folder %s with access for the web server and reload the page — the migration runs automatically. Details: Documentation → "Panel data storage".',
+    'data_dir_stale_warning' => 'Old copies of users.json or vlmcconf_config.json are left in the panel folder although the data is already stored in %s. Delete the old files manually: they are reachable from the web folder.',
+    'update_channel_selected' => 'will be installed',
+    'update_ch_not_checked' => 'Not checked',
+    'update_ch_uptodate' => 'Up to date',
+    'update_ch_available_release' => 'Version %s available (files: %d)',
+    'update_ch_available_early' => 'Changes available: new %d, changed %d',
+    'update_ch_older' => 'The release is not newer than the installed version',
+    'update_ch_version' => 'Version',
+    'update_ch_revision' => 'Revision',
+    'update_obsolete_files' => 'Files not in the repository: %d (not deleted)',
+    'update_never' => 'never',
+    'update_last_check' => 'Last check',
+    'update_cached' => 'from saved data',
+    'update_file_new' => 'new',
+    'update_file_changed' => 'changed',
+    'update_auto_check_label' => 'Check for updates automatically (both channels)',
+    'update_auto_check_every' => 'Every %d h',
+    'update_in_dev' => 'in development',
+    'update_settings_saved' => 'Update settings saved',
+    'update_done' => 'Files updated: %d. Backup: %s',
+    'update_github_ok' => 'GitHub is reachable, SSL verification passed. API limit: %d of %d requests left.',
+    'update_err_ssl_ca' => 'Cannot verify the server certificate: this computer has no list of trusted certificate authorities (CA) configured.',
+    'update_err_ssl' => 'Could not establish a secure connection: the server certificate failed verification.',
+    'update_err_network' => 'No connection to GitHub (network, DNS or timeout).',
+    'update_err_rate_limit' => 'GitHub has temporarily limited the number of requests. Try again later (after %s).',
+    'update_err_not_found' => 'The repository or link was not found on GitHub.',
+    'update_err_no_releases' => 'The repository has no published releases yet.',
+    'update_err_http_error' => 'GitHub returned an error (code %d).',
+    'update_err_bad_response' => 'Unexpected response from GitHub.',
+    'update_err_tree_truncated' => 'The repository file list is too large to check.',
+    'update_err_no_transport' => 'The server has no curl extension and allow_url_fopen/openssl are not enabled: the update is impossible.',
+    'update_err_insecure_scheme' => 'Insecure address: only https connections are allowed.',
+    'update_err_busy' => 'An update is already in progress.',
+    'update_err_verify_failed' => 'The downloaded file does not match the repository (checksum): %s. The installation was cancelled.',
+    'update_err_write_failed' => 'Could not write the file: %s. Rolled back.',
+    'update_err_nothing' => 'No files to update.',
+    'update_ssl_help_title' => 'How to enable certificate verification',
+    'update_ssl_help_windows' => 'Certificate verification is enabled, but PHP on this computer has no list of trusted certificate authorities (CA). On Windows this is configured once:
+
+1. Download https://curl.se/ca/cacert.pem and save it as
+   C:\php\extras\ssl\cacert.pem   (create the folders if they do not exist).
+2. Find php.ini: the command  php --ini  shows the line "Loaded Configuration File". If it is empty, copy php.ini-development to php.ini (in the PHP folder).
+3. In php.ini find the lines curl.cainfo and openssl.cafile, remove the leading ";" and set the path:
+   curl.cainfo = "C:\php\extras\ssl\cacert.pem"
+   openssl.cafile = "C:\php\extras\ssl\cacert.pem"
+4. Make sure these extensions are enabled (no leading ";"):  extension=curl  and  extension=openssl
+5. Restart PHP (stop and start php -S again, or restart Apache/IIS) and click "Check GitHub".',
+    'update_ssl_help_linux' => 'The server certificate cannot be verified. On Ubuntu update the list of trusted certificates:
+   sudo apt update && sudo apt install --reinstall ca-certificates && sudo update-ca-certificates
+If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix the path or remove those lines, then restart PHP-FPM or Apache.',
+    'update_banner_text' => 'A panel update is available.',
+    'update_banner_release' => 'Release %s',
+    'update_banner_early' => 'early access: %d files',
+    'update_banner_open' => 'Open',
+    'stats_geo_ssl_error' => 'Cannot verify certificates (SSL), countries are not resolved. See Documentation, section "SSL certificate verification".',
     'password_change_error' => 'Error changing password',
     
     // Validation
@@ -621,20 +679,8 @@ return [
 	'update_success' => 'Update completed',
 	'update_error' => 'Update error',
 	'update_backup_created' => 'Backup created',
-	'update_service' => 'Update service',
-	'update_custom_server' => 'Custom server',
 	'update_repository' => 'Repository',
 	'update_branch' => 'Branch',
-	'update_server_url' => 'Server URL',
-	'update_version_path' => 'Path to version.json',
-	'update_check_mode' => 'Check mode',
-	'update_mode_version' => 'By version (single number)',
-	'update_mode_files' => 'By files (list)',
-	'update_auth_type' => 'Authentication',
-	'update_auth_none' => 'No authentication',
-	'update_username' => 'Username',
-	'update_password' => 'Password',
-	'update_token' => 'Token',
 	'update_not_checked' => 'Not checked',
 	'update_in_progress' => 'Updating...',
 	'update_no_files' => 'No files to update',

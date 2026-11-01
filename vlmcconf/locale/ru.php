@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.0.0
-// ДАТА: 2026-06-02
+// ВЕРСИЯ: 5.5.0
+// ДАТА: 2026-11-01
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -458,7 +458,7 @@ return [
     'whitelist_auth_required' => 'Авторизуйтесь для добавления IP в белый список',
     
     // Модальное окно добавления устройства
-    'add_device_title' => 'Добавить устройство',
+    'add_device_title' => '➕ Добавить устройство',
     'add_device_name' => 'Имя устройства',
     'add_device_name_placeholder' => 'Введите имя устройства',
     'add_device_group' => 'Группа',
@@ -515,6 +515,64 @@ return [
     'invalid_login' => 'Неверный логин или пароль',
     'user_not_found' => 'Пользователь не найден',
     'change_password_session_expired' => 'Сессия смены пароля истекла. Войдите заново.',
+    'csrf_error' => 'Ошибка безопасности: токен запроса недействителен. Обновите страницу и повторите действие.',
+    'login_too_many_attempts' => 'Слишком много попыток входа. Повторите через %d мин.',
+    'data_dir_legacy_warning' => 'Данные панели (users.json, vlmcconf_config.json) хранятся в веб-папке. Рекомендуется перенести их за её пределы: создайте папку %s с правами для веб-сервера и обновите страницу — перенос выполнится автоматически. Подробнее: Документация → «Хранение данных панели».',
+    'data_dir_stale_warning' => 'В старой папке панели остались копии users.json или vlmcconf_config.json, хотя данные уже хранятся в %s. Удалите старые файлы вручную: они доступны из веб-папки.',
+    'update_channel_selected' => 'будет установлен',
+    'update_ch_not_checked' => 'Не проверялось',
+    'update_ch_uptodate' => 'Актуально',
+    'update_ch_available_release' => 'Доступна версия %s (файлов: %d)',
+    'update_ch_available_early' => 'Есть изменения: новых %d, изменённых %d',
+    'update_ch_older' => 'Релиз не новее установленной версии',
+    'update_ch_version' => 'Версия',
+    'update_ch_revision' => 'Ревизия',
+    'update_obsolete_files' => 'Файлов нет в репозитории: %d (не удаляются)',
+    'update_never' => 'не выполнялась',
+    'update_last_check' => 'Последняя проверка',
+    'update_cached' => 'из сохранённых данных',
+    'update_file_new' => 'новый',
+    'update_file_changed' => 'изменён',
+    'update_auto_check_label' => 'Автоматически проверять обновления (оба канала)',
+    'update_auto_check_every' => 'Раз в %d ч',
+    'update_in_dev' => 'в разработке',
+    'update_settings_saved' => 'Настройки обновления сохранены',
+    'update_done' => 'Обновлено файлов: %d. Резервная копия: %s',
+    'update_github_ok' => 'GitHub доступен, проверка SSL пройдена. Лимит запросов: осталось %d из %d.',
+    'update_err_ssl_ca' => 'Не удаётся проверить сертификат сервера: на этом компьютере не подключён список доверенных сертификатов (CA).',
+    'update_err_ssl' => 'Не удалось установить защищённое соединение: сертификат сервера не прошёл проверку.',
+    'update_err_network' => 'Нет соединения с GitHub (сеть, DNS или тайм-аут).',
+    'update_err_rate_limit' => 'GitHub временно ограничил число запросов. Повторите позже (после %s).',
+    'update_err_not_found' => 'Репозиторий или ссылка не найдены на GitHub.',
+    'update_err_no_releases' => 'В репозитории ещё нет опубликованных релизов.',
+    'update_err_http_error' => 'GitHub вернул ошибку (код %d).',
+    'update_err_bad_response' => 'Неожиданный ответ GitHub.',
+    'update_err_tree_truncated' => 'Список файлов репозитория слишком большой для проверки.',
+    'update_err_no_transport' => 'На сервере нет расширения curl и не включены allow_url_fopen и openssl: обновление невозможно.',
+    'update_err_insecure_scheme' => 'Небезопасный адрес: допускаются только https-соединения.',
+    'update_err_busy' => 'Обновление уже выполняется.',
+    'update_err_verify_failed' => 'Скачанный файл не совпал с репозиторием (контрольная сумма): %s. Установка отменена.',
+    'update_err_write_failed' => 'Не удалось записать файл: %s. Выполнен откат.',
+    'update_err_nothing' => 'Нет файлов для обновления.',
+    'update_ssl_help_title' => 'Как подключить проверку сертификатов',
+    'update_ssl_help_windows' => 'Проверка сертификата включена, но PHP на этом компьютере не знает списка доверенных сертификатов (CA). На Windows это настраивается один раз:
+
+1. Скачайте файл https://curl.se/ca/cacert.pem и сохраните его как
+   C:\php\extras\ssl\cacert.pem   (создайте папки, если их нет).
+2. Найдите php.ini: команда  php --ini  покажет строку «Loaded Configuration File». Если там пусто, скопируйте php.ini-development в php.ini (в папке PHP).
+3. В php.ini найдите строки curl.cainfo и openssl.cafile, уберите «;» в начале и впишите путь:
+   curl.cainfo = "C:\php\extras\ssl\cacert.pem"
+   openssl.cafile = "C:\php\extras\ssl\cacert.pem"
+4. Убедитесь, что включены расширения (без «;» в начале строки):  extension=curl  и  extension=openssl
+5. Перезапустите PHP (закройте и снова запустите php -S либо перезапустите Apache/IIS) и нажмите «Проверить GitHub».',
+    'update_ssl_help_linux' => 'Не удаётся проверить сертификат сервера. На Ubuntu обновите список доверенных сертификатов:
+   sudo apt update && sudo apt install --reinstall ca-certificates && sudo update-ca-certificates
+Если в php.ini заданы curl.cainfo или openssl.cafile с несуществующим файлом, исправьте путь или удалите эти строки, затем перезапустите PHP-FPM или Apache.',
+    'update_banner_text' => 'Доступно обновление панели.',
+    'update_banner_release' => 'Релиз %s',
+    'update_banner_early' => 'ранний доступ: файлов %d',
+    'update_banner_open' => 'Открыть',
+    'stats_geo_ssl_error' => 'Не удаётся проверить сертификаты (SSL), страны не определяются. См. Документация, раздел «Проверка SSL-сертификатов».',
     'password_change_error' => 'Ошибка при смене пароля',
     
     // Валидация
@@ -623,20 +681,8 @@ return [
 	'update_success' => 'Обновление завершено',
 	'update_error' => 'Ошибка обновления',
 	'update_backup_created' => 'Резервная копия создана',
-	'update_service' => 'Сервис обновлений',
-	'update_custom_server' => 'Собственный сервер',
 	'update_repository' => 'Репозиторий',
 	'update_branch' => 'Ветка',
-	'update_server_url' => 'URL сервера',
-	'update_version_path' => 'Путь к version.json',
-	'update_check_mode' => 'Способ проверки',
-	'update_mode_version' => 'По версии (одно число)',
-	'update_mode_files' => 'По файлам (список)',
-	'update_auth_type' => 'Аутентификация',
-	'update_auth_none' => 'Без аутентификации',
-	'update_username' => 'Логин',
-	'update_password' => 'Пароль',
-	'update_token' => 'Токен',
 	'update_not_checked' => 'Не проверялось',
 	'update_in_progress' => 'Обновление...',
 	'update_no_files' => 'Нет файлов для обновления',
