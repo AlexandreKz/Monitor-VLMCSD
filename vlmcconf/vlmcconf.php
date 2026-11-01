@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.4.0
-// ДАТА: 2026-06-29
+// ВЕРСИЯ: 5.6.1
+// ДАТА: 2026-11-01
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -25,7 +25,11 @@ foreach ($protectedExtensions as $ext) {
     }
 }
 
-session_start();
+require_once __DIR__ . '/vlmcinc/csrf.php';
+require_once __DIR__ . '/vlmcinc/paths.php';
+require_once __DIR__ . '/vlmcinc/http_client.php';
+require_once __DIR__ . '/vlmcinc/updater.php';
+vlmcSessionStart();
 
 // Проверка авторизации
 if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
@@ -76,13 +80,27 @@ if ($currentUserPermissions == 0 && isset($_SESSION['vlmc_username']) && $_SESSI
     $_SESSION['vlmc_permissions'] = $currentUserPermissions;
 }
 
+// CSRF: токен для форм и AJAX + проверка для ВСЕХ изменяющих (POST) запросов панели.
+// Формы и fetch() получают токен автоматически (csrfClientScript в <head>).
+csrfEnsureToken();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfVerifyOrDie();
+}
+define('VLMC_CSRF_CHECKED', true);
+
+// Дальше страница и AJAX только читают сессию (login_time уже обновлён выше).
+// Освобождаем блокировку, чтобы параллельные запросы и вход в другой вкладке
+// не ждали окончания тяжёлого рендера. $_SESSION остаётся доступной для чтения.
+define('VLMC_SESSION_CLOSED', true);
+session_write_close();
+
 // Для обратной совместимости
 $isAdmin = hasPermission($currentUserPermissions, PERM_USERS_EDIT);
 
-define('CONFIG_VERSION', '5.4.0');
-define('CONFIG_DATE', '2026-06-29');
+define('CONFIG_VERSION', '5.9.0');
+define('CONFIG_DATE', '2026-11-01');
 
-$configFile = __DIR__ . '/vlmcconf_config.json';
+$configFile = vlmcConfigFile(); // вне веб-папки (см. vlmcinc/paths.php), при недоступности — vlmcconf/
 $logFile = dirname(__DIR__) . '/vlmcsd.log';
 
 $defaultGroupColors = [
@@ -329,6 +347,12 @@ $messageType = $_GET['type'] ?? 'success';
 
 // AJAX загрузка вкладки обновления
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_update_tab') {
+    // Обновление проекта — только с правом «Инструменты: редактирование»
+    if (!hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
+        http_response_code(403);
+        echo '<div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div>';
+        exit;
+    }
     if (!defined('VLMCS_CONF')) {
         define('VLMCS_CONF', true);
     }
@@ -611,6 +635,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 <!DOCTYPE html>
 <html>
 <head>
+    <?= csrfClientScript() ?>
     <link rel="shortcut icon" href="../pic/favicon.png" type="image/x-icon">
     <meta charset="UTF-8">
     <title>KMS Monitor • <?= __('menu_settings') ?></title>
@@ -1639,6 +1664,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             </div>
             <a href="../vlmc.php" class="back-link">← <?= __('back') ?></a>
         </div>
+        
+        <?php
+        // Предупреждение: данные всё ещё в веб-папке или там остались старые копии
+        $dataStatus = vlmcDataStatus();
+        if (($dataStatus['legacy'] || !empty($dataStatus['stale'])) && hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)):
+            $dataWarnText = $dataStatus['legacy']
+                ? sprintf(__('data_dir_legacy_warning'), $dataStatus['default_dir'])
+                : sprintf(__('data_dir_stale_warning'), $dataStatus['dir']);
+        ?>
+        <div style="margin: 0 0 15px 0; padding: 12px 16px; border-radius: 8px; border: 1px solid #e0a800; background: rgba(224, 168, 0, 0.12); color: #e0a800; font-size: 13px; line-height: 1.5;">
+            ⚠️ <?= htmlspecialchars($dataWarnText) ?>
+            <?php if ($dataStatus['legacy']): ?>
+            <br><code style="user-select: all;"><?= htmlspecialchars(vlmcDataSetupHint($dataStatus['default_dir'])) ?></code>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        
+        <?php
+        // Уведомление об обновлении: результат автопроверки обоих каналов (берётся из сохранённого состояния,
+        // сеть при открытии страницы не используется; устаревшую проверку обновляет фоновый запрос ниже)
+        $updBannerOn = false;
+        $updBanner = ['release' => '', 'early' => 0];
+        $updStale = false;
+        if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
+            $updBannerUpdater = new Updater();
+            $updBannerSettings = $updBannerUpdater->getSettings();
+            if ($updBannerSettings['auto_check']) {
+                $updBannerOn = true;
+                $updBannerState = $updBannerUpdater->loadState();
+                $updBanner = $updBannerUpdater->bannerData($updBannerState);
+                $updStale = $updBannerUpdater->isStale($updBannerState, $updBannerSettings['interval']);
+            }
+        }
+        if ($updBannerOn):
+        ?>
+        <div id="updateBanner" style="display: none; margin: 0 0 15px 0; padding: 12px 16px; border-radius: 8px; border: 1px solid #3d8bfd; background: rgba(61, 139, 253, 0.12); color: #3d8bfd; font-size: 13px; line-height: 1.5;">
+            🔄 <span id="updateBannerText"></span>
+            <a href="vlmcconf.php?section=tools&amp;tab=update" style="color: inherit; font-weight: 600; margin-left: 8px;"><?= __('update_banner_open') ?></a>
+        </div>
+        <script>
+        (function () {
+            var T = <?= json_encode(['text' => __('update_banner_text'), 'release' => __('update_banner_release'), 'early' => __('update_banner_early')], JSON_UNESCAPED_UNICODE) ?>;
+            function render(b) {
+                var parts = [];
+                if (b && b.release) parts.push(T.release.replace('%s', b.release));
+                if (b && b.early > 0) parts.push(T.early.replace('%d', b.early));
+                var box = document.getElementById('updateBanner');
+                if (!box) return;
+                if (!parts.length) { box.style.display = 'none'; return; }
+                document.getElementById('updateBannerText').textContent = T.text + ' ' + parts.join('; ');
+                box.style.display = 'block';
+            }
+            render(<?= json_encode($updBanner) ?>);
+            <?php if ($updStale): ?>
+            // Проверка устарела: обновляем в фоне (не задерживает страницу)
+            var fd = new FormData();
+            fd.append('ajax', 'update_auto_check');
+            fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
+                if (d && d.success && d.enabled && d.banner) render(d.banner);
+            }).catch(function () {});
+            <?php endif; ?>
+        })();
+        </script>
+        <?php endif; ?>
         
         <div class="main-content">
             <div class="settings-menu">

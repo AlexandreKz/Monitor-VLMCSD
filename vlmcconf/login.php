@@ -1,13 +1,16 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.0.0
-// ДАТА: 2026-06-02
+// ВЕРСИЯ: 4.1.1
+// ДАТА: 2026-11-01
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
-session_start();
+require_once __DIR__ . '/vlmcinc/csrf.php';
+require_once __DIR__ . '/vlmcinc/paths.php';
+vlmcSessionStart();
 require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/auth.php';
+require_once __DIR__ . '/vlmcinc/login_limiter.php';
 
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
@@ -26,7 +29,7 @@ foreach ($protectedExtensions as $ext) {
 // ============================================
 // ЗАГРУЗКА КОНФИГУРАЦИИ ДЛЯ ЯЗЫКА И AD
 // ============================================
-$configFile = __DIR__ . '/vlmcconf_config.json';
+$configFile = vlmcConfigFile();
 $config = [
     'language' => 'ru',
     'integrations' => [
@@ -103,7 +106,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
             $user = getUserById($user['id']);
             
             unset($_SESSION['pending_user'], $_SESSION['pending_time']);
-            session_regenerate_id(true);
+            vlmcLoginSessionRefresh();
             
             $_SESSION['vlmc_admin'] = true;
             $_SESSION['vlmc_user_id'] = $user['id'];
@@ -129,9 +132,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
+    // 0. Лимит попыток: 5 неудач за 15 мин на пару IP+логин, 10 неудач за 15 мин на IP
+    $lockedFor = loginLimiterCheck($username);
+    
     // 1. СНАЧАЛА ПРОВЕРЯЕМ ЛОКАЛЬНЫХ ПОЛЬЗОВАТЕЛЕЙ
-    if (authenticate_user($username, $password)) {
+    if ($lockedFor > 0) {
+        http_response_code(429);
+        header('Retry-After: ' . $lockedFor);
+        $error = sprintf(__('login_too_many_attempts'), (int)ceil($lockedFor / 60));
+    } elseif (authenticate_user($username, $password)) {
         $user = getUserByUsername($username);
+        loginLimiterSuccess($username);
         
         if (isset($user['must_change_password']) && $user['must_change_password'] === true) {
             session_regenerate_id(true);
@@ -140,6 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
             $changePasswordMode = true;
             $error = '';
         } else {
+            vlmcLoginSessionRefresh();
             $_SESSION['vlmc_admin'] = true;
             $_SESSION['vlmc_user_id'] = $user['id'];
             $_SESSION['vlmc_username'] = $user['username'];
@@ -161,6 +173,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
                 $user = getUserByUsername($ad_user['username']);
                 
                 if ($user) {
+                    loginLimiterSuccess($username);
+                    vlmcLoginSessionRefresh();
                     $_SESSION['vlmc_admin'] = true;
                     $_SESSION['vlmc_user_id'] = $user['id'];
                     $_SESSION['vlmc_username'] = $user['username'];
@@ -177,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         
         // Если ни локальная, ни AD-аутентификация не прошли
         $error = __('invalid_login');
+        loginLimiterFail($username);
     }
 }
 

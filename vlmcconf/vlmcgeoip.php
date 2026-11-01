@@ -1,11 +1,13 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcgeoip.php
-// ВЕРСИЯ: 1.8.0
-// ДАТА: 2026-06-28
-// @description: Геолокация IP-адресов + флаги стран (только .txt кэш)
-// @description: GeoIP location + country flags (only .txt cache)
+// ВЕРСИЯ: 1.10.0
+// ДАТА: 2026-11-01
+// @description: Геолокация IP-адресов + флаги стран (.txt кэш, .fail маркеры, HTTPS с проверкой сертификата)
+// @description: GeoIP location + country flags (.txt cache, .fail markers, HTTPS with certificate verification)
 // ============================================
+
+require_once __DIR__ . '/vlmcinc/http_client.php';
 
 /**
  * Преобразование HEX в RGB
@@ -96,39 +98,21 @@ function getGeoCacheDir() {
 }
 
 /**
- * HTTP GET с короткими тайм-аутами. Работает и без расширения curl
- * (fallback на file_get_contents). Возвращает тело ответа или null.
+ * HTTPS GET с короткими тайм-аутами и ОБЯЗАТЕЛЬНОЙ проверкой сертификата (см. vlmcinc/http_client.php).
+ * Возвращает тело ответа или null. Код последней ошибки (ssl_ca, ssl, network ...) — в
+ * $GLOBALS['vlmc_geo_last_error'], чтобы интерфейс мог подсказать, что настроить.
  */
 function geoHttpGet($url, $timeout = 2) {
-    if (function_exists('curl_init')) {
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 1,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0',
-            CURLOPT_FOLLOWLOCATION => true
-        ]);
-        $response = curl_exec($ch);
-        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        return ($code === 200 && is_string($response) && $response !== '') ? $response : null;
+    $r = vlmcHttpRequest($url, [
+        'timeout'         => $timeout,
+        'connect_timeout' => 1,
+        'user_agent'      => 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0'
+    ]);
+    if ($r['ok'] && $r['body'] !== '') {
+        return $r['body'];
     }
-
-    // curl не включён в php.ini — пробуем штатные потоки PHP
-    if (!ini_get('allow_url_fopen')) {
-        return null;
-    }
-    if (stripos($url, 'https://') === 0 && !extension_loaded('openssl')) {
-        return null;
-    }
-    $context = stream_context_create(['http' => [
-        'timeout' => $timeout,
-        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0'
-    ]]);
-    $response = @file_get_contents($url, false, $context);
-    return ($response !== false && $response !== '') ? $response : null;
+    $GLOBALS['vlmc_geo_last_error'] = $r['error'] !== '' ? $r['error'] : 'http_' . $r['status'];
+    return null;
 }
 
 if (!defined('GEO_CACHE_TTL')) define('GEO_CACHE_TTL', 2592000); // 30 дней
@@ -173,8 +157,9 @@ function getGeoLocationDirect($ip) {
         return __('geo_unknown');
     }
 
+    // Только источники с HTTPS (бесплатный ip-api.com HTTPS не поддерживает)
     $apis = [
-        "http://ip-api.com/json/{$ip}?fields=country",
+        "https://ipwho.is/{$ip}",
         "https://ipapi.co/{$ip}/country_name/"
     ];
 
@@ -184,9 +169,9 @@ function getGeoLocationDirect($ip) {
             continue;
         }
 
-        if (strpos($api, 'ip-api.com') !== false) {
+        if (strpos($api, 'ipwho.is') !== false) {
             $data = json_decode($response, true);
-            if (isset($data['country'])) {
+            if (!empty($data['success']) && isset($data['country']) && $data['country'] !== '') {
                 return $data['country'];
             }
         } else {
@@ -261,9 +246,8 @@ function getDetailedGeoLocation($ip) {
     }
     
     $apis = [
-        ['url' => "http://ip-api.com/json/{$ip}?fields=status,country,regionName,city,isp,org,timezone,query,as", 'type' => 'ip-api'],
-        ['url' => "https://ipapi.co/{$ip}/json/", 'type' => 'ipapi'],
-        ['url' => "http://ipwho.is/{$ip}", 'type' => 'ipwhois']
+        ['url' => "https://ipwho.is/{$ip}", 'type' => 'ipwhois'],
+        ['url' => "https://ipapi.co/{$ip}/json/", 'type' => 'ipapi']
     ];
     
     $result = [
@@ -285,23 +269,6 @@ function getDetailedGeoLocation($ip) {
         if ($response !== null) {
             $data = json_decode($response, true);
             
-            if ($api['type'] === 'ip-api' && isset($data['status']) && $data['status'] === 'success') {
-                $cidr = ipToCidr($ip);
-                $result = [
-                    'country' => $data['country'] ?? __('geo_unknown'),
-                    'city' => $data['city'] ?? '—',
-                    'region' => $data['regionName'] ?? '—',
-                    'isp' => $data['isp'] ?? '—',
-                    'org' => $data['org'] ?? '—',
-                    'timezone' => $data['timezone'] ?? '—',
-                    'asn' => $data['as'] ?? '—',
-                    'cidr' => $cidr,
-                    'ip_range' => getIpRange($ip, $cidr),
-                    'success' => true
-                ];
-                break;
-            }
-            
             if ($api['type'] === 'ipapi' && isset($data['country_name'])) {
                 $cidr = ipToCidr($ip);
                 $result = [
@@ -319,7 +286,7 @@ function getDetailedGeoLocation($ip) {
                 break;
             }
             
-            if ($api['type'] === 'ipwhois' && isset($data['country'])) {
+            if ($api['type'] === 'ipwhois' && !empty($data['success']) && isset($data['country'])) {
                 $cidr = ipToCidr($ip);
                 $result = [
                     'country' => $data['country'] ?? __('geo_unknown'),

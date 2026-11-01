@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcloghandler.php
-// ВЕРСИЯ: 1.4.0
-// ДАТА: 2026-06-28
+// ВЕРСИЯ: 1.4.1
+// ДАТА: 2026-11-01
 // @description: Обработчик и форматирование логов KMS с поддержкой tooltip
 // @description: KMS log handler and formatter with tooltip support
 // ============================================
