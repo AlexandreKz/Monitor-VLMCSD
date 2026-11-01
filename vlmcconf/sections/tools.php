@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 6.4.0
-// ДАТА: 2026-06-28
+// ВЕРСИЯ: 6.4.1
+// ДАТА: 2026-11-01
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
 // ============================================
@@ -41,7 +41,9 @@ $firstLogDate = getFirstLogDate($fullLogPath);
     <!-- Вкладки -->
     <div class="tools-tabs">
         <button class="tools-tab-btn <?= $activeTab === 'project' ? 'active' : '' ?>" onclick="switchToolsTab('project')">🚀 <?= __('tools_tab_project') ?></button>
+        <?php if ($canEditTools): ?>
         <button class="tools-tab-btn <?= $activeTab === 'update' ? 'active' : '' ?>" onclick="switchToolsTab('update')">🔄 <?= __('tools_tab_update') ?></button>
+        <?php endif; ?>
         <button class="tools-tab-btn <?= $activeTab === 'log' ? 'active' : '' ?>" onclick="switchToolsTab('log')">📝 <?= __('tools_tab_log') ?></button>
         <button class="tools-tab-btn <?= $activeTab === 'cache' ? 'active' : '' ?>" onclick="switchToolsTab('cache')">🗑️ <?= __('tools_tab_cache') ?></button>
     </div>

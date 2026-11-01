@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 5.1.0
-// ДАТА: 2026-06-05
+// ВЕРСИЯ: 5.1.1
+// ДАТА: 2026-11-01
 // @description: Раздел интеграций (в разработке)
 // @description: Integrations section (under development)
 // ============================================
@@ -437,7 +437,7 @@ function sync_ad_users() {
         }
     }
     
-    $users_file = __DIR__ . '/../users.json';
+    $users_file = vlmcDataFile('users.json');
     file_put_contents($users_file, json_encode(array_values($users), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     
     ldap_close($ldapconn);

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 2.0.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 2.2.0
+// ДАТА: 2026-11-01
 // @description: Секция "Статистика" (переработанная)
 // ============================================
 
@@ -123,12 +123,14 @@ $totalGroups = count($groupStats);
             <div class="stat-list-empty" id="geo-pending-hint">🌐 <?= sprintf(__('stats_geo_pending'), $geoPending) ?></div>
             <script>
             (function () {
-                var rounds = 0, resolvedTotal = 0;
+                var rounds = 0, resolvedTotal = 0, lastError = '';
                 function finish() {
                     var el = document.getElementById('geo-pending-hint');
                     if (!el) return;
                     if (resolvedTotal > 0) {
                         el.textContent = <?= json_encode('🌐 ' . __('stats_geo_done')) ?>;
+                    } else if (lastError === 'ssl_ca' || lastError === 'ssl') {
+                        el.textContent = <?= json_encode('🔒 ' . __('stats_geo_ssl_error')) ?>;
                     } else {
                         el.remove();
                     }
@@ -142,6 +144,7 @@ $totalGroups = count($groupStats);
                         .then(function (d) {
                             if (!d || !d.success) { finish(); return; }
                             resolvedTotal += d.resolved;
+                            if (d.error) lastError = d.error;
                             if (d.remaining > 0 && (d.resolved + d.failed) > 0) { step(); } else { finish(); }
                         })
                         .catch(finish);

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.0.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 5.2.0
+// ДАТА: 2026-11-01
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
@@ -331,6 +331,61 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         <p><strong>Причина:</strong> Неправильное имя файла. Правильный адрес: <code>/vlmc.php</code> (без буквы 's').</p>
     </div>
     
+    <!-- Хранение данных -->
+    <div class="section-card">
+        <div class="section-title"><span>🗄️</span> Хранение данных панели</div>
+        <p>Файлы <code>users.json</code> (пользователи и хеши паролей) и <code>vlmcconf_config.json</code> (настройки панели) хранятся <strong>вне веб-папки</strong>, чтобы их нельзя было скачать по прямой ссылке на любом веб-сервере (Apache, nginx, IIS).</p>
+        <p><strong>Расположение по умолчанию:</strong></p>
+        <ul>
+            <li>Ubuntu: <code>/var/lib/vlmc-monitor/</code></li>
+            <li>Windows: <code>%PROGRAMDATA%\vlmc-monitor\</code></li>
+        </ul>
+        <p>Создайте папку и дайте права веб-серверу (Ubuntu):</p>
+        <div class="code-block"><pre>sudo install -d -o www-data -g www-data -m 750 /var/lib/vlmc-monitor</pre></div>
+        <p><strong>Перенос.</strong> При первом открытии панели после создания папки файлы копируются, проверяются и удаляются из старого места (<code>vlmcconf/</code>). Копия «до переноса» остаётся в подпапке <code>backups/</code> новой папки.</p>
+        <p>Если папки нет или нет прав на запись, панель продолжает работать по-старому (файлы в <code>vlmcconf/</code>) и показывает предупреждение с готовой командой.</p>
+        <p><strong>Свой путь:</strong> переменная окружения <code>VLMC_DATA_DIR</code> (Apache: <code>SetEnv VLMC_DATA_DIR /путь</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /путь</code>) либо файл <code>vlmcconf/data_dir.local.php</code> с содержимым <code>&lt;?php return '/путь/к/папке';</code>. Этого файла нет в репозитории, поэтому обновления панели его не затрагивают.</p>
+        <div class="note">⚠️ <strong>Обновление и откат.</strong> Обновление панели данные не затрагивает: они лежат вне папки проекта. Не возвращайтесь на версию панели, которая не знает о новой папке: она не найдёт <code>users.json</code> в старом месте и создаст нового пользователя <code>root</code>. Для резервной копии сохраняйте папку данных целиком.</div>
+        <div class="note">💡 Каталог <code>vlmcconf/cache</code> пока остаётся на прежнем месте.</div>
+    </div>
+    
+    <!-- SSL -->
+    <div class="section-card">
+        <div class="section-title"><span>🔒</span> Проверка SSL-сертификатов</div>
+        <p>Панель обращается к GitHub (обновление) и к сервисам геолокации по <code>https://</code> и <strong>всегда проверяет сертификат сервера</strong>. Без проверки любой, кто оказался между панелью и сервером, мог бы подсунуть чужой код при обновлении. Для проверки PHP нужен список доверенных сертификатов (CA).</p>
+        <p><strong>Ubuntu:</strong> список уже есть в системе. Если проверка не проходит, обновите его:</p>
+        <div class="code-block"><pre>sudo apt update &amp;&amp; sudo apt install --reinstall ca-certificates &amp;&amp; sudo update-ca-certificates</pre></div>
+        <p><strong>Windows (настраивается один раз):</strong></p>
+        <ol>
+            <li>Скачайте файл <code>https://curl.se/ca/cacert.pem</code> (официальный список сертификатов проекта curl) и сохраните его как <code>C:\php\extras\ssl\cacert.pem</code>. Создайте папки, если их нет.</li>
+            <li>Найдите <code>php.ini</code>: команда <code>php --ini</code> покажет строку «Loaded Configuration File». Если она пуста, скопируйте <code>php.ini-development</code> в <code>php.ini</code> в папке PHP.</li>
+            <li>В <code>php.ini</code> найдите строки <code>curl.cainfo</code> и <code>openssl.cafile</code>, уберите <code>;</code> в начале и впишите путь:</li>
+        </ol>
+        <div class="code-block"><pre>curl.cainfo = "C:\php\extras\ssl\cacert.pem"
+openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
+        <ol start="4">
+            <li>Убедитесь, что включены расширения (без <code>;</code> в начале): <code>extension=curl</code> и <code>extension=openssl</code>.</li>
+            <li>Перезапустите PHP (остановите и снова запустите <code>php -S</code> либо перезапустите Apache/IIS).</li>
+        </ol>
+        <p><strong>Проверка:</strong> «Инструменты → Обновление → 🌐 Проверить GitHub» должна ответить «GitHub доступен, проверка SSL пройдена». Пока сертификаты не подключены, обновление и определение стран по IP работать не будут: в интерфейсе появится эта же подсказка.</p>
+    </div>
+    
+    <!-- Обновление панели -->
+    <div class="section-card">
+        <div class="section-title"><span>🔄</span> Обновление панели</div>
+        <p>Источник обновлений один: репозиторий проекта на GitHub. На вкладке «Инструменты → Обновление» выбирается канал:</p>
+        <ul>
+            <li><strong>Релиз (стабильный)</strong> — файлы берутся из тега последнего опубликованного релиза. Обновлением считается только релиз с номером выше установленной версии.</li>
+            <li><strong>Ранний доступ</strong> — файлы из ветки <code>main</code>. Обновление доступно, если в репозитории есть новые или изменённые файлы (сравнение по git-SHA содержимого, а не по размеру).</li>
+        </ul>
+        <p><strong>Автоматическая проверка</strong> проверяет оба канала раз в выбранный интервал (по умолчанию 12 часов), когда администратор с правом «Инструменты: редактирование» открывает панель, и показывает уведомление. Устанавливает обновление только человек. Для проверки по расписанию на сервере:</p>
+        <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
+        <p>Скрипт <code>update_check.php</code> завершается с кодом 0 (обновлений нет), 10 (есть обновление) или 1 (ошибка проверки).</p>
+        <p><strong>Как идёт установка:</strong> файлы скачиваются во временную папку и сверяются с репозиторием по SHA, затем делается резервная копия заменяемых файлов (в <code>backups/update_…</code> папки данных) и файлы заменяются. Если что-то пошло не так, выполняется откат. Папки <code>pic/</code> и <code>screen/</code>, настройки и данные панели не обновляются, файлы, которых нет в репозитории, не удаляются.</p>
+        <div class="note">🚧 Автоматическая установка, расписание и уведомления пока в разработке.</div>
+        <div class="note">⚠️ Если вы вносили в файлы панели собственные правки, ранний доступ предложит заменить их версией из репозитория: сначала загрузите свои правки в репозиторий.</div>
+    </div>
+    
     <!-- Структура проекта -->
     <div class="section-card">
         <div class="section-title"><span>📂</span> Структура проекта</div>
@@ -347,13 +402,15 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
             <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
             <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
             <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf_config.json — настройки</div>
-            <div style="margin-left: 40px;">│   ├── 📄 users.json — пользователи</div>
             <div style="margin-left: 40px;">│   ├── 📁 cache/ — кэш геолокации (создаётся автоматически)</div>
             <div style="margin-left: 40px;">│   ├── 📁 locale/ — языковые файлы</div>
             <div style="margin-left: 40px;">│   ├── 📁 sections/ — секции панели управления</div>
             <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
             <div style="margin-left: 20px;">└── 📁 pic/ — иконки</div>
+            <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — данные панели (вне веб-папки)</div>
+            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки</div>
+            <div style="margin-left: 20px;">├── 📄 users.json — пользователи</div>
+            <div style="margin-left: 20px;">└── 📁 backups/ — копии «до переноса»</div>
         </div>
     </div>
 </div>
@@ -679,6 +736,61 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         <p><strong>Cause:</strong> Incorrect filename. The correct URL is: <code>/vlmc.php</code> (without the letter 's').</p>
     </div>
     
+    <!-- Data storage -->
+    <div class="section-card">
+        <div class="section-title"><span>🗄️</span> Panel data storage</div>
+        <p>The files <code>users.json</code> (users and password hashes) and <code>vlmcconf_config.json</code> (panel settings) are stored <strong>outside the web root</strong>, so they cannot be downloaded by a direct link on any web server (Apache, nginx, IIS).</p>
+        <p><strong>Default location:</strong></p>
+        <ul>
+            <li>Ubuntu: <code>/var/lib/vlmc-monitor/</code></li>
+            <li>Windows: <code>%PROGRAMDATA%\vlmc-monitor\</code></li>
+        </ul>
+        <p>Create the folder and give the web server access (Ubuntu):</p>
+        <div class="code-block"><pre>sudo install -d -o www-data -g www-data -m 750 /var/lib/vlmc-monitor</pre></div>
+        <p><strong>Migration.</strong> When the panel is first opened after the folder is created, the files are copied, verified and removed from the old location (<code>vlmcconf/</code>). A pre-migration copy is kept in the <code>backups/</code> subfolder of the new folder.</p>
+        <p>If the folder does not exist or is not writable, the panel keeps working the old way (files in <code>vlmcconf/</code>) and shows a warning with a ready-to-run command.</p>
+        <p><strong>Custom path:</strong> the <code>VLMC_DATA_DIR</code> environment variable (Apache: <code>SetEnv VLMC_DATA_DIR /path</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /path</code>) or the file <code>vlmcconf/data_dir.local.php</code> containing <code>&lt;?php return '/path/to/folder';</code>. This file is not in the repository, so panel updates do not touch it.</p>
+        <div class="note">⚠️ <strong>Updates and rollback.</strong> Updating the panel does not touch the data: it lives outside the project folder. Do not roll back to a panel version that does not know about the new folder: it will not find <code>users.json</code> in the old location and will create a new <code>root</code> user. For backups, save the whole data folder.</div>
+        <div class="note">💡 The <code>vlmcconf/cache</code> directory stays in its old location for now.</div>
+    </div>
+    
+    <!-- SSL -->
+    <div class="section-card">
+        <div class="section-title"><span>🔒</span> SSL certificate verification</div>
+        <p>The panel talks to GitHub (updates) and to geolocation services over <code>https://</code> and <strong>always verifies the server certificate</strong>. Without verification anyone between the panel and the server could slip foreign code into an update. PHP needs a list of trusted certificate authorities (CA) for this.</p>
+        <p><strong>Ubuntu:</strong> the list is already part of the system. If verification fails, refresh it:</p>
+        <div class="code-block"><pre>sudo apt update &amp;&amp; sudo apt install --reinstall ca-certificates &amp;&amp; sudo update-ca-certificates</pre></div>
+        <p><strong>Windows (configured once):</strong></p>
+        <ol>
+            <li>Download <code>https://curl.se/ca/cacert.pem</code> (the official certificate bundle of the curl project) and save it as <code>C:\php\extras\ssl\cacert.pem</code>. Create the folders if they do not exist.</li>
+            <li>Find <code>php.ini</code>: the command <code>php --ini</code> shows the line "Loaded Configuration File". If it is empty, copy <code>php.ini-development</code> to <code>php.ini</code> in the PHP folder.</li>
+            <li>In <code>php.ini</code> find the lines <code>curl.cainfo</code> and <code>openssl.cafile</code>, remove the leading <code>;</code> and set the path:</li>
+        </ol>
+        <div class="code-block"><pre>curl.cainfo = "C:\php\extras\ssl\cacert.pem"
+openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
+        <ol start="4">
+            <li>Make sure these extensions are enabled (no leading <code>;</code>): <code>extension=curl</code> and <code>extension=openssl</code>.</li>
+            <li>Restart PHP (stop and start <code>php -S</code> again, or restart Apache/IIS).</li>
+        </ol>
+        <p><strong>Check:</strong> "Tools → Update → 🌐 Check GitHub" should answer "GitHub is reachable, SSL verification passed". Until certificates are configured, updates and country lookup by IP will not work: the interface shows this same hint.</p>
+    </div>
+    
+    <!-- Panel update -->
+    <div class="section-card">
+        <div class="section-title"><span>🔄</span> Panel update</div>
+        <p>There is a single update source: the project repository on GitHub. The channel is chosen on "Tools → Update":</p>
+        <ul>
+            <li><strong>Release (stable)</strong> — files come from the tag of the latest published release. Only a release with a version higher than the installed one counts as an update.</li>
+            <li><strong>Early access</strong> — files from the <code>main</code> branch. An update is available if the repository has new or changed files (compared by git SHA of the content, not by size).</li>
+        </ul>
+        <p><strong>Automatic check</strong> checks both channels at the chosen interval (12 hours by default) when an administrator with the "Tools: edit" right opens the panel and shows a notice. Only a person installs the update. For scheduled checks on the server:</p>
+        <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
+        <p>The <code>update_check.php</code> script exits with code 0 (no updates), 10 (an update is available) or 1 (check error).</p>
+        <p><strong>How installation works:</strong> files are downloaded to a temporary folder and verified against the repository by SHA, then the files being replaced are backed up (to <code>backups/update_…</code> in the data folder) and replaced. If anything goes wrong, the changes are rolled back. The <code>pic/</code> and <code>screen/</code> folders, settings and panel data are not updated; files that are not in the repository are not deleted.</p>
+        <div class="note">🚧 Automatic installation, schedule and notifications are still in development.</div>
+        <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
+    </div>
+    
     <!-- Project structure -->
     <div class="section-card">
         <div class="section-title"><span>📂</span> Project structure</div>
@@ -695,13 +807,15 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
             <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
             <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
             <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf_config.json — settings</div>
-            <div style="margin-left: 40px;">│   ├── 📄 users.json — users</div>
             <div style="margin-left: 40px;">│   ├── 📁 cache/ — geolocation cache (auto-created)</div>
             <div style="margin-left: 40px;">│   ├── 📁 locale/ — language files</div>
             <div style="margin-left: 40px;">│   ├── 📁 sections/ — control panel sections</div>
             <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — helper libraries</div>
             <div style="margin-left: 20px;">└── 📁 pic/ — icons</div>
+            <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — panel data (outside the web root)</div>
+            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings</div>
+            <div style="margin-left: 20px;">├── 📄 users.json — users</div>
+            <div style="margin-left: 20px;">└── 📁 backups/ — pre-migration copies</div>
         </div>
     </div>
 </div>
