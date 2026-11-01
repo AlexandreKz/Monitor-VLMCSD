@@ -1,16 +1,180 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.2.0
-// ДАТА: 2026-06-01
+// ВЕРСИЯ: 3.5.0
+// ДАТА: 2026-11-01
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
-// Сессия может быть уже запущена (в vlmcconf.php)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Сессия может быть уже запущена (в vlmcconf.php) или намеренно закрыта им после проверки прав
+require_once __DIR__ . '/csrf.php';
+require_once __DIR__ . '/paths.php';
+if (session_status() === PHP_SESSION_NONE && !defined('VLMC_SESSION_CLOSED')) {
+    vlmcSessionStart();
 }
 require_once __DIR__ . '/users.php';
+
+// CSRF при прямом обращении к ajax.php (например, из vlmc.php). Запросы через vlmcconf.php
+// уже проверены там (VLMC_CSRF_CHECKED). check_permission только читает и вызывается и для гостей.
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !defined('VLMC_CSRF_CHECKED')
+    && ($_POST['ajax'] ?? '') !== 'check_permission') {
+    csrfVerifyOrDie();
+}
+
+// ============================================
+// ЕДИНАЯ ПРОВЕРКА ПРАВ ДЛЯ AJAX-ДЕЙСТВИЙ
+// ============================================
+/**
+ * Какое право нужно для каждого действия.
+ *   'public' — доступно без входа (только чтение)
+ *   0        — достаточно быть вошедшим пользователем панели
+ *   int      — нужны все биты маски
+ *   array    — достаточно любого из перечисленных прав
+ * Действия, которых нет в таблице, отклоняются (новое действие нужно сначала внести сюда).
+ */
+function ajaxActionPermissions() {
+    $toolsEdit = PERM_TOOLS_EDIT;
+    $toolsAny = [PERM_TOOLS_VIEW, PERM_TOOLS_EDIT];
+    return [
+        'check_permission'      => 'public',
+
+        // Статистика и оформление
+        'get_activity'          => 0,
+        'get_device_activity'   => 0,
+        'preview_theme'         => 0,
+        'geo_resolve_portion'   => 0,
+        'file_info'             => PERM_INFO_VIEW,
+
+        // Инструменты: лог, кэши, экспорт
+        'backup_log'            => $toolsEdit,
+        'clear_log'             => $toolsEdit,
+        'clear_geo_cache'       => $toolsEdit,
+        'refresh_geo_cache'     => $toolsEdit,
+        'check_geo_cache'       => $toolsAny,
+        'clear_emoji_cache'     => $toolsEdit,
+        'refresh_emoji_cache'   => $toolsEdit,
+        'check_emoji_cache'     => $toolsAny,
+        'export_project'        => $toolsEdit,   // внутри обработчика дополнительно нужен PERM_ADMIN_FULL
+
+        // Обновление проекта
+        'check_github_access'   => $toolsEdit,
+        'check_updates'         => $toolsEdit,
+        'update_auto_check'     => $toolsEdit,
+        'get_update_files'      => $toolsEdit,
+        'perform_update'        => $toolsEdit,
+        'save_update_settings'  => $toolsEdit,
+
+        // Пользователи
+        'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
+        'add_user'              => PERM_USERS_EDIT,
+        'update_user'           => PERM_USERS_EDIT,
+        'delete_user'           => PERM_USERS_EDIT,
+        'change_user_password'  => PERM_USERS_EDIT,
+
+        // Группы и устройства
+        'rename_group'          => PERM_GROUPS_EDIT,
+        'delete_group'          => PERM_GROUPS_EDIT,
+        'save_group_changes'    => PERM_GROUPS_EDIT,
+        'add_device'            => PERM_DEVICES_EDIT,
+        'mass_move_devices'     => PERM_DEVICES_EDIT,
+
+        // Белый список IP
+        'get_whitelist_ips'     => PERM_IP_WHITELIST,
+        'add_whitelist_ip'      => PERM_IP_WHITELIST,
+        'remove_whitelist_ip'   => PERM_IP_WHITELIST,
+    ];
+}
+
+/** Пропускает запрос дальше или отвечает 403 и завершает скрипт. */
+function ajaxAuthorizeOrDie($action) {
+    $map = ajaxActionPermissions();
+    $need = (is_string($action) && array_key_exists($action, $map)) ? $map[$action] : null;
+    if ($need === 'public') {
+        return;
+    }
+
+    $deny = function () {
+        $message = function_exists('__') ? __('access_denied') : 'Access denied';
+        if (!headers_sent()) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=UTF-8');
+        }
+        echo json_encode(['success' => false, 'has_permission' => false, 'error' => $message, 'message' => $message]);
+        exit;
+    };
+
+    // Неизвестное действие или нет входа
+    if ($need === null || ($_SESSION['vlmc_admin'] ?? false) !== true) {
+        $deny();
+    }
+    if ($need === 0) {
+        return;
+    }
+
+    $perms = (int)($_SESSION['vlmc_permissions'] ?? 0);
+    if ($perms === 0 && ($_SESSION['vlmc_username'] ?? '') === 'root') {
+        $perms = PERM_ADMIN_FULL;
+    }
+    foreach ((array)$need as $mask) {
+        if (($perms & $mask) === $mask) {
+            return;
+        }
+    }
+    $deny();
+}
+
+// ============================================
+// ПРОВЕРКА ПУТЕЙ К ФАЙЛАМ (Ubuntu и Windows)
+// ============================================
+/** Лежит ли $path внутри каталога $root (оба — уже после realpath). */
+function pathIsInside($path, $root) {
+    if (DIRECTORY_SEPARATOR === '\\') {
+        // Windows: разделители могут быть любыми, регистр букв не важен
+        $path = strtolower(str_replace('\\', '/', $path));
+        $root = strtolower(str_replace('\\', '/', $root));
+    }
+    $path = rtrim($path, '/');
+    $root = rtrim($root, '/');
+    return $path === $root || strpos($path, $root . '/') === 0;
+}
+
+/**
+ * Превращает путь из запроса в реальный путь к файлу — или null, если файл нельзя
+ * показывать. Разрешены только обычные файлы внутри каталога проекта и файл лога
+ * (он может лежать вне проекта, например /var/log/vlmcsd.log).
+ * Принимает путь относительно корня проекта (основной вариант) или абсолютный
+ * (для совместимости со старыми открытыми страницами).
+ */
+function resolveProjectFilePath($input) {
+    if (!is_string($input) || $input === '' || strlen($input) > 4096
+        || strpos($input, "\0") !== false || strpos($input, '://') !== false) {
+        return null;
+    }
+    $root = realpath(dirname(__DIR__, 2));
+    if ($root === false) {
+        return null;
+    }
+
+    $isAbsolute = $input[0] === '/' || $input[0] === '\\' || preg_match('/^[A-Za-z]:[\\\\\/]/', $input);
+    $candidate = $isAbsolute
+        ? $input
+        : $root . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $input);
+
+    $real = realpath($candidate); // раскрывает .. и символические ссылки
+    if ($real === false || !is_file($real)) {
+        return null;
+    }
+    if (pathIsInside($real, $root)) {
+        return $real;
+    }
+
+    $logFile = $GLOBALS['fullLogPath'] ?? '';
+    $logReal = $logFile !== '' ? realpath($logFile) : false;
+    if ($logReal !== false && pathIsInside($real, $logReal) && pathIsInside($logReal, $real)) {
+        return $real; // ровно файл лога
+    }
+    return null;
+}
 
 // ============================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЭКСПОРТА
@@ -78,6 +242,9 @@ function deleteDir($dir) {
 if (isset($_POST['ajax'])) {
     header('Content-Type: application/json');
     
+    // Единая проверка прав: вход + право на конкретное действие (см. ajaxActionPermissions)
+    ajaxAuthorizeOrDie($_POST['ajax']);
+    
     // Получаем активность по датам
     if ($_POST['ajax'] === 'get_activity') {
         $period = $_POST['period'] ?? 'day';
@@ -126,8 +293,9 @@ if (isset($_POST['ajax'])) {
     
     // Получаем информацию о файле
     if ($_POST['ajax'] === 'file_info' && isset($_POST['path'])) {
-        $path = $_POST['path'];
-        if (file_exists($path)) {
+        // Только файлы проекта и файл лога; любой другой путь — такой же ответ, как у несуществующего файла
+        $path = resolveProjectFilePath($_POST['path']);
+        if ($path !== null) {
             $size = filesize($path);
             $mtime = filemtime($path);
             if ($size < 1024) $sizeFormatted = $size . ' B';
@@ -539,7 +707,7 @@ if (isset($_POST['ajax'])) {
         
         $alwaysExclude = [
             '.git', '.gitignore', '.DS_Store', 'Thumbs.db',
-            'cache', 'tmp', 'temp'
+            'cache', 'tmp', 'temp', 'data_dir.local.php'
         ];
         
         $shouldExclude = function($item, $currentPath, $exportType) use ($alwaysExclude) {
@@ -606,6 +774,20 @@ if (isset($_POST['ajax'])) {
                 $copyWithExclude($sourcePath, $destPath, $exportType, $copyWithExclude);
             } else {
                 copy($sourcePath, $destPath);
+            }
+        }
+        
+        // Файлы данных лежат вне папки панели: для экспортов «config» и «full» кладём их в архив
+        // на прежнее место (vlmcconf/) — так архив восстанавливается как раньше
+        if ($exportType !== 'clean') {
+            foreach (unserialize(VLMC_DATA_FILES) as $dataName) {
+                $dataPath = vlmcDataFile($dataName);
+                if (is_file($dataPath)) {
+                    if (!is_dir($tempDir . '/vlmcconf')) {
+                        mkdir($tempDir . '/vlmcconf', 0755, true);
+                    }
+                    copy($dataPath, $tempDir . '/vlmcconf/' . $dataName);
+                }
             }
         }
         
@@ -685,7 +867,7 @@ if (isset($_POST['ajax'])) {
             exit;
         }
         
-        $configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+        $configFile = vlmcConfigFile();
         
         $defaultConfig = [
             'config_version' => CONFIG_VERSION,
@@ -717,8 +899,8 @@ if (isset($_POST['ajax'])) {
     if ($_POST['ajax'] === 'check_permission') {
         header('Content-Type: application/json');
         
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        if (session_status() === PHP_SESSION_NONE && !defined('VLMC_SESSION_CLOSED')) {
+            vlmcSessionStart();
         }
         
         if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
@@ -801,7 +983,7 @@ if (isset($_POST['ajax'])) {
 			exit;
 		}
 		
-		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$configFile = vlmcConfigFile();
 		$config = json_decode(file_get_contents($configFile), true);
 		
 		if (!isset($config['groupColors'][$oldName])) {
@@ -847,7 +1029,7 @@ if (isset($_POST['ajax'])) {
 			exit;
 		}
 		
-		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$configFile = vlmcConfigFile();
 		$config = json_decode(file_get_contents($configFile), true);
 		
 		if (!isset($config['groupColors'][$groupName])) {
@@ -893,7 +1075,7 @@ if (isset($_POST['ajax'])) {
 			exit;
 		}
 		
-		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$configFile = vlmcConfigFile();
 		$config = json_decode(file_get_contents($configFile), true);
 		
 		if (!isset($config['groupColors'][$oldName])) {
@@ -948,7 +1130,7 @@ if (isset($_POST['ajax'])) {
 			exit;
 		}
 		
-		$configFile = dirname(__DIR__) . '/vlmcconf_config.json';
+		$configFile = vlmcConfigFile();
 		$config = json_decode(file_get_contents($configFile), true);
 		
 		if (!isset($config['groupColors'][$targetGroup])) {
@@ -986,89 +1168,136 @@ if (isset($_POST['ajax'])) {
 	}
 	
 // ============================================
-// AJAX: Проверка доступности GitHub
+// AJAX: Обновление панели с GitHub (проверка связи, проверка каналов, список файлов, установка, настройки)
 // ============================================
-if ($_POST['ajax'] === 'check_github_access') {
+if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_auto_check', 'get_update_files', 'perform_update', 'save_update_settings'], true)) {
     require_once __DIR__ . '/updater.php';
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close(); // долгие сетевые запросы не должны держать сессию
+    }
     $updater = new Updater();
-    $result = $updater->checkGitHubAccess();
-    echo json_encode($result);
-    exit;
-}
+    $action = $_POST['ajax'];
+    $updateSettings = $updater->getSettings();
 
-// ============================================
-// AJAX: Проверка обновлений
-// ============================================
-if ($_POST['ajax'] === 'check_updates') {
-    require_once __DIR__ . '/updater.php';
-    $updater = new Updater();
-    $result = $updater->checkUpdates();
-    echo json_encode($result);
-    exit;
-}
+    // Канал из запроса (если задан и допустим) или выбранный в настройках
+    $channel = (isset($_POST['channel']) && in_array($_POST['channel'], Updater::CHANNELS, true))
+        ? $_POST['channel']
+        : $updateSettings['type'];
 
-// ============================================
-// AJAX: Получение списка файлов для обновления
-// ============================================
-if ($_POST['ajax'] === 'get_update_files') {
-    require_once __DIR__ . '/updater.php';
-    $updater = new Updater();
-    $result = $updater->getFilesToUpdate();
-    echo json_encode($result);
-    exit;
-}
-
-// ============================================
-// AJAX: Выполнение обновления
-// ============================================
-if ($_POST['ajax'] === 'perform_update') {
-    // Перехватываем весь вывод
-    ob_start();
-    
-    $files = json_decode($_POST['files'] ?? '[]', true);
-    
-    require_once __DIR__ . '/updater.php';
-    $updater = new Updater();
-    $result = $updater->performUpdate($files);
-    
-    // Проверяем, что было выведено
-    $output = ob_get_clean();
-    if (!empty($output)) {
-        // Логируем и отправляем ошибку
-        error_log("Update output: " . $output);
-        echo json_encode([
-            'success' => false,
-            'message' => '⚠️ ' . strip_tags(substr($output, 0, 500))
-        ]);
+    // --- Проверка связи с GitHub и SSL ---
+    if ($action === 'check_github_access') {
+        $r = $updater->checkGitHubAccess();
+        if ($r['success']) {
+            $r['message'] = sprintf(__('update_github_ok'), $r['remaining'], $r['limit']);
+        } else {
+            $r['message'] = Updater::errorText($r['error'], $r);
+            $r['ssl_help'] = in_array($r['error'], ['ssl_ca', 'ssl'], true);
+        }
+        unset($r['ssl']);
+        echo json_encode($r, JSON_UNESCAPED_UNICODE);
         exit;
     }
-    
-    echo json_encode($result);
-    exit;
-}
 
-// ============================================
-// AJAX: Сохранение настроек в Обновлении
-// ============================================
-if ($_POST['ajax'] === 'save_update_settings') {
-    $configFile = dirname(__DIR__) . '/vlmcconf_config.json';
-    $config = json_decode(file_get_contents($configFile), true);
-    
-    $config['update']['type'] = $_POST['type'] ?? 'release';
-    $config['update']['mode'] = $_POST['mode'] ?? 'manual';
-    $config['update']['schedule']['enabled'] = $_POST['schedule_enabled'] === 'true';
-    $config['update']['schedule']['time'] = $_POST['schedule_time'] ?? '03:00';
-    $config['update']['schedule']['days'] = isset($_POST['schedule_days']) ? json_decode($_POST['schedule_days'], true) : [1,2,3,4,5,6,7];
-    $config['update']['notifications']['enabled'] = $_POST['notify_enabled'] === 'true';
-    $config['update']['notifications']['email'] = $_POST['notify_email'] ?? '';
-    $config['update']['notifications']['telegram'] = $_POST['notify_telegram'] ?? '';
-    
-    file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-    
-    echo json_encode(['success' => true, 'message' => __('settings_saved')]);
-    exit;
-}
+    // --- Проверка обоих каналов: кнопкой (всегда заново) или автоматически (по интервалу) ---
+    if ($action === 'check_updates' || $action === 'update_auto_check') {
+        if ($action === 'update_auto_check' && !$updateSettings['auto_check']) {
+            echo json_encode(['success' => true, 'enabled' => false]);
+            exit;
+        }
+        $res = $updater->checkAll($action === 'check_updates');
+        $state = $res['state'];
+        $out = [
+            'success'         => true,
+            'enabled'         => true,
+            'cached'          => $res['cached'],
+            'current_version' => $updater->getCurrentVersion(),
+            'selected'        => $updateSettings['type'],
+            'checked_at'      => (int)($state['checked_at'] ?? 0),
+            'banner'          => $updater->bannerData($state),
+            'channels'        => [],
+            'ssl_help'        => false
+        ];
+        foreach (Updater::CHANNELS as $ch) {
+            $r = (isset($state[$ch]) && is_array($state[$ch])) ? $state[$ch] : ['success' => false, 'error' => 'bad_response'];
+            if (empty($r['success'])) {
+                $code = (string)($r['error'] ?? 'bad_response');
+                $out['ssl_help'] = $out['ssl_help'] || in_array($code, ['ssl_ca', 'ssl'], true);
+                $out['channels'][$ch] = ['success' => false, 'error' => $code, 'message' => Updater::errorText($code, $r)];
+                continue;
+            }
+            $out['channels'][$ch] = [
+                'success'        => true,
+                'available'      => (bool)$r['available'],
+                'newer'          => $r['newer'],
+                'version'        => (string)$r['version'],
+                'commit'         => substr((string)$r['commit'], 0, 7),
+                'published_at'   => (string)$r['published_at'],
+                'committed_at'   => (string)$r['committed_at'],
+                'subject'        => (string)$r['subject'],
+                'new_count'      => (int)$r['new_count'],
+                'changed_count'  => (int)$r['changed_count'],
+                'obsolete_count' => (int)$r['obsolete_count']
+            ];
+        }
+        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
+    // --- Список файлов для окна подтверждения ---
+    if ($action === 'get_update_files') {
+        $r = $updater->getFilesToUpdate($channel);
+        if (empty($r['success'])) {
+            $r['message'] = Updater::errorText((string)($r['error'] ?? 'bad_response'), $r);
+        }
+        echo json_encode($r, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // --- Установка выбранного канала ---
+    if ($action === 'perform_update') {
+        ignore_user_abort(true);
+        set_time_limit(300);
+        $files = json_decode($_POST['files'] ?? 'null', true);
+        ob_start();
+        $r = $updater->performUpdate($channel, is_array($files) ? $files : null);
+        $stray = ob_get_clean();
+        if ($stray !== '') {
+            error_log('Update output: ' . $stray); // посторонний вывод в журнал, клиенту не отдаём
+        }
+        if (empty($r['success'])) {
+            $r['message'] = Updater::errorText((string)($r['error'] ?? 'bad_response'), $r);
+        } else {
+            $r['message'] = sprintf(__('update_done'), (int)$r['updated_count'], basename((string)$r['backup_dir']));
+        }
+        echo json_encode($r, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // --- Настройки: канал, автопроверка, интервал. Автоустановка, расписание и уведомления — в разработке ---
+    if ($action === 'save_update_settings') {
+        $configFile = vlmcConfigFile();
+        $config = json_decode((string)@file_get_contents($configFile), true);
+        if (!is_array($config)) {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $type = $_POST['type'] ?? 'release';
+        if (!in_array($type, Updater::CHANNELS, true)) {
+            $type = 'release';
+        }
+        $interval = (int)($_POST['check_interval'] ?? 12);
+        if (!in_array($interval, [1, 3, 6, 12, 24, 72], true)) {
+            $interval = 12;
+        }
+        $config['update']['type'] = $type;
+        $config['update']['auto_check'] = (($_POST['auto_check'] ?? '') === 'true');
+        $config['update']['check_interval_hours'] = $interval;
+        $config['update']['mode'] = 'manual';
+        $saved = @file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
+        echo json_encode(['success' => $saved, 'message' => __($saved ? 'update_settings_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
     echo json_encode(['success' => false]);
     exit;
 }

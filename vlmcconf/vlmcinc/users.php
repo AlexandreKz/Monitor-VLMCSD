@@ -1,10 +1,12 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 4.0.0
-// ДАТА: 2026-06-02
+// ВЕРСИЯ: 4.0.1
+// ДАТА: 2026-11-01
 // @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
+
+require_once __DIR__ . '/paths.php';
 
 // Права доступа (битовые маски)
 define('PERM_GROUPS_NONE', 0);
@@ -66,7 +68,7 @@ define('PERM_ADMIN_FULL',
  * Выполняется только один раз — при обнаружении старого формата
  */
 function migrate_users_if_needed() {
-    $users_file = __DIR__ . '/../users.json';
+    $users_file = getUsersFile();
     if (!file_exists($users_file)) {
         return false;
     }
@@ -114,7 +116,7 @@ migrate_users_if_needed();
  * Получить путь к файлу с пользователями
  */
 function getUsersFile() {
-    return dirname(__DIR__) . '/users.json';
+    return vlmcDataFile('users.json');
 }
 
 /**

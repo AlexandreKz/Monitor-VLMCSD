@@ -1,10 +1,12 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/auth.php
-// ВЕРСИЯ: 2.0.0
-// ДАТА: 2026-06-02
+// ВЕРСИЯ: 2.0.1
+// ДАТА: 2026-11-01
 // @description: Функции авторизации (локальная + AD)
 // ============================================
+
+require_once __DIR__ . '/paths.php';
 
 /**
  * Проверка авторизации в панели управления
@@ -136,7 +138,7 @@ function authenticate_ad($username, $password) {
  * @return bool
  */
 function create_or_update_ad_user($ad_user) {
-    $users_file = __DIR__ . '/../users.json';
+    $users_file = vlmcDataFile('users.json');
     $users = [];
     
     if (file_exists($users_file)) {

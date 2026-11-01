@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/structure.php
-// ВЕРСИЯ: 2.5.0
-// ДАТА: 2026-03-26
+// ВЕРСИЯ: 2.5.1
+// ДАТА: 2026-11-01
 // @description: Динамическая структура проекта (папки свёрнуты по умолчанию)
 // ============================================
 
@@ -219,7 +219,7 @@ function renderFileStructure($themeCSS, $fileVersions, $configFile) {
             $stability = getFileStability($item['name']);
             $stableColor = $stability >= 95 ? '#2ecc71' : ($stability >= 85 ? '#3b82f6' : '#f39c12');
             
-            $html = '<div style="display: flex; align-items: center; gap: 10px; padding: 2px 0; border-bottom: 1px dashed ' . $themeCSS['border'] . ';" class="file-row" data-path="' . htmlspecialchars($item['fullPath']) . '" style="margin-left: ' . $indent . 'px;">';
+            $html = '<div style="display: flex; align-items: center; gap: 10px; padding: 2px 0; border-bottom: 1px dashed ' . $themeCSS['border'] . ';" class="file-row" data-path="' . htmlspecialchars($item['path']) . '" style="margin-left: ' . $indent . 'px;">';
             $html .= '<span style="width: 20px;"></span>';
             $html .= '<span style="width: 20px;">' . $icon . '</span>';
             $html .= '<span style="flex: 2; font-size: 12px;">' . htmlspecialchars($item['name']) . '</span>';

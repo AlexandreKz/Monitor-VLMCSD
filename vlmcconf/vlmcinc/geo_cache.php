@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/geo_cache.php
-// ВЕРСИЯ: 1.4.0
-// ДАТА: 2026-04-27
+// ВЕРСИЯ: 1.6.0
+// ДАТА: 2026-11-01
 // @description: Управление кэшем геолокации
 // ============================================
 
@@ -212,7 +212,8 @@ function resolveGeoPortion($logFile, $limit = 5) {
         'success'   => true,
         'resolved'  => $resolved,
         'failed'    => $failed,
-        'remaining' => max(0, count($pending) - $resolved - $failed)
+        'remaining' => max(0, count($pending) - $resolved - $failed),
+        'error'     => ($resolved === 0 && $failed > 0) ? ($GLOBALS['vlmc_geo_last_error'] ?? '') : ''
     ];
 }
 ?>
