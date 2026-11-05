@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.6.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 5.6.3
+// ДАТА: 2026-11-03
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -27,6 +27,7 @@ foreach ($protectedExtensions as $ext) {
 
 require_once __DIR__ . '/vlmcinc/csrf.php';
 require_once __DIR__ . '/vlmcinc/paths.php';
+require_once __DIR__ . '/vlmcinc/version.php';
 require_once __DIR__ . '/vlmcinc/http_client.php';
 require_once __DIR__ . '/vlmcinc/updater.php';
 vlmcSessionStart();
@@ -97,8 +98,8 @@ session_write_close();
 // Для обратной совместимости
 $isAdmin = hasPermission($currentUserPermissions, PERM_USERS_EDIT);
 
-define('CONFIG_VERSION', '5.9.0');
-define('CONFIG_DATE', '2026-11-01');
+define('CONFIG_VERSION', VLMC_VERSION); // версия задаётся в vlmcinc/version.php
+define('CONFIG_DATE', VLMC_DATE);
 
 $configFile = vlmcConfigFile(); // вне веб-папки (см. vlmcinc/paths.php), при недоступности — vlmcconf/
 $logFile = dirname(__DIR__) . '/vlmcsd.log';
@@ -688,6 +689,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             border-radius: 20px;
             font-size: 12px;
             border: 1px solid <?= $themeCSS['border'] ?>;
+        }
+        .update-pill {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 11px;
+            border-radius: 12px;
+            border: 1px solid #3d8bfd;
+            background: rgba(61, 139, 253, 0.12);
+            color: #3d8bfd;
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .update-pill:hover {
+            background: rgba(61, 139, 253, 0.24);
         }
         .back-link {
             color: <?= $themeCSS['text'] ?>;
@@ -1449,7 +1467,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
         const selected = document.getElementById('section-' + section);
         if (selected) selected.classList.add('active');
-        if (section === 'info') refreshFileInfo();
         if (section === 'stats') {
             setTimeout(function() {
                 if (typeof loadTimelineActivity === 'function') {
@@ -1579,25 +1596,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             .catch(e => alert('<?= __('msg_backup_error') ?>'));
     }
     
-    function refreshFileInfo() {
-        document.querySelectorAll('.file-row').forEach(row => {
-            const path = row.dataset.path;
-            const sizeCell = row.querySelector('.file-size');
-            const mtimeCell = row.querySelector('.file-mtime');
-            if (!path) return;
-            const fd = new FormData();
-            fd.append('ajax', 'file_info');
-            fd.append('path', path);
-            fetch('', { method: 'POST', body: fd })
-                .then(r => r.json())
-                .then(d => { 
-                    if (d.success) { 
-                        if (sizeCell && sizeCell.textContent !== d.size) sizeCell.textContent = d.size; 
-                        if (mtimeCell && mtimeCell.textContent !== d.date) mtimeCell.textContent = d.date; 
-                    } 
-                })
-                .catch(e => console.error('File info error:', e));
-        });
+    // Значок статуса к сообщению: если в тексте (из локали) уже есть эмодзи, второй не добавляется
+    function withIcon(icon, text) {
+        text = String(text === null || text === undefined ? '' : text);
+        return /^[\u2190-\u2BFF\uD83C-\uDBFF]/.test(text) ? text : icon + ' ' + text;
     }
     
     document.addEventListener('DOMContentLoaded', function() {
@@ -1637,7 +1639,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         });
         
         filterDevices();
-        if (sectionToActivate === 'info') setTimeout(refreshFileInfo, 500);
         
         // Принудительно скрываем все модальные окна
         const modals = document.querySelectorAll('.modal');
@@ -1657,10 +1658,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 </head>
 <body>
     <div class="container">
+        <?php
+        // Уведомление об обновлении (значок в шапке): результат автопроверки обоих каналов берётся из
+        // сохранённого состояния, сеть при открытии страницы не используется; устаревшую проверку
+        // обновляет фоновый запрос (см. скрипт в шапке)
+        $updBannerOn = false;
+        $updBanner = ['release' => '', 'early' => 0];
+        $updStale = false;
+        if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
+            $updBannerUpdater = new Updater();
+            $updBannerSettings = $updBannerUpdater->getSettings();
+            if ($updBannerSettings['auto_check']) {
+                $updBannerOn = true;
+                $updBannerState = $updBannerUpdater->loadState();
+                $updBanner = $updBannerUpdater->bannerData($updBannerState);
+                $updStale = $updBannerUpdater->isStale($updBannerState, $updBannerSettings['interval']);
+            }
+        }
+        ?>
         <div class="header">
-            <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <h1>⚙️ KMS MONITOR • <?= __('menu_settings') ?></h1>
                 <span class="version-badge">v<?= CONFIG_VERSION ?></span>
+                <?php if ($updBannerOn): ?>
+                <a id="updateBanner" class="update-pill" href="vlmcconf.php?section=tools&amp;tab=update" title="<?= htmlspecialchars(__('update_banner_open')) ?>">🔄 <span id="updateBannerText"></span></a>
+                <script>
+                (function () {
+                    var T = <?= json_encode(['text' => __('update_banner_text'), 'release' => __('update_banner_release'), 'early' => __('update_banner_early')], JSON_UNESCAPED_UNICODE) ?>;
+                    function render(b) {
+                        var parts = [];
+                        if (b && b.release) parts.push(T.release.replace('%s', b.release));
+                        if (b && b.early > 0) parts.push(T.early.replace('%d', b.early));
+                        var box = document.getElementById('updateBanner');
+                        if (!box) return;
+                        if (!parts.length) { box.style.display = 'none'; return; }
+                        document.getElementById('updateBannerText').textContent = T.text + ' ' + parts.join('; ');
+                        box.style.display = 'inline-flex';
+                    }
+                    render(<?= json_encode($updBanner) ?>);
+                    <?php if ($updStale): ?>
+                    // Проверка устарела: обновляем в фоне (не задерживает страницу)
+                    var fd = new FormData();
+                    fd.append('ajax', 'update_auto_check');
+                    fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
+                        if (d && d.success && d.enabled && d.banner) render(d.banner);
+                    }).catch(function () {});
+                    <?php endif; ?>
+                })();
+                </script>
+                <?php endif; ?>
             </div>
             <a href="../vlmc.php" class="back-link">← <?= __('back') ?></a>
         </div>
@@ -1679,54 +1725,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             <br><code style="user-select: all;"><?= htmlspecialchars(vlmcDataSetupHint($dataStatus['default_dir'])) ?></code>
             <?php endif; ?>
         </div>
-        <?php endif; ?>
-        
-        <?php
-        // Уведомление об обновлении: результат автопроверки обоих каналов (берётся из сохранённого состояния,
-        // сеть при открытии страницы не используется; устаревшую проверку обновляет фоновый запрос ниже)
-        $updBannerOn = false;
-        $updBanner = ['release' => '', 'early' => 0];
-        $updStale = false;
-        if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
-            $updBannerUpdater = new Updater();
-            $updBannerSettings = $updBannerUpdater->getSettings();
-            if ($updBannerSettings['auto_check']) {
-                $updBannerOn = true;
-                $updBannerState = $updBannerUpdater->loadState();
-                $updBanner = $updBannerUpdater->bannerData($updBannerState);
-                $updStale = $updBannerUpdater->isStale($updBannerState, $updBannerSettings['interval']);
-            }
-        }
-        if ($updBannerOn):
-        ?>
-        <div id="updateBanner" style="display: none; margin: 0 0 15px 0; padding: 12px 16px; border-radius: 8px; border: 1px solid #3d8bfd; background: rgba(61, 139, 253, 0.12); color: #3d8bfd; font-size: 13px; line-height: 1.5;">
-            🔄 <span id="updateBannerText"></span>
-            <a href="vlmcconf.php?section=tools&amp;tab=update" style="color: inherit; font-weight: 600; margin-left: 8px;"><?= __('update_banner_open') ?></a>
-        </div>
-        <script>
-        (function () {
-            var T = <?= json_encode(['text' => __('update_banner_text'), 'release' => __('update_banner_release'), 'early' => __('update_banner_early')], JSON_UNESCAPED_UNICODE) ?>;
-            function render(b) {
-                var parts = [];
-                if (b && b.release) parts.push(T.release.replace('%s', b.release));
-                if (b && b.early > 0) parts.push(T.early.replace('%d', b.early));
-                var box = document.getElementById('updateBanner');
-                if (!box) return;
-                if (!parts.length) { box.style.display = 'none'; return; }
-                document.getElementById('updateBannerText').textContent = T.text + ' ' + parts.join('; ');
-                box.style.display = 'block';
-            }
-            render(<?= json_encode($updBanner) ?>);
-            <?php if ($updStale): ?>
-            // Проверка устарела: обновляем в фоне (не задерживает страницу)
-            var fd = new FormData();
-            fd.append('ajax', 'update_auto_check');
-            fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
-                if (d && d.success && d.enabled && d.banner) render(d.banner);
-            }).catch(function () {});
-            <?php endif; ?>
-        })();
-        </script>
         <?php endif; ?>
         
         <div class="main-content">
@@ -1833,7 +1831,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         </div>
         
         <div class="footer">
-            KMS Monitor Configuration • <?= __('info_version') ?> <?= CONFIG_VERSION ?> • <?= __($themeCSS['name']) ?>
+            <?= htmlspecialchars(vlmcFooterText()) ?>
         </div>
     </div>
     
