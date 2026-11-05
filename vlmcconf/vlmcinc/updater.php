@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.0.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 3.0.2
+// ДАТА: 2026-11-03
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
 // ============================================
@@ -49,10 +49,14 @@ class Updater {
     }
 
     private function readVersionFromFile() {
-        $file = $this->baseDir . '/vlmcconf/vlmcconf.php';
-        $src = is_file($file) ? (string)file_get_contents($file) : '';
-        if (preg_match("/define\('CONFIG_VERSION',\s*'([^']+)'/", $src, $m)) {
-            return $m[1];
+        // Версия проекта задаётся в vlmcinc/version.php (старые установки: CONFIG_VERSION в vlmcconf.php)
+        foreach (['/vlmcconf/vlmcinc/version.php' => "/define\\('VLMC_VERSION',\\s*'([^']+)'/",
+                  '/vlmcconf/vlmcconf.php'        => "/define\\('CONFIG_VERSION',\\s*'([^']+)'/"] as $rel => $regex) {
+            $file = $this->baseDir . $rel;
+            $src = is_file($file) ? (string)file_get_contents($file) : '';
+            if (preg_match($regex, $src, $m)) {
+                return $m[1];
+            }
         }
         return '0.0.0';
     }
@@ -354,8 +358,17 @@ class Updater {
             $available = $toInstall > 0;
         }
 
+        // Для релиза: сколько коммитов тега отсутствует в ветке main (релиз создан, а ветка с ним не влита)
+        $mainBehind = null;
+        if ($channel === 'release') {
+            $cmp = $this->github('/repos/' . self::REPO . '/compare/' . rawurlencode(self::BRANCH) . '...' . rawurlencode($info['ref']));
+            if ($cmp['ok'] && isset($cmp['data']['ahead_by'])) {
+                $mainBehind = (int)$cmp['data']['ahead_by'];
+            }
+        }
+
         return [
-            'ok' => true, 'success' => true, 'channel' => $channel,
+            'ok' => true, 'success' => true, 'channel' => $channel, 'main_behind' => $mainBehind,
             'ref' => $info['ref'], 'version' => $info['version'], 'commit' => $info['commit'],
             'published_at' => $info['published_at'], 'committed_at' => $info['committed_at'], 'subject' => $info['subject'],
             'newer' => $newer, 'available' => $available,

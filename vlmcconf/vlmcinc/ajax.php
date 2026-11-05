@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.5.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 3.5.2
+// ДАТА: 2026-11-03
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
@@ -44,6 +44,7 @@ function ajaxActionPermissions() {
         'preview_theme'         => 0,
         'geo_resolve_portion'   => 0,
         'file_info'             => PERM_INFO_VIEW,
+        'file_info_batch'       => PERM_INFO_VIEW,
 
         // Инструменты: лог, кэши, экспорт
         'backup_log'            => $toolsEdit,
@@ -176,6 +177,17 @@ function resolveProjectFilePath($input) {
     return null;
 }
 
+/** Сведения о файле для раздела «Информация»: размер, дата изменения, версия из заголовка. */
+function fileInfoPayload($path) {
+    $size = filesize($path);
+    $mtime = filemtime($path);
+    if ($size < 1024) $sizeFormatted = $size . ' B';
+    elseif ($size < 1048576) $sizeFormatted = round($size / 1024, 1) . ' KB';
+    else $sizeFormatted = round($size / 1048576, 1) . ' MB';
+    $version = function_exists('getFileVersionFromContent') ? (string)getFileVersionFromContent($path) : '';
+    return ['size' => $sizeFormatted, 'date' => date('d.m.Y H:i', $mtime), 'version' => $version];
+}
+
 // ============================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЭКСПОРТА
 // ============================================
@@ -296,16 +308,26 @@ if (isset($_POST['ajax'])) {
         // Только файлы проекта и файл лога; любой другой путь — такой же ответ, как у несуществующего файла
         $path = resolveProjectFilePath($_POST['path']);
         if ($path !== null) {
-            $size = filesize($path);
-            $mtime = filemtime($path);
-            if ($size < 1024) $sizeFormatted = $size . ' B';
-            elseif ($size < 1048576) $sizeFormatted = round($size/1024,1) . ' KB';
-            else $sizeFormatted = round($size/1048576,1) . ' MB';
-            $dateFormatted = date('d.m.Y H:i', $mtime);
-            echo json_encode(['success' => true, 'size' => $sizeFormatted, 'date' => $dateFormatted]);
+            echo json_encode(['success' => true] + fileInfoPayload($path));
         } else {
             echo json_encode(['success' => false]);
         }
+        exit;
+    }
+    
+    // Пакетное получение сведений о файлах (кнопка «Обновить» в разделе «Информация»): один запрос на все файлы
+    if ($_POST['ajax'] === 'file_info_batch') {
+        $paths = json_decode($_POST['paths'] ?? '[]', true);
+        $files = [];
+        if (is_array($paths)) {
+            foreach (array_slice($paths, 0, 500) as $requested) {
+                $real = is_string($requested) ? resolveProjectFilePath($requested) : null;
+                $files[] = ($real === null)
+                    ? ['path' => (string)$requested, 'success' => false]
+                    : ['path' => $requested, 'success' => true] + fileInfoPayload($real);
+            }
+        }
+        echo json_encode(['success' => true, 'files' => $files, 'time' => date('H:i:s')]);
         exit;
     }
     
@@ -1236,7 +1258,8 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
                 'subject'        => (string)$r['subject'],
                 'new_count'      => (int)$r['new_count'],
                 'changed_count'  => (int)$r['changed_count'],
-                'obsolete_count' => (int)$r['obsolete_count']
+                'obsolete_count' => (int)$r['obsolete_count'],
+                'main_behind'    => isset($r['main_behind']) ? $r['main_behind'] : null
             ];
         }
         echo json_encode($out, JSON_UNESCAPED_UNICODE);
