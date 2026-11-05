@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.1.0
-// ДАТА: 2026-06-01
+// ВЕРСИЯ: 5.1.1
+// ДАТА: 2026-11-03
 // @description: Секция "Безопасность" — управление пользователями + белые IP
 // ============================================
 
@@ -224,7 +224,7 @@ const PERM_IP_WHITELIST = <?= PERM_IP_WHITELIST ?>;
 <div id="addWhitelistIpModal" class="modal" style="display: none; z-index: 100000;">
     <div class="modal-content" style="width: 450px; max-width: 90%;">
         <div class="modal-header">
-            <h2>➕ <?= __('whitelist_add_ip_title') ?></h2>
+            <h2><?= __('whitelist_add_ip_title') ?></h2>
             <span class="modal-close" onclick="closeAddWhitelistIpModal()">&times;</span>
         </div>
         <div class="modal-body">
@@ -868,14 +868,14 @@ function addWhitelistIp() {
         .then(data => {
             if (data.success) {
                 messageDiv.className = 'modal-message success';
-                messageDiv.innerHTML = '✅ ' + data.message;
+                messageDiv.innerHTML = withIcon('✅', data.message);
                 setTimeout(() => {
                     closeAddWhitelistIpModal();
                     location.reload();
                 }, 1500);
             } else {
                 messageDiv.className = 'modal-message error';
-                messageDiv.innerHTML = '❌ ' + data.message;
+                messageDiv.innerHTML = withIcon('❌', data.message);
             }
         })
         .catch(error => {

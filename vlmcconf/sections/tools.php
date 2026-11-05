@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 6.4.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 6.4.2
+// ДАТА: 2026-11-03
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
 // ============================================
@@ -633,7 +633,7 @@ async function toolsCheckCache(showMessage = true) {
             document.getElementById('cacheSize').innerText = data.size_formatted;
             if (showMessage) showCacheMessage('📊 ' + '<?= __('tools_cache_stats') ?>: ' + data.count + ' ' + '<?= __('tools_cache_files') ?>' + ', ' + data.size_formatted, 'success');
         } else if (showMessage) showCacheMessage(data.message, 'error');
-    } catch (error) { if (showMessage) showCacheMessage('❌ ' + '<?= __('msg_save_error') ?>', 'error'); }
+    } catch (error) { if (showMessage) showCacheMessage('<?= __('msg_save_error') ?>', 'error'); }
     finally { if (showMessage) setToolsButtonLoading(btn, false); }
 }
 

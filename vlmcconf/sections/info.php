@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.5.0
-// ДАТА: 2026-05-31
+// ВЕРСИЯ: 1.6.0
+// ДАТА: 2026-11-03
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW)
 // ============================================
 
@@ -23,7 +23,10 @@ if (!$canViewInfo) {
 <div id="section-info" class="settings-section <?= $activeSection === 'info' ? 'active' : '' ?>">
     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span>ℹ️ <?= __('info_title') ?></span>
-        <button class="btn btn-primary btn-small" onclick="refreshFileInfo()" style="font-size: 11px; padding: 4px 10px;">🔄 <?= __('refresh') ?></button>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="fileInfoStatus" class="file-info-status" style="display: none;"></span>
+            <button id="refreshFileInfoBtn" class="btn btn-primary btn-small" onclick="refreshFileInfo(true)" style="font-size: 11px; padding: 4px 10px;">🔄 <?= __('refresh') ?></button>
+        </div>
         <?php if ($activeSection === 'info' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
@@ -117,55 +120,150 @@ if (!$canViewInfo) {
     padding: 4px 10px;
     font-size: 11px;
 }
+
+.btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+    transform: none;
+}
+
+.file-info-status {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+}
+.file-info-status.ok {
+    color: <?= $themeCSS['success'] ?>;
+    border-color: <?= $themeCSS['success'] ?>;
+}
+.file-info-status.err {
+    color: <?= $themeCSS['danger'] ?>;
+    border-color: <?= $themeCSS['danger'] ?>;
+}
+
+/* Подсветка значений, которые изменились при обновлении */
+.file-flash {
+    background: <?= $themeCSS['primary'] ?>44;
+    border-radius: 3px;
+    transition: background 1.6s;
+}
 </style>
 
 <script>
-function refreshFileInfo() {
-    document.querySelectorAll('.file-row').forEach(row => {
-        const path = row.dataset.path;
-        const sizeCell = row.querySelector('.file-size');
-        const mtimeCell = row.querySelector('.file-mtime');
-        if (!path) return;
-        
-        const fd = new FormData();
-        fd.append('ajax', 'file_info');
-        fd.append('path', path);
-        
-        fetch('', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(d => { 
-                if (d.success) { 
-                    if (sizeCell && sizeCell.textContent !== d.size) sizeCell.textContent = d.size; 
-                    if (mtimeCell && mtimeCell.textContent !== d.date) mtimeCell.textContent = d.date; 
-                } 
-            })
-            .catch(e => console.error('File info error:', e));
-    });
-}
+(function () {
+    'use strict';
 
-// Инициализация при активации секции
-document.addEventListener('DOMContentLoaded', function() {
-    const section = document.getElementById('section-info');
-    if (section && section.classList.contains('active')) {
-        setTimeout(refreshFileInfo, 500);
+    const I18N = <?= json_encode([
+        'refreshing' => __('info_refreshing'),
+        'refreshed'  => __('info_refreshed'),
+        'unavailable'=> __('info_refresh_unavailable'),
+        'failed'     => __('info_refresh_failed')
+    ], JSON_UNESCAPED_UNICODE) ?>;
+
+    let busy = false;
+    let hideTimer = null;
+
+    function fmt(template) {
+        const args = Array.prototype.slice.call(arguments, 1);
+        let i = 0;
+        return String(template).replace(/%[sd]/g, function () { return i < args.length ? args[i++] : ''; });
     }
-});
 
-const infoObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.attributeName === 'class') {
-            const target = mutation.target;
-            if (target.id === 'section-info' && target.classList.contains('active')) {
-                setTimeout(refreshFileInfo, 500);
-            }
+    function setStatus(text, cls, hideAfterMs) {
+        const el = document.getElementById('fileInfoStatus');
+        if (!el) return;
+        clearTimeout(hideTimer);
+        el.textContent = text;
+        el.className = 'file-info-status ' + (cls || '');
+        el.style.display = text ? 'inline-block' : 'none';
+        if (text && hideAfterMs) {
+            hideTimer = setTimeout(function () { el.style.display = 'none'; }, hideAfterMs);
+        }
+    }
+
+    function flash(cell) {
+        if (!cell) return;
+        cell.classList.add('file-flash');
+        setTimeout(function () { cell.classList.remove('file-flash'); }, 1600);
+    }
+
+    // manual === true: вызвано кнопкой (показываем ход и результат); иначе — тихое обновление при открытии раздела
+    window.refreshFileInfo = function (manual) {
+        if (busy) return;
+        const rows = {};
+        const paths = [];
+        document.querySelectorAll('.file-row').forEach(function (row) {
+            const p = row.dataset.path;
+            if (p && !rows[p]) { rows[p] = row; paths.push(p); }
+        });
+        if (!paths.length) return;
+
+        const btn = document.getElementById('refreshFileInfoBtn');
+        const label = btn ? btn.innerHTML : '';
+        busy = true;
+        if (manual === true) {
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ ' + I18N.refreshing; }
+            setStatus('', '');
+        }
+
+        const fd = new FormData();
+        fd.append('ajax', 'file_info_batch');
+        fd.append('paths', JSON.stringify(paths));
+
+        fetch('', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d || !d.success || !Array.isArray(d.files)) throw new Error('bad response');
+                let changed = 0, failed = 0;
+                d.files.forEach(function (f) {
+                    const row = rows[f.path];
+                    if (!row) return;
+                    if (!f.success) { failed++; return; }
+                    const size = row.querySelector('.file-size');
+                    const mtime = row.querySelector('.file-mtime');
+                    const ver = row.querySelector('.file-version');
+                    let did = false;
+                    if (size && size.textContent !== f.size) { size.textContent = f.size; flash(size); did = true; }
+                    if (mtime && mtime.textContent !== f.date) { mtime.textContent = f.date; flash(mtime); did = true; }
+                    if (ver && f.version && ver.textContent !== f.version) { ver.textContent = f.version; flash(ver); did = true; }
+                    if (did) changed++;
+                });
+                if (manual === true) {
+                    let text = '✅ ' + fmt(I18N.refreshed, d.time || '', paths.length - failed, changed);
+                    if (failed) text += fmt(I18N.unavailable, failed);
+                    setStatus(text, failed ? 'err' : 'ok', 8000);
+                }
+            })
+            .catch(function (e) {
+                console.error('File info error:', e);
+                if (manual === true) setStatus('❌ ' + I18N.failed, 'err', 10000);
+            })
+            .then(function () {
+                busy = false;
+                if (manual === true && btn) { btn.disabled = false; btn.innerHTML = label; }
+            });
+    };
+
+    // Тихое обновление при открытии раздела
+    document.addEventListener('DOMContentLoaded', function () {
+        const section = document.getElementById('section-info');
+        if (section && section.classList.contains('active')) {
+            setTimeout(window.refreshFileInfo, 500);
         }
     });
-});
 
-const infoSection = document.getElementById('section-info');
-if (infoSection) {
-    infoObserver.observe(infoSection, { attributes: true });
-}
+    const infoSection = document.getElementById('section-info');
+    if (infoSection) {
+        new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.attributeName === 'class' && infoSection.classList.contains('active')) {
+                    setTimeout(window.refreshFileInfo, 500);
+                }
+            });
+        }).observe(infoSection, { attributes: true });
+    }
+})();
 </script>
 <?php
 ?>

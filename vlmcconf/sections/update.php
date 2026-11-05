@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 4.0.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 4.0.1
+// ДАТА: 2026-11-03
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
 // ============================================
@@ -42,7 +42,9 @@ $updI18n = [
     'checkingGitHub' => __('update_checking_github'),
     'saveError'      => __('msg_save_error'),
     'ready'          => __('update_ready'),
-    'cached'         => __('update_cached')
+    'cached'         => __('update_cached'),
+    'uptodateMain'   => __('update_ch_uptodate_main'),
+    'mainBehind'     => __('update_ch_main_behind')
 ];
 ?>
 
@@ -303,10 +305,13 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
                 st.textContent = fmt(I18N.availEarly, info.new_count, info.changed_count);
                 st.classList.add('avail');
             } else {
-                st.textContent = I18N.uptodate;
+                st.textContent = I18N.uptodateMain;
                 st.classList.add('ok');
             }
             extra.textContent = info.subject || '';
+        }
+        if (info.main_behind > 0) {
+            extra.textContent = (extra.textContent ? extra.textContent + ' · ' : '') + '⚠️ ' + fmt(I18N.mainBehind, info.main_behind);
         }
         if (info.obsolete_count > 0) {
             extra.textContent = (extra.textContent ? extra.textContent + ' · ' : '') + fmt(I18N.obsolete, info.obsolete_count);

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 2.2.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 2.2.2
+// ДАТА: 2026-11-05
 // @description: Секция "Статистика" (переработанная)
 // ============================================
 
@@ -108,7 +108,7 @@ $totalGroups = count($groupStats);
                 <?php else: ?>
                     <?php foreach ($topIps as $ip => $count): ?>
                     <div class="stat-list-item">
-                        <span class="stat-list-label"><?= htmlspecialchars($ip) ?></span>
+                        <span class="stat-list-label stat-copyable" data-copy="<?= htmlspecialchars($ip) ?>" title="<?= htmlspecialchars(__('stats_ip_copy_hint')) ?>" role="button" tabindex="0"><?= htmlspecialchars($ip) ?></span>
                         <span class="stat-list-value"><?= $count ?></span>
                     </div>
                     <?php endforeach; ?>
@@ -267,6 +267,24 @@ $totalGroups = count($groupStats);
     padding: 4px 0;
     border-bottom: 1px dashed <?= $themeCSS['border'] ?>;
 }
+
+.stat-copyable {
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.15s;
+}
+.stat-copyable:hover,
+.stat-copyable:focus {
+    background: rgba(61, 139, 253, 0.18);
+    outline: none;
+}
+.stat-copy-badge {
+    margin-left: 8px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+.stat-copy-badge.ok { color: #2ea043; }
+.stat-copy-badge.err { color: #f85149; }
 
 .stat-list-label {
     color: #8aa0bb;
@@ -544,6 +562,60 @@ function updateStatChart(data) {
             }
         }, 500);
     }
+})();
+</script>
+<script>
+// Копирование IP из блока «Топ IP адресов» по клику (работает и без HTTPS: запасной вариант через execCommand)
+(function () {
+    if (window.__statCopyInit) return;
+    window.__statCopyInit = true;
+
+    const I18N = <?= json_encode(['copied' => __('stats_ip_copied'), 'failed' => __('stats_ip_copy_failed')], JSON_UNESCAPED_UNICODE) ?>;
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+    }
+
+    function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+        }
+        return Promise.resolve(fallbackCopy(text));
+    }
+
+    function showBadge(el, ok) {
+        const old = el.parentNode.querySelector('.stat-copy-badge');
+        if (old) old.remove();
+        const badge = document.createElement('span');
+        badge.className = 'stat-copy-badge ' + (ok ? 'ok' : 'err');
+        badge.textContent = ok ? '✅ ' + I18N.copied : '❌ ' + I18N.failed;
+        el.insertAdjacentElement('afterend', badge);
+        setTimeout(function () { badge.remove(); }, 1600);
+    }
+
+    function handle(el) {
+        copyText(el.getAttribute('data-copy') || '').then(function (ok) { showBadge(el, ok); });
+    }
+
+    document.addEventListener('click', function (e) {
+        const el = e.target.closest ? e.target.closest('.stat-copyable') : null;
+        if (el) handle(el);
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const el = e.target.closest ? e.target.closest('.stat-copyable') : null;
+        if (el) { e.preventDefault(); handle(el); }
+    });
 })();
 </script>
 <?php
