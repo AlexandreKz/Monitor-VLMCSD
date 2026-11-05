@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.5.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 5.5.3
+// ДАТА: 2026-11-03
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -568,11 +568,20 @@ return [
     'update_ssl_help_linux' => 'Не удаётся проверить сертификат сервера. На Ubuntu обновите список доверенных сертификатов:
    sudo apt update && sudo apt install --reinstall ca-certificates && sudo update-ca-certificates
 Если в php.ini заданы curl.cainfo или openssl.cafile с несуществующим файлом, исправьте путь или удалите эти строки, затем перезапустите PHP-FPM или Apache.',
-    'update_banner_text' => 'Доступно обновление панели.',
+    'update_banner_text' => 'Доступно обновление:',
     'update_banner_release' => 'Релиз %s',
     'update_banner_early' => 'ранний доступ: файлов %d',
     'update_banner_open' => 'Открыть',
     'stats_geo_ssl_error' => 'Не удаётся проверить сертификаты (SSL), страны не определяются. См. Документация, раздел «Проверка SSL-сертификатов».',
+    'info_refreshing' => 'Обновление…',
+    'info_refreshed' => 'Обновлено в %s: файлов %d, изменилось %d',
+    'info_refresh_unavailable' => ', недоступно: %d',
+    'info_refresh_failed' => 'Не удалось обновить данные о файлах',
+    'stats_ip_copy_hint' => 'Нажмите, чтобы скопировать IP',
+    'stats_ip_copied' => 'Скопировано',
+    'stats_ip_copy_failed' => 'Не удалось скопировать',
+    'update_ch_uptodate_main' => 'Актуально: совпадает с веткой main',
+    'update_ch_main_behind' => 'в ветке main нет %d коммитов этого релиза: влейте релиз в main',
     'password_change_error' => 'Ошибка при смене пароля',
     
     // Валидация

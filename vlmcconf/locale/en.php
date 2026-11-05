@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.5.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 5.5.3
+// ДАТА: 2026-11-03
 // @description: English translations
 // ============================================
 
@@ -566,11 +566,20 @@ return [
     'update_ssl_help_linux' => 'The server certificate cannot be verified. On Ubuntu update the list of trusted certificates:
    sudo apt update && sudo apt install --reinstall ca-certificates && sudo update-ca-certificates
 If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix the path or remove those lines, then restart PHP-FPM or Apache.',
-    'update_banner_text' => 'A panel update is available.',
+    'update_banner_text' => 'Update available:',
     'update_banner_release' => 'Release %s',
     'update_banner_early' => 'early access: %d files',
     'update_banner_open' => 'Open',
     'stats_geo_ssl_error' => 'Cannot verify certificates (SSL), countries are not resolved. See Documentation, section "SSL certificate verification".',
+    'info_refreshing' => 'Refreshing…',
+    'info_refreshed' => 'Updated at %s: %d files, changed %d',
+    'info_refresh_unavailable' => ', unavailable: %d',
+    'info_refresh_failed' => 'Could not refresh file information',
+    'stats_ip_copy_hint' => 'Click to copy the IP',
+    'stats_ip_copied' => 'Copied',
+    'stats_ip_copy_failed' => 'Copy failed',
+    'update_ch_uptodate_main' => 'Up to date: matches the main branch',
+    'update_ch_main_behind' => 'the main branch lacks %d commits of this release: merge the release into main',
     'password_change_error' => 'Error changing password',
     
     // Validation
