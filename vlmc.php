@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.5.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 5.5.1
+// ДАТА: 2026-11-03
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.5.0
+ * Version: 5.5.1
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/vlmcconf/vlmcinc/csrf.php';
 require_once __DIR__ . '/vlmcconf/vlmcinc/paths.php';
+require_once __DIR__ . '/vlmcconf/vlmcinc/version.php';
 vlmcSessionStart();
 csrfEnsureToken(); // для вошедшего администратора создаёт CSRF-токен, если его ещё нет
 
@@ -949,11 +950,11 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         <button class="scroll-bottom-btn" id="scrollBottomBtn">↓</button>
     </div>
     
-    <div class="footer">KMS Log Monitor • <?= __('version') ?> 5.4.2 • <?= __('footer_copyright') ?></div>
+    <div class="footer"><?= htmlspecialchars(vlmcFooterText()) ?></div>
     
     <div id="geoModal" class="modal"><div class="modal-content" id="geoModalContent"><div class="modal-header" id="geoModalHeader"><h2>🌍 <?= __('geo_title') ?></h2><span class="modal-close" onclick="closeGeoModal()">&times;</span></div><div class="modal-body" id="geoModalBody"><div class="modal-loading">⏳ <?= __('geo_loading') ?></div></div></div></div>
     
-    <div id="addDeviceModal" class="modal"><div class="modal-content add-device-modal"><div class="modal-header"><h2>➕ <?= __('add_device_title') ?></h2><span class="modal-close" onclick="closeAddDeviceModal()">&times;</span></div><div class="modal-body"><div id="addDeviceMessage" class="modal-message"></div><form id="addDeviceForm"><div class="modal-form-group"><label><?= __('add_device_name') ?></label><input type="text" id="deviceName" class="modal-form-control" required></div><div class="modal-form-group"><label><?= __('add_device_group') ?></label><select id="deviceGroup" class="modal-form-control"><?php foreach ($config['groupColors'] as $groupName => $groupData): ?><option value="<?= $groupName ?>"><?= __($groupName) ?></option><?php endforeach; ?></select></div><div class="modal-form-group"><label><?= __('add_device_comment') ?></label><input type="text" id="deviceComment" class="modal-form-control" placeholder="<?= __('add_device_comment_placeholder') ?>"></div><input type="hidden" id="deviceIp" value=""><button type="submit" class="modal-btn modal-btn-success" id="submitAddDevice"><?= __('add_device_btn') ?></button></form></div></div></div>
+    <div id="addDeviceModal" class="modal"><div class="modal-content add-device-modal"><div class="modal-header"><h2><?= __('add_device_title') ?></h2><span class="modal-close" onclick="closeAddDeviceModal()">&times;</span></div><div class="modal-body"><div id="addDeviceMessage" class="modal-message"></div><form id="addDeviceForm"><div class="modal-form-group"><label><?= __('add_device_name') ?></label><input type="text" id="deviceName" class="modal-form-control" required></div><div class="modal-form-group"><label><?= __('add_device_group') ?></label><select id="deviceGroup" class="modal-form-control"><?php foreach ($config['groupColors'] as $groupName => $groupData): ?><option value="<?= $groupName ?>"><?= __($groupName) ?></option><?php endforeach; ?></select></div><div class="modal-form-group"><label><?= __('add_device_comment') ?></label><input type="text" id="deviceComment" class="modal-form-control" placeholder="<?= __('add_device_comment_placeholder') ?>"></div><input type="hidden" id="deviceIp" value=""><button type="submit" class="modal-btn modal-btn-success" id="submitAddDevice"><?= __('add_device_btn') ?></button></form></div></div></div>
     
     <div id="toast" class="toast">📋 <?= __('toast_copied') ?></div>
     
@@ -1017,6 +1018,12 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     document.getElementById('v4-badge')?.addEventListener('mouseenter', positionTooltips);
     document.getElementById('v6-badge')?.addEventListener('mouseenter', positionTooltips);
     
+    // Значок статуса к сообщению: если в тексте (из локали) уже есть эмодзи, второй не добавляется
+    function withIcon(icon, text) {
+        text = String(text === null || text === undefined ? '' : text);
+        return /^[\u2190-\u2BFF\uD83C-\uDBFF]/.test(text) ? text : icon + ' ' + text;
+    }
+
     function showToast(message = '<?= __('toast_copied') ?>') {
         const toast = document.getElementById('toast');
         toast.textContent = message;
@@ -1049,10 +1056,10 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         modalContent.className = 'modal-content';
         if (type === 'unknown') {
             modalContent.classList.add('unknown-geo');
-            modalHeader.querySelector('h2').textContent = '🌍 <?= __('geo_device_title') ?>';
+            modalHeader.querySelector('h2').textContent = '<?= __('geo_device_title') ?>';
         } else {
             modalContent.classList.add('suspicious-geo');
-            modalHeader.querySelector('h2').textContent = '🌍 <?= __('geo_suspicious_title') ?>';
+            modalHeader.querySelector('h2').textContent = '<?= __('geo_suspicious_title') ?>';
         }
         modal.style.display = 'flex';
         modalBody.innerHTML = '<div class="modal-loading">⏳ <?= __('geo_loading') ?></div>';
@@ -1097,10 +1104,10 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ ' + data.message);
+                    showToast(withIcon('✅', data.message));
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    showToast('❌ ' + data.message);
+                    showToast(withIcon('❌', data.message));
                 }
             })
             .catch(error => {
@@ -1131,11 +1138,11 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             .then(data => {
                 if (data.success) {
                     messageDiv.className = 'modal-message success';
-                    messageDiv.textContent = '✅ ' + data.message;
+                    messageDiv.textContent = withIcon('✅', data.message);
                     setTimeout(() => { closeAddDeviceModal(); location.reload(); }, 1500);
                 } else {
                     messageDiv.className = 'modal-message error';
-                    messageDiv.textContent = '❌ ' + data.message;
+                    messageDiv.textContent = withIcon('❌', data.message);
                     submitBtn.disabled = false;
                 }
             })
@@ -1328,7 +1335,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         temp.innerHTML = fullLog;
         const lines = Array.from(temp.children);
         const filtered = lines.filter(div => div.textContent.toLowerCase().includes(filter));
-        if (filtered.length === 0) container.innerHTML = '<div class="no-results">🔍 <?= __('no_results') ?></div>';
+        if (filtered.length === 0) container.innerHTML = '<div class="no-results"><?= __('no_results') ?></div>';
         else container.innerHTML = filtered.map(div => div.outerHTML).join('');
     }
     
