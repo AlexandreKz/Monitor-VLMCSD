@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.5.1
-// ДАТА: 2026-11-03
+// ВЕРСИЯ: 5.5.2
+// ДАТА: 2026-11-07
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.5.1
+ * Version: 5.5.2
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -54,8 +54,9 @@ $config = [
     'whitelist_ips' => []
 ];
 
-if (file_exists($configFile)) {
-    $loaded = json_decode(file_get_contents($configFile), true);
+$configRead = config_read($configFile); // с повторами: не принимаем недописанный файл за пустой конфиг
+if ($configRead['status'] !== 'missing') {
+    $loaded = $configRead['config'];
     if ($loaded) {
         $config = array_merge($config, $loaded);
         if (isset($loaded['theme'])) {
@@ -177,6 +178,11 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
         exit;
     }
     
+    if (!config_refresh($config, $configFile)) {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+        exit;
+    }
+
     $deviceName = trim($_POST['deviceName'] ?? '');
     $deviceGroup = $_POST['deviceGroup'] ?? '';
     $deviceComment = trim($_POST['deviceComment'] ?? '');
@@ -204,7 +210,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
                 'comment' => $deviceComment,
                 'added' => date('Y-m-d H:i:s')
             ];
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             $response['success'] = true;
             $response['message'] = __('add_device_success');
         }
@@ -234,6 +240,11 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
         exit;
     }
     
+    if (!config_refresh($config, $configFile)) {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
+        exit;
+    }
+
     $ip = trim($_POST['ip'] ?? '');
     
     if (empty($ip)) {
@@ -257,7 +268,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
     $config['whitelist_ips'] = $whitelistIps;
     $config['last_modified'] = date('Y-m-d H:i:s');
     
-    if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+    if (save_config($configFile, $config)) {
         echo json_encode(['success' => true, 'message' => __('whitelist_ip_added')]);
     } else {
         echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
