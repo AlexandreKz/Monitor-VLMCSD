@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.2.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 5.2.1
+// ДАТА: 2026-11-07
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
@@ -346,6 +346,7 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         <p>Если папки нет или нет прав на запись, панель продолжает работать по-старому (файлы в <code>vlmcconf/</code>) и показывает предупреждение с готовой командой.</p>
         <p><strong>Свой путь:</strong> переменная окружения <code>VLMC_DATA_DIR</code> (Apache: <code>SetEnv VLMC_DATA_DIR /путь</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /путь</code>) либо файл <code>vlmcconf/data_dir.local.php</code> с содержимым <code>&lt;?php return '/путь/к/папке';</code>. Этого файла нет в репозитории, поэтому обновления панели его не затрагивают.</p>
         <div class="note">⚠️ <strong>Обновление и откат.</strong> Обновление панели данные не затрагивает: они лежат вне папки проекта. Не возвращайтесь на версию панели, которая не знает о новой папке: она не найдёт <code>users.json</code> в старом месте и создаст нового пользователя <code>root</code>. Для резервной копии сохраняйте папку данных целиком.</div>
+        <p><strong>Резервные копии настроек.</strong> Перед каждым изменением настроек панель сохраняет копию <code>vlmcconf_config.json</code> в <code>backups/config/</code> папки данных (последние 50). Если файл настроек повреждён, панель восстановит его из последней копии, а повреждённый файл сохранит рядом (<code>*.broken</code>). Каждое сохранение записывается в <code>config_changes.log</code> (время, пользователь, действие, число устройств до и после; метка <code>SHRINK</code> означает, что устройств стало меньше).</p>
         <div class="note">💡 Каталог <code>vlmcconf/cache</code> пока остаётся на прежнем месте.</div>
     </div>
     
@@ -751,6 +752,7 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         <p>If the folder does not exist or is not writable, the panel keeps working the old way (files in <code>vlmcconf/</code>) and shows a warning with a ready-to-run command.</p>
         <p><strong>Custom path:</strong> the <code>VLMC_DATA_DIR</code> environment variable (Apache: <code>SetEnv VLMC_DATA_DIR /path</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /path</code>) or the file <code>vlmcconf/data_dir.local.php</code> containing <code>&lt;?php return '/path/to/folder';</code>. This file is not in the repository, so panel updates do not touch it.</p>
         <div class="note">⚠️ <strong>Updates and rollback.</strong> Updating the panel does not touch the data: it lives outside the project folder. Do not roll back to a panel version that does not know about the new folder: it will not find <code>users.json</code> in the old location and will create a new <code>root</code> user. For backups, save the whole data folder.</div>
+        <p><strong>Settings backups.</strong> Before every settings change the panel saves a copy of <code>vlmcconf_config.json</code> to <code>backups/config/</code> in the data folder (the latest 50). If the settings file is damaged, the panel restores it from the latest copy and keeps the damaged file next to it (<code>*.broken</code>). Every save is recorded in <code>config_changes.log</code> (time, user, action, device count before and after; the <code>SHRINK</code> mark means fewer devices than before).</p>
         <div class="note">💡 The <code>vlmcconf/cache</code> directory stays in its old location for now.</div>
     </div>
     
