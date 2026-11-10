@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.5.3
-// ДАТА: 2026-11-03
+// ВЕРСИЯ: 5.5.4
+// ДАТА: 2026-11-07
 // @description: English translations
 // ============================================
 
@@ -580,6 +580,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'stats_ip_copy_failed' => 'Copy failed',
     'update_ch_uptodate_main' => 'Up to date: matches the main branch',
     'update_ch_main_behind' => 'the main branch lacks %d commits of this release: merge the release into main',
+    'config_status_restored' => 'The settings file was damaged or unreadable: the settings were restored from the latest backup and the damaged file was kept for analysis. Please check groups and devices.',
+    'config_status_corrupt' => 'The settings file cannot be read and there are no backups: default settings are in use and the file itself was not touched. Restore it manually from a backup.',
     'password_change_error' => 'Error changing password',
     
     // Validation
