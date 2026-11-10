@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.5.2
-// ДАТА: 2026-11-03
+// ВЕРСИЯ: 3.5.3
+// ДАТА: 2026-11-07
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
@@ -256,6 +256,15 @@ if (isset($_POST['ajax'])) {
     
     // Единая проверка прав: вход + право на конкретное действие (см. ajaxActionPermissions)
     ajaxAuthorizeOrDie($_POST['ajax']);
+    
+    // Действия, меняющие конфиг: блокировка и свежее чтение (параллельные запросы не должны терять изменения друг друга)
+    if (isset($configFile)
+        && in_array($_POST['ajax'], ['add_device', 'add_whitelist_ip', 'remove_whitelist_ip', 'mass_move_devices', 'rename_group', 'delete_group', 'save_group_changes'], true)) {
+        if (!config_refresh($config, $configFile)) {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
     
     // Получаем активность по датам
     if ($_POST['ajax'] === 'get_activity') {
@@ -513,7 +522,7 @@ if (isset($_POST['ajax'])) {
                     'comment' => $deviceComment,
                     'added' => date('Y-m-d H:i:s')
                 ];
-                file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                save_config($configFile, $config);
                 $response['success'] = true;
                 $response['message'] = __('add_device_success');
             }
@@ -580,7 +589,7 @@ if (isset($_POST['ajax'])) {
         $config['whitelist_ips'] = $whitelistIps;
         $config['last_modified'] = date('Y-m-d H:i:s');
         
-        if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+        if (save_config($configFile, $config)) {
             echo json_encode(['success' => true, 'message' => __('whitelist_ip_added')]);
         } else {
             echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
@@ -628,7 +637,7 @@ if (isset($_POST['ajax'])) {
         $config['whitelist_ips'] = $newWhitelist;
         $config['last_modified'] = date('Y-m-d H:i:s');
         
-        if (file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+        if (save_config($configFile, $config)) {
             echo json_encode(['success' => true, 'message' => __('whitelist_ip_removed')]);
         } else {
             echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
@@ -907,7 +916,7 @@ if (isset($_POST['ajax'])) {
             'whitelist_ips' => []
         ];
         
-        if (file_put_contents($configFile, json_encode($defaultConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))) {
+        if (save_config($configFile, $defaultConfig)) {
             echo json_encode(['success' => true, 'message' => __('msg_config_reset')]);
         } else {
             echo json_encode(['success' => false, 'message' => __('msg_save_error')]);
@@ -1006,7 +1015,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$configFile = vlmcConfigFile();
-		$config = json_decode(file_get_contents($configFile), true);
+		$config = config_read($configFile)['config'];
 		
 		if (!isset($config['groupColors'][$oldName])) {
 			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
@@ -1029,7 +1038,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$config['last_modified'] = date('Y-m-d H:i:s');
-		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		save_config($configFile, $config);
 		
 		echo json_encode(['success' => true, 'message' => __('msg_group_renamed')]);
 		exit;
@@ -1052,7 +1061,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$configFile = vlmcConfigFile();
-		$config = json_decode(file_get_contents($configFile), true);
+		$config = config_read($configFile)['config'];
 		
 		if (!isset($config['groupColors'][$groupName])) {
 			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
@@ -1072,7 +1081,7 @@ if (isset($_POST['ajax'])) {
 		unset($config['groupColors'][$groupName]);
 		
 		$config['last_modified'] = date('Y-m-d H:i:s');
-		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		save_config($configFile, $config);
 		
 		echo json_encode(['success' => true, 'message' => __('msg_group_deleted')]);
 		exit;
@@ -1098,7 +1107,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$configFile = vlmcConfigFile();
-		$config = json_decode(file_get_contents($configFile), true);
+		$config = config_read($configFile)['config'];
 		
 		if (!isset($config['groupColors'][$oldName])) {
 			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
@@ -1129,7 +1138,7 @@ if (isset($_POST['ajax'])) {
 		$config['groupColors'][$newName]['color'] = $newColor;
 		
 		$config['last_modified'] = date('Y-m-d H:i:s');
-		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		save_config($configFile, $config);
 		
 		echo json_encode(['success' => true, 'message' => __('msg_group_saved')]);
 		exit;
@@ -1153,7 +1162,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$configFile = vlmcConfigFile();
-		$config = json_decode(file_get_contents($configFile), true);
+		$config = config_read($configFile)['config'];
 		
 		if (!isset($config['groupColors'][$targetGroup])) {
 			echo json_encode(['success' => false, 'message' => __('msg_group_not_found')]);
@@ -1183,7 +1192,7 @@ if (isset($_POST['ajax'])) {
 		}
 		
 		$config['last_modified'] = date('Y-m-d H:i:s');
-		file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+		save_config($configFile, $config);
 		
 		echo json_encode(['success' => true, 'message' => sprintf(__('devices_moved'), $moved, $targetGroup)]);
 		exit;
@@ -1299,7 +1308,8 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
     // --- Настройки: канал, автопроверка, интервал. Автоустановка, расписание и уведомления — в разработке ---
     if ($action === 'save_update_settings') {
         $configFile = vlmcConfigFile();
-        $config = json_decode((string)@file_get_contents($configFile), true);
+        config_lock($configFile);
+        $config = config_read($configFile)['config'];
         if (!is_array($config)) {
             echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
             exit;
@@ -1316,7 +1326,7 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
         $config['update']['auto_check'] = (($_POST['auto_check'] ?? '') === 'true');
         $config['update']['check_interval_hours'] = $interval;
         $config['update']['mode'] = 'manual';
-        $saved = @file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
+        $saved = save_config($configFile, $config);
         echo json_encode(['success' => $saved, 'message' => __($saved ? 'update_settings_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
         exit;
     }
