@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.6.3
-// ДАТА: 2026-11-03
+// ВЕРСИЯ: 5.6.4
+// ДАТА: 2026-11-07
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -207,10 +207,10 @@ if (!isset($config['api'])) {
 }
 
 // Сохраняем если были изменения
-if ($needSave) {
+if ($needSave && ($GLOBALS['vlmc_config_status'] ?? '') !== 'corrupt') { // поверх нечитаемого файла автоматически не пишем
     $config['last_modified'] = date('Y-m-d H:i:s');
     $config['last_modified_version'] = CONFIG_VERSION;
-    file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    save_config($configFile, $config);
 }
 
 $themeCSS = getThemeCSS($config['theme']);
@@ -369,13 +369,18 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_update_tab') {
 // ОБРАБОТКА POST ЗАПРОСОВ
 // ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
+    // Форма меняет конфиг: блокировка и свежая версия (параллельные запросы не должны терять изменения)
+    if (!config_refresh($config, $configFile)) {
+        header('Location: vlmcconf.php?message=' . urlencode(__('msg_save_error')) . '&type=error');
+        exit;
+    }
     if (isset($_POST['action'])) {
         
         // Сохранение темы
         if ($_POST['action'] === 'save_theme' && isset($_POST['theme'])) {
             $config['theme'] = $_POST['theme'];
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=general&message=' . urlencode(__('msg_theme_saved')) . '&type=success');
             exit;
         }
@@ -385,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             $config['language'] = $_POST['language'];
             $translations = loadTranslations($config['language']);
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=general&message=' . urlencode(__('msg_language_saved')) . '&type=success');
             exit;
         }
@@ -394,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         if ($_POST['action'] === 'save_log_path' && isset($_POST['logPath'])) {
             $config['logPath'] = $_POST['logPath'];
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=general&message=' . urlencode(__('msg_log_path_saved')) . '&type=success');
             exit;
         }
@@ -432,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 			}
 			
 			$config['last_modified'] = date('Y-m-d H:i:s');
-			file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			save_config($configFile, $config);
 			header('Location: vlmcconf.php?section=groups&message=' . urlencode($messageText) . '&type=' . $messageType);
 			exit;
 		}
@@ -452,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             }
             
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=groups&message=' . urlencode($messageText) . '&type=' . $messageType);
             exit;
         }
@@ -486,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 				];
 			}
 			$config['last_modified'] = date('Y-m-d H:i:s');
-			file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			save_config($configFile, $config);
 			header('Location: vlmcconf.php?section=groups&message=' . urlencode(__('msg_colors_saved')) . '&type=success');
 			exit;
 		}
@@ -526,7 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             }
             
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=devices&message=' . urlencode($messageText) . '&type=' . $messageType);
             exit;
         }
@@ -550,7 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             }
             
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=devices&message=' . urlencode($messageText) . '&type=' . $messageType);
             exit;
         }
@@ -585,7 +590,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             }
             
             $config['last_modified'] = date('Y-m-d H:i:s');
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=devices&message=' . urlencode($messageText) . '&type=' . $messageType);
             exit;
         }
@@ -626,7 +631,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 'keys' => []
             ];
             
-            file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            save_config($configFile, $config);
             header('Location: vlmcconf.php?section=info&message=' . urlencode(__('msg_config_reset')) . '&type=warning');
             exit;
         }
@@ -1724,6 +1729,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             <?php if ($dataStatus['legacy']): ?>
             <br><code style="user-select: all;"><?= htmlspecialchars(vlmcDataSetupHint($dataStatus['default_dir'])) ?></code>
             <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        
+        <?php if (in_array($GLOBALS['vlmc_config_status'] ?? '', ['restored', 'corrupt'], true)): ?>
+        <div style="margin: 0 0 15px 0; padding: 12px 16px; border-radius: 8px; border: 1px solid #f85149; background: rgba(248, 81, 73, 0.12); color: #f85149; font-size: 13px; line-height: 1.5;">
+            ⚠️ <?= htmlspecialchars(__('config_status_' . $GLOBALS['vlmc_config_status'])) ?>
         </div>
         <?php endif; ?>
         
