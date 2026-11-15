@@ -2,7 +2,7 @@
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
 // ВЕРСИЯ: 3.0.2
-// ДАТА: 2026-11-03
+// ДАТА: 2026-11-14
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
 // ============================================

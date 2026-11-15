@@ -1,12 +1,13 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/auth.php
-// ВЕРСИЯ: 2.0.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 2.0.3
+// ДАТА: 2026-11-14
 // @description: Функции авторизации (локальная + AD)
 // ============================================
 
 require_once __DIR__ . '/paths.php';
+require_once __DIR__ . '/safe_json.php';
 
 /**
  * Проверка авторизации в панели управления
@@ -139,14 +140,15 @@ function authenticate_ad($username, $password) {
  */
 function create_or_update_ad_user($ad_user) {
     $users_file = vlmcDataFile('users.json');
-    $users = [];
     
-    if (file_exists($users_file)) {
-        $users = json_decode(file_get_contents($users_file), true);
-        if (!is_array($users)) {
-            $users = [];
-        }
+    // Безопасное чтение под блокировкой: если файл нечитаем, поверх него не пишем
+    // (формат этой функции — по имени пользователя — отличается от списка в users.php, доработка в пункте про AD)
+    config_lock($users_file);
+    $read = config_read($users_file);
+    if ($read['status'] !== 'ok' && $read['status'] !== 'missing') {
+        return false;
     }
+    $users = is_array($read['config']) ? $read['config'] : [];
     
     $username = $ad_user['username'];
     
@@ -162,7 +164,7 @@ function create_or_update_ad_user($ad_user) {
             $users[$username]['source'] = 'ad_local';
         }
         
-        return file_put_contents($users_file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+        return save_config($users_file, $users);
     }
     
     // Новый пользователь из AD
@@ -177,6 +179,6 @@ function create_or_update_ad_user($ad_user) {
         'last_login' => null
     ];
     
-    return file_put_contents($users_file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+    return save_config($users_file, $users);
 }
 ?>

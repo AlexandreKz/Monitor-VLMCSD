@@ -1,12 +1,13 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 4.0.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 4.1.0
+// ДАТА: 2026-11-14
 // @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
 
 require_once __DIR__ . '/paths.php';
+require_once __DIR__ . '/safe_json.php'; // атомарная запись, блокировка, резервные копии users.json
 
 // Права доступа (битовые маски)
 define('PERM_GROUPS_NONE', 0);
@@ -97,7 +98,8 @@ function migrate_users_if_needed() {
         }
         
         // Сохраняем в новом формате (прямой массив)
-        file_put_contents($users_file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        config_lock($users_file);
+        save_config($users_file, array_values($users));
         return true;
     }
     
@@ -170,7 +172,15 @@ function isStrongPassword($password) {
 function initUsers() {
     $file = getUsersFile();
     if (file_exists($file)) return;
-    
+
+    // Файла нет: берём блокировку и проверяем ещё раз (другой запрос мог его уже создать)
+    config_lock($file);
+    clearstatcache(true, $file);
+    if (file_exists($file)) return;
+
+    // Файл пропал, но есть резервная копия: восстанавливаем пользователей, а не создаём root/root
+    if (config_restore_from_backup($file) !== null) return;
+
     $hash = password_hash('root', PASSWORD_DEFAULT);
     $data = [
         [
@@ -184,7 +194,7 @@ function initUsers() {
             'last_login' => null
         ]
     ];
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    save_config($file, $data);
 }
 
 /**
@@ -193,10 +203,43 @@ function initUsers() {
 function getAllUsers() {
     initUsers();
     $file = getUsersFile();
-    if (!file_exists($file)) return [];
-    $content = file_get_contents($file);
-    $data = json_decode($content, true);
-    return is_array($data) ? $data : [];
+    $r = config_read($file);
+    if ($r['status'] === 'ok') {
+        return $r['config'];
+    }
+    if ($r['status'] === 'missing') {
+        return [];
+    }
+
+    // Файл есть, но не читается, пуст или повреждён: под блокировкой повторяем чтение
+    // и пробуем восстановить из резервной копии. Пустой список НЕ возвращаем молча:
+    // иначе следующее «добавить пользователя» записало бы файл только с одним новым пользователем.
+    config_lock($file);
+    $r = config_read($file, 1);
+    if ($r['status'] === 'ok') {
+        return $r['config'];
+    }
+    $restored = config_restore_from_backup($file);
+    if ($restored !== null) {
+        $GLOBALS['vlmc_users_status'] = 'restored';
+        return $restored;
+    }
+    $GLOBALS['vlmc_users_status'] = 'corrupt';
+    return [];
+}
+
+/**
+ * Сохранить список пользователей. Пустой список недопустим, а поверх нечитаемого файла
+ * (когда восстановить не из чего) запись запрещена.
+ */
+function saveUsers($users) {
+    if (!is_array($users) || !$users) {
+        return false;
+    }
+    if (($GLOBALS['vlmc_users_status'] ?? '') === 'corrupt') {
+        return false;
+    }
+    return save_config(getUsersFile(), array_values($users));
 }
 
 function getUserById($id) {
@@ -226,6 +269,7 @@ function authenticate_user($username, $password) {
 }
 
 function updateUser($id, $data) {
+    config_lock(getUsersFile()); // изменения пользователей выстраиваются по очереди и не теряют друг друга
     $users = getAllUsers();
     $found = false;
     foreach ($users as &$user) {
@@ -246,9 +290,7 @@ function updateUser($id, $data) {
         }
     }
     if (!$found) return false;
-    $file = getUsersFile();
-    file_put_contents($file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-    return true;
+    return saveUsers($users);
 }
 
 function updateLastLogin($username) {
@@ -260,6 +302,7 @@ function updateLastLogin($username) {
  * Добавить пользователя с детальной валидацией
  */
 function addUser($username, $password, $permissions = PERM_DEVICES_VIEW) {
+    config_lock(getUsersFile());
     $users = getAllUsers();
     
     // Проверка существования пользователя
@@ -297,10 +340,9 @@ function addUser($username, $password, $permissions = PERM_DEVICES_VIEW) {
         'last_login' => null
     ];
     
-    $file = getUsersFile();
-    $result = file_put_contents($file, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $result = saveUsers($users);
     
-    if ($result !== false) {
+    if ($result) {
         return ['success' => true, 'message' => 'Пользователь добавлен'];
     }
     return ['success' => false, 'message' => 'Ошибка сохранения'];
@@ -310,6 +352,7 @@ function deleteUser($id) {
     if ($id == 1) {
         return ['success' => false, 'message' => 'Нельзя удалить главного администратора'];
     }
+    config_lock(getUsersFile());
     $users = getAllUsers();
     $newUsers = [];
     $deleted = false;
@@ -323,9 +366,8 @@ function deleteUser($id) {
     if (!$deleted) {
         return ['success' => false, 'message' => 'Пользователь не найден'];
     }
-    $file = getUsersFile();
-    $result = file_put_contents($file, json_encode($newUsers, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-    if ($result !== false) {
+    $result = saveUsers($newUsers);
+    if ($result) {
         return ['success' => true, 'message' => 'Пользователь удален'];
     }
     return ['success' => false, 'message' => 'Ошибка сохранения'];
