@@ -2,7 +2,7 @@
 // ============================================
 // ФАЙЛ: sections/update.php
 // ВЕРСИЯ: 4.0.1
-// ДАТА: 2026-11-03
+// ДАТА: 2026-11-14
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
 // ============================================
