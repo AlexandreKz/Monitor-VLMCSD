@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.1.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 4.1.2
+// ДАТА: 2026-11-14
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
 require_once __DIR__ . '/vlmcinc/csrf.php';
@@ -203,6 +203,13 @@ if ($changePasswordMode && empty($username)) {
         if ($pendingUser) {
             $username = $pendingUser['username'];
         }
+    }
+}
+// Файл пользователей повреждён и восстановить его не из чего: говорим об этом, а не «неверный пароль»
+if (empty($error)) {
+    getAllUsers();
+    if (($GLOBALS['vlmc_users_status'] ?? '') === 'corrupt') {
+        $error = __('login_users_corrupt');
     }
 }
 ?>

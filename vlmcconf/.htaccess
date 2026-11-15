@@ -5,7 +5,7 @@ Options -Indexes
 DirectoryIndex vlmcconf.php login.php
 
 # Запрещаем доступ к JSON и LOG файлам
-<FilesMatch "\.(json|log|ini|conf|txt)$">
+<FilesMatch "\.(json|log|ini|conf|txt|bak|broken|lock|tmp)$">
     Require all denied
 </FilesMatch>
 
