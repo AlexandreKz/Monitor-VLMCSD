@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.9.0
+// ВЕРСИЯ: 1.9.1
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -109,10 +109,14 @@ if (!$canViewInfo) {
 
 <style>
 /* Раздел занимает всю высоту области; прокручивается только блок со списком (страницу листать не нужно) */
-#section-info.active { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+#section-info.active { display: flex; flex-direction: column; flex: 1 1 auto; height: 100%; min-height: 0; }
+/* Область контента при открытом разделе не прокручивается — прокрутка только внутри блоков */
+.settings-content:has(#section-info.active) { display: flex; flex-direction: column; overflow: hidden; }
 .info-page { display: none; flex: 1 1 auto; min-height: 0; }
 .info-page.active { display: flex; flex-direction: column; }
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
+#infoStructure .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
+#infoStructure .struct-card { flex: 1 1 auto; }
 .info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
 .info-auto-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
 .info-auto-note .file-info-status { margin-left: auto; text-align: right; }

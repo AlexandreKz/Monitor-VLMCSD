@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/structure.php
-// ВЕРСИЯ: 2.5.1
+// ВЕРСИЯ: 2.5.2
 // ДАТА: 2026-11-01
 // @description: Динамическая структура проекта (папки свёрнуты по умолчанию)
 // ============================================
@@ -234,8 +234,12 @@ function renderFileStructure($themeCSS, $fileVersions, $configFile) {
     };
     
     ?>
-    <div style="background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 12px; margin-bottom: 15px;">
+    <div class="struct-card" style="background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 12px;">
         <style>
+            /* Карточка не растёт: прокручивается только дерево, легенда остаётся внизу */
+            .struct-card { display: flex; flex-direction: column; height: 100%; min-height: 0; box-sizing: border-box; }
+            .struct-tree { flex: 1 1 auto; min-height: 0; overflow: auto; }
+            .struct-legend { flex: 0 0 auto; }
             .folder-toggle {
                 display: inline-block;
                 cursor: pointer;
@@ -260,7 +264,7 @@ function renderFileStructure($themeCSS, $fileVersions, $configFile) {
             }
         </style>
         
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.4;">
+        <div class="struct-tree" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.4;">
             <?php if (empty($structure)): ?>
                 <div style="color: <?= $themeCSS['danger'] ?>; text-align: center; padding: 20px;">
                     ⚠️ Структура не найдена. Проверьте права доступа к файлам.
@@ -272,7 +276,7 @@ function renderFileStructure($themeCSS, $fileVersions, $configFile) {
             <?php endif; ?>
         </div>
         
-        <div style="display: flex; gap: 20px; margin-top: 12px; padding: 6px 12px; background: <?= $themeCSS['menuBg'] ?>; border-radius: 6px; font-size: 11px;">
+        <div class="struct-legend" style="display: flex; gap: 20px; margin-top: 12px; padding: 6px 12px; background: <?= $themeCSS['menuBg'] ?>; border-radius: 6px; font-size: 11px;">
             <div><span style="background: #2ecc7120; color: #2ecc71; padding: 2px 8px; border-radius: 12px;">95-100%</span> — <?= __('structure_stable') ?></div>
             <div><span style="background: #3b82f620; color: #3b82f6; padding: 2px 8px; border-radius: 12px;">85-94%</span> — <?= __('structure_working') ?></div>
             <div><span style="background: #f39c1220; color: #f39c12; padding: 2px 8px; border-radius: 12px;">&lt;85%</span> — <?= __('structure_development') ?></div>
