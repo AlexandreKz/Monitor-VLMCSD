@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.4.0
+// ВЕРСИЯ: 5.4.1
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -134,15 +134,15 @@ sudo systemctl status vlmcsd</pre></div>
         
         <p><strong>Для Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.1 php8.1-curl php8.1-common libapache2-mod-php8.1</pre></div>
+sudo apt install apache2 php8.1 php8.1-curl php8.1-common php8.1-mbstring libapache2-mod-php8.1</pre></div>
         
         <p><strong>Для Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.3 php8.3-curl php8.3-common libapache2-mod-php8.3</pre></div>
+sudo apt install apache2 php8.3 php8.3-curl php8.3-common php8.3-mbstring libapache2-mod-php8.3</pre></div>
         
         <p><strong>Для Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.5 php8.5-curl php8.5-common libapache2-mod-php8.5</pre></div>
+sudo apt install apache2 php8.5 php8.5-curl php8.5-common php8.5-mbstring libapache2-mod-php8.5</pre></div>
         
         <div class="note">💡 <strong>Примечание:</strong> Расширения <code>json</code> и <code>session</code> встроены в PHP, отдельно устанавливать не нужно.</div>
     </div>
@@ -557,15 +557,15 @@ sudo systemctl status vlmcsd</pre></div>
         
         <p><strong>For Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.1 php8.1-curl php8.1-common libapache2-mod-php8.1</pre></div>
+sudo apt install apache2 php8.1 php8.1-curl php8.1-common php8.1-mbstring libapache2-mod-php8.1</pre></div>
         
         <p><strong>For Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.3 php8.3-curl php8.3-common libapache2-mod-php8.3</pre></div>
+sudo apt install apache2 php8.3 php8.3-curl php8.3-common php8.3-mbstring libapache2-mod-php8.3</pre></div>
         
         <p><strong>For Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
         <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.5 php8.5-curl php8.5-common libapache2-mod-php8.5</pre></div>
+sudo apt install apache2 php8.5 php8.5-curl php8.5-common php8.5-mbstring libapache2-mod-php8.5</pre></div>
         
         <div class="note">💡 <strong>Note:</strong> The <code>json</code> and <code>session</code> extensions are built into PHP, no separate installation required.</div>
     </div>
