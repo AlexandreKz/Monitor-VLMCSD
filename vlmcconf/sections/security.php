@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.2.1
-// ДАТА: 2026-11-17
-// @description: Секция "Безопасность" — управление пользователями + белые IP
+// ВЕРСИЯ: 5.3.0
+// ДАТА: 2026-11-18
+// @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных (только администратор)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -16,6 +16,8 @@ $userPerms = $_SESSION['vlmc_permissions'] ?? 0;
 $canViewUsers = hasPermission($userPerms, PERM_USERS_VIEW);
 $canEditUsers = hasPermission($userPerms, PERM_USERS_EDIT);
 $canManageWhitelist = hasPermission($userPerms, PERM_IP_WHITELIST);
+$isFullAdmin = hasPermission($userPerms, PERM_ADMIN_FULL);
+$hideDeviceIps = !empty($config['privacy']['hide_device_ips']);
 
 // Получаем список белых IP из конфига
 $whitelistIps = $config['whitelist_ips'] ?? [];
@@ -113,6 +115,19 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 				</div>
 				</div>
 			</div>
+
+			<?php if ($isFullAdmin): ?>
+			<!-- Скрытие IP от неавторизованных (только администратор) -->
+			<div class="settings-card privacy-card">
+				<div class="settings-card-title">🙈 <?= __('privacy_title') ?></div>
+				<label class="privacy-switch">
+					<input type="checkbox" id="hideDeviceIps" <?= $hideDeviceIps ? 'checked' : '' ?> onchange="savePrivacySettings(this)">
+					<span><?= __('privacy_hide_ips_label') ?></span>
+				</label>
+				<p class="privacy-hint"><?= __('privacy_hide_ips_hint') ?></p>
+				<div id="privacyMessage" class="privacy-message" style="display: none;"></div>
+			</div>
+			<?php endif; ?>
 		</div>
         
     </div>
@@ -270,7 +285,18 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 .security-whitelist-column {
     flex: 0.35;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
+.security-whitelist-column > .settings-card:first-child { flex: 1 1 auto; height: auto; }
+.security-whitelist-column > .privacy-card { flex: 0 0 auto; height: auto; }
+.privacy-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.privacy-switch input { width: 16px; height: 16px; accent-color: <?= $themeCSS['primary'] ?>; cursor: pointer; }
+.privacy-hint { margin: 8px 0 0; font-size: 11px; color: <?= $themeCSS['muted'] ?>; line-height: 1.4; }
+.privacy-message { margin-top: 8px; font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px solid transparent; display: inline-block; }
+.privacy-message.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
+.privacy-message.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
 
 .settings-card {
     background: <?= $themeCSS['input'] ?>;
@@ -918,6 +944,33 @@ function removeWhitelistIp(ip) {
         })
         .catch(error => {
             showModalMessage('<?= __('whitelist_remove_error') ?>', 'error');
+        });
+}
+
+// Скрытие IP-адресов добавленных устройств от неавторизованных (только администратор)
+function savePrivacySettings(box) {
+    const msg = document.getElementById('privacyMessage');
+    const fd = new FormData();
+    fd.append('ajax', 'save_privacy_settings');
+    fd.append('hide_device_ips', box.checked ? '1' : '0');
+    box.disabled = true;
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) { box.checked = !box.checked; }
+            msg.textContent = (data.success ? '✅ ' : '❌ ') + (data.message || '');
+            msg.className = 'privacy-message ' + (data.success ? 'ok' : 'err');
+            msg.style.display = 'inline-block';
+        })
+        .catch(() => {
+            box.checked = !box.checked;
+            msg.textContent = '❌ <?= __('msg_save_error') ?>';
+            msg.className = 'privacy-message err';
+            msg.style.display = 'inline-block';
+        })
+        .then(() => {
+            box.disabled = false;
+            setTimeout(() => { msg.style.display = 'none'; }, 6000);
         });
 }
 

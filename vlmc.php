@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.5.2
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 5.6.0
+// ДАТА: 2026-11-18
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.5.2
+ * Version: 5.6.0
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -123,6 +123,11 @@ if (!empty($config['devices'])) {
     }
 }
 
+// Скрытие IP добавленных устройств от неавторизованных (настройка в разделе «Безопасность»).
+// Подмена делается на сервере: настоящие адреса в страницу и в ответы опроса не попадают.
+$viewerLoggedIn = isset($_SESSION['vlmc_admin']) && $_SESSION['vlmc_admin'] === true;
+$hideDeviceIps = !empty($config['privacy']['hide_device_ips']) && !$viewerLoggedIn;
+
 // ============================================
 // AJAX ОБРАБОТЧИКИ (ДО HTML)
 // ============================================
@@ -142,7 +147,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_log') {
         }
     }
     
-    echo processLog($logFile, $devices, $deviceComments, $groups, $groupColors, $filter, $groupFilter);
+    echo processLog($logFile, $devices, $deviceComments, $groups, $groupColors, $filter, $groupFilter,
+        $hideDeviceIps ? vlmcLoadKnownIps($logFile, $devices) : null);
     exit;
 }
 
@@ -526,6 +532,23 @@ if (!empty($stats['suspicious_ips'])) {
     }
 }
 
+// IP добавленных устройств заменяем заглушкой (для неавторизованных при включённой настройке)
+$maskedIps = $hideDeviceIps ? vlmcLoadKnownIps($logFile, $devices) : [];
+if ($maskedIps) {
+    foreach ($unknownDevicesArray as $k => $row) {
+        if (isset($maskedIps[$row['last_ip']])) {
+            $unknownDevicesArray[$k]['last_ip'] = '';
+            $unknownDevicesArray[$k]['masked'] = true;
+        }
+    }
+    foreach ($suspiciousIpsArray as $k => $row) {
+        if (isset($maskedIps[$row['ip']])) {
+            $suspiciousIpsArray[$k]['ip'] = '';
+            $suspiciousIpsArray[$k]['masked'] = true;
+        }
+    }
+}
+
 // Подготовка данных для лога
 $deviceComments = [];
 foreach ($config['devices'] as $group => $deviceList) {
@@ -536,7 +559,7 @@ foreach ($config['devices'] as $group => $deviceList) {
     }
 }
 
-$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 'all', 'all');
+$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 'all', 'all', $hideDeviceIps ? $maskedIps : null);
 
 ?>
 <!DOCTYPE html>
@@ -739,6 +762,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-item:hover { background: <?= $themeCSS['hover'] ?>; border-left-width: 5px; }
         .suspicious-ip { color: <?= $themeCSS['danger'] ?>; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline dotted; }
         .suspicious-ip:hover { color: #ff6b6b; }
+        .ip-blur, .unknown-ip.ip-blur, .suspicious-ip.ip-blur { filter: blur(4px); user-select: none; pointer-events: none; cursor: default; text-decoration: none; }
         .suspicious-count { color: <?= $themeCSS['warning'] ?>; font-weight: 600; font-size: 10px; text-align: center; }
         .suspicious-actions { display: flex; justify-content: center; gap: 4px; }
         .suspicious-country { color: <?= $themeCSS['text'] ?>; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
@@ -1223,6 +1247,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             sorted.forEach(item => {
                 const escapedDevice = escapeHtml(item.device);
                 const escapedIp = escapeHtml(item.last_ip);
+                const ipMasked = item.masked === true;
                 
                 const addButton = canAdd 
                     ? `<button class="add-device-btn" onclick="showAddDeviceModal('${escapedDevice.replace(/'/g, "\\'")}', '${escapedIp}')" title="<?= __('unknown_add_tooltip') ?>">➕</button>`
@@ -1231,9 +1256,9 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                 html += `<div class="unknown-item" title="<?= __('unknown_first_seen') ?> ${new Date(item.first_seen * 1000).toLocaleString()}\n<?= __('unknown_last_seen') ?> ${new Date(item.last_seen * 1000).toLocaleString()}">
                     <span class="unknown-device">${escapedDevice}</span>
                     <span class="unknown-actions">
-                        <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('unknown_copy_ip') ?>">📋</button>
+                        ${ipMasked ? '' : `<button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('unknown_copy_ip') ?>">📋</button>`}
                     </span>
-                    <span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>
+                    ${ipMasked ? '<span class="unknown-ip ip-blur">•••.•••.•••.•••</span>' : `<span class="unknown-ip" onclick="showGeoModal('${escapedIp}', 'unknown')">${escapedIp}</span>`}
                     <span class="unknown-actions">
                         ${addButton}
                     </span>
@@ -1285,19 +1310,22 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             let html = '';
             sorted.forEach(item => {
                 const escapedIp = escapeHtml(item.ip);
+                const ipMasked = item.masked === true;
                 const countryCode = item.country_code || '';
                 const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
                 const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
                 
-                const whitelistButton = canAddToWhitelist
+                const whitelistButton = ipMasked
+                    ? ''
+                    : canAddToWhitelist
                     ? `<button class="add-whitelist-btn" onclick="addToWhitelist('${escapedIp}')" title="<?= __('whitelist_add_ip') ?>">➕</button>`
                     : `<span class="add-whitelist-lock" title="<?= __('whitelist_auth_required') ?>">🔒</span>`;
                 
                 html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
                     <span class="suspicious-actions">
-                        <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>
+                        ${ipMasked ? '' : `<button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>`}
                     </span>
-                    <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
+                    ${ipMasked ? '<span class="suspicious-ip ip-blur">•••.•••.•••.•••</span>' : `<span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>`}
                     <span class="suspicious-count">${item.count}</span>
                     <span class="suspicious-actions">
                         ${whitelistButton}

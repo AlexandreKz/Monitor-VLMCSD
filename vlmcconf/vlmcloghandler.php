@@ -1,10 +1,11 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcloghandler.php
-// ВЕРСИЯ: 1.4.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 1.5.0
+// ДАТА: 2026-11-18
 // @description: Обработчик и форматирование логов KMS с поддержкой tooltip
 // @description: KMS log handler and formatter with tooltip support
+// @description: Скрытие (размытие) IP-адресов добавленных устройств для неавторизованных
 // ============================================
 
 // Подключаем geoip для функции hex2rgb
@@ -34,6 +35,99 @@ function getFirstLogDate($logFile) {
     fclose($fh);
     
     return null;
+}
+
+/**
+ * Набор IP-адресов, принадлежащих добавленным в панель устройствам.
+ * IP определяется по строке «connection accepted», предшествующей запросу устройства;
+ * устройства, у которых именем служит сам IP, тоже входят в набор.
+ * @param string[] $lines Строки лога (как есть)
+ * @param array $devices Добавленные устройства [имя => группа]
+ * @return array [ip => true]
+ */
+function vlmcKnownDeviceIps(array $lines, array $devices) {
+    $set = [];
+    $names = [];
+    foreach (array_keys($devices) as $name) {
+        $name = (string)$name;
+        if (preg_match('/^\d{1,3}(?:\.\d{1,3}){3}$/', $name)) {
+            $set[$name] = true;
+        } elseif ($name !== '') {
+            $names[] = $name;
+        }
+    }
+    $lastIp = null;
+    foreach ($lines as $line) {
+        if (strpos($line, 'connection accepted') !== false) {
+            $lastIp = preg_match('/connection accepted: ([\d\.]+):\d+/', $line, $m) ? $m[1] : null;
+            continue;
+        }
+        if ($lastIp === null || isset($set[$lastIp]) || strpos($line, 'request from') === false) {
+            continue;
+        }
+        $fromPos = strpos($line, 'from');
+        $forPos = ($fromPos !== false) ? strpos($line, 'for', $fromPos + 4) : false;
+        if ($fromPos === false || $forPos === false) {
+            continue;
+        }
+        $device = trim(substr($line, $fromPos + 4, $forPos - $fromPos - 4));
+        if ($device === '') {
+            continue;
+        }
+        foreach ($names as $name) {
+            if (strpos($name, $device) !== false || strpos($device, $name) !== false) {
+                $set[$lastIp] = true;
+                break;
+            }
+        }
+    }
+    return $set;
+}
+
+/** Читает лог и возвращает набор IP добавленных устройств (см. vlmcKnownDeviceIps). */
+function vlmcLoadKnownIps($logFile, array $devices) {
+    if (!is_readable($logFile)) {
+        return [];
+    }
+    $content = @file_get_contents($logFile);
+    if ($content === false) {
+        return [];
+    }
+    return vlmcKnownDeviceIps(explode("\n", $content), $devices);
+}
+
+/** Размытая заглушка вместо IP-адреса. */
+function vlmcIpPlaceholder() {
+    return '<span class="ip-blur">•••.•••.•••.•••</span>';
+}
+
+/**
+ * Заменяет IP из набора в HTML-строке: в тексте — размытой заглушкой, внутри тегов (атрибуты) — простыми точками.
+ */
+function vlmcMaskIpsInHtml($html, array $set) {
+    if (!$set || $html === '') {
+        return $html;
+    }
+    $parts = preg_split('/(<[^>]*>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => $part) {
+        $isTag = ($part !== '' && $part[0] === '<');
+        $parts[$i] = preg_replace_callback('/(?<![\d.])\d{1,3}(?:\.\d{1,3}){3}(?![\d.]*\d)/', function ($m) use ($set, $isTag) {
+            if (!isset($set[$m[0]])) {
+                return $m[0];
+            }
+            return $isTag ? '•••' : vlmcIpPlaceholder();
+        }, $part);
+    }
+    return implode('', $parts);
+}
+
+/** Текущий набор IP для скрытия (задаётся processLog). */
+function vlmcIpMaskSet($set = false) {
+    static $current = [];
+    if ($set !== false) {
+        $current = is_array($set) ? $set : [];
+    }
+    return $current;
 }
 
 /**
@@ -155,13 +249,17 @@ function processLine($line, $devices, $deviceComments, $groups, $groupColors, $f
         $result .= '<div style="padding: 4px 0 4px 16px; margin: 0;">' . $lineWithHighlights . '</div>';
     }
     
+    $mask = vlmcIpMaskSet();
+    if ($mask) {
+        $result = vlmcMaskIpsInHtml($result, $mask);
+    }
     return $result;
 }
 
 /**
  * Обработка всего лога
  */
-function processLog($logFile, $devices, $deviceComments, $groups, $groupColors, $filter = 'all', $groupFilter = 'all') {
+function processLog($logFile, $devices, $deviceComments, $groups, $groupColors, $filter = 'all', $groupFilter = 'all', $maskIps = null) {
     if (!file_exists($logFile)) {
         return 'Ошибка: файл лога не найден';
     }
@@ -178,6 +276,8 @@ function processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 
         return trim($line) !== '';
     });
     
+    // $maskIps: набор [ip => true] IP добавленных устройств, которые нужно скрыть (для неавторизованных)
+    vlmcIpMaskSet(is_array($maskIps) ? $maskIps : []);
     $processedLines = [];
     $lastConnectionId = null;
     
