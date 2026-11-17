@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.5.7
+// ВЕРСИЯ: 5.5.8
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -534,6 +534,19 @@ return [
     'update_auto_check_every' => 'Every %d h',
     'update_in_dev' => 'in development',
     'update_settings_saved' => 'Update settings saved',
+    'update_channel_saved' => 'Selected channel saved',
+    'update_token_label' => 'GitHub token (optional)',
+    'update_token_placeholder' => 'ghp_… or github_pat_…',
+    'update_token_clear' => 'Remove',
+    'update_token_hint' => 'Only needed to raise the GitHub API limit from 60 to 5000 requests per hour. Create a token at github.com: Settings → Developer settings → Personal access tokens. No permissions are required. The token is stored in the panel data folder and is never shown.',
+    'update_token_set' => 'token set (…%s)',
+    'update_token_unset' => 'no token (limit: 60 requests per hour)',
+    'update_token_empty' => 'Enter a token.',
+    'update_token_bad_format' => 'Invalid token format: Latin letters, digits and "_" only, at least 20 characters.',
+    'update_token_saved' => 'Token saved.',
+    'update_token_cleared' => 'Token removed.',
+    'update_github_with_token' => 'Token in use.',
+    'update_err_bad_token' => 'GitHub rejected the token (invalid or expired).',
     'update_done' => 'Files updated: %d. Backup: %s',
     'update_github_ok' => 'GitHub is reachable, SSL verification passed. API limit: %d of %d requests left.',
     'update_err_ssl_ca' => 'Cannot verify the server certificate: this computer has no list of trusted certificate authorities (CA) configured.',

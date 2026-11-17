@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.5.7
+// ВЕРСИЯ: 5.5.8
 // ДАТА: 2026-11-17
 // @description: Русские переводы интерфейса
 // ============================================
@@ -536,6 +536,19 @@ return [
     'update_auto_check_every' => 'Раз в %d ч',
     'update_in_dev' => 'в разработке',
     'update_settings_saved' => 'Настройки обновления сохранены',
+    'update_channel_saved' => 'Выбранный канал сохранён',
+    'update_token_label' => 'Токен GitHub (необязательно)',
+    'update_token_placeholder' => 'ghp_… или github_pat_…',
+    'update_token_clear' => 'Удалить',
+    'update_token_hint' => 'Нужен только для увеличения лимита запросов к GitHub с 60 до 5000 в час. Создайте токен на github.com: Settings → Developer settings → Personal access tokens. Права доступа не нужны. Токен хранится в папке данных панели и не показывается.',
+    'update_token_set' => 'токен задан (…%s)',
+    'update_token_unset' => 'токен не задан (лимит 60 запросов в час)',
+    'update_token_empty' => 'Введите токен.',
+    'update_token_bad_format' => 'Неверный формат токена: допустимы латинские буквы, цифры и «_», длина от 20 символов.',
+    'update_token_saved' => 'Токен сохранён.',
+    'update_token_cleared' => 'Токен удалён.',
+    'update_github_with_token' => 'Используется токен.',
+    'update_err_bad_token' => 'GitHub не принял токен (неверный или просроченный).',
     'update_done' => 'Обновлено файлов: %d. Резервная копия: %s',
     'update_github_ok' => 'GitHub доступен, проверка SSL пройдена. Лимит запросов: осталось %d из %d.',
     'update_err_ssl_ca' => 'Не удаётся проверить сертификат сервера: на этом компьютере не подключён список доверенных сертификатов (CA).',

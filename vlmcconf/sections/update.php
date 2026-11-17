@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 4.0.2
+// ВЕРСИЯ: 4.1.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -16,9 +16,14 @@ require_once dirname(__DIR__) . '/vlmcinc/updater.php';
 $updater = new Updater();
 $updSettings = $updater->getSettings();
 $sslInfo = vlmcSslDiagnostics();
+$tokenInfo = $updater->tokenInfo();
 
 // Строки для JavaScript
 $updI18n = [
+    'channelSaved'   => __('update_channel_saved'),
+    'tokenEmpty'     => __('update_token_empty'),
+    'tokenSet'       => __('update_token_set'),
+    'tokenUnset'     => __('update_token_unset'),
     'notChecked'     => __('update_ch_not_checked'),
     'uptodate'       => __('update_ch_uptodate'),
     'availRelease'   => __('update_ch_available_release'),
@@ -70,10 +75,13 @@ $updI18n = [
             <div style="display: flex; gap: 25px; flex-wrap: wrap; align-items: flex-end;">
                 <div>
                     <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;"><?= __('update_type_label') ?></label>
-                    <select id="updateType" class="form-control" style="width: 200px;">
-                        <option value="release" <?= $updSettings['type'] === 'release' ? 'selected' : '' ?>><?= __('update_type_release') ?></option>
-                        <option value="early" <?= $updSettings['type'] === 'early' ? 'selected' : '' ?>><?= __('update_type_early') ?></option>
-                    </select>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="updateType" class="form-control" style="width: 200px;">
+                            <option value="release" <?= $updSettings['type'] === 'release' ? 'selected' : '' ?>><?= __('update_type_release') ?></option>
+                            <option value="early" <?= $updSettings['type'] === 'early' ? 'selected' : '' ?>><?= __('update_type_early') ?></option>
+                        </select>
+                        <span id="channelSavedMsg" style="display: none; font-size: 12px; white-space: nowrap;"></span>
+                    </div>
                 </div>
                 <div>
                     <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;">
@@ -90,6 +98,18 @@ $updI18n = [
             <button class="btn btn-primary" onclick="saveUpdateSettings()" style="padding: 6px 14px; font-size: 11px; flex-shrink: 0;">
                 💾 <?= __('save') ?>
             </button>
+        </div>
+        
+        <!-- Токен GitHub (необязательно): лимит запросов к API 5000/ч вместо 60/ч -->
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed <?= $themeCSS['border'] ?>;">
+            <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;">🔑 <?= __('update_token_label') ?></label>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="password" id="githubToken" class="form-control" style="width: 320px;" autocomplete="new-password" spellcheck="false" placeholder="<?= htmlspecialchars(__('update_token_placeholder')) ?>">
+                <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 14px; font-size: 11px;">💾 <?= __('save') ?></button>
+                <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 14px; font-size: 11px;">🗑️ <?= __('update_token_clear') ?></button>
+                <span id="tokenStatus" style="font-size: 12px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></span>
+            </div>
+            <div style="font-size: 11px; color: #8aa0bb; margin-top: 6px;"><?= __('update_token_hint') ?></div>
         </div>
         
         <!-- Автоматическая установка, расписание и уведомления: в разработке -->
@@ -446,6 +466,51 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         });
     }
 
+    // --- Автосохранение выбранного канала ---
+    let channelMsgTimer = null;
+    function saveChannel() {
+        const el = $('channelSavedMsg');
+        if (!el) return;
+        post({
+            ajax: 'save_update_settings',
+            type: selectedChannel(),
+            auto_check: $('autoCheckEnabled').checked ? 'true' : 'false',
+            check_interval: $('autoCheckInterval').value
+        }).then(function (data) {
+            el.style.color = data.success ? '#2ecc71' : '#e74c3c';
+            el.textContent = data.success ? '✔ ' + I18N.channelSaved : '❌ ' + (data.message || I18N.saveError);
+        }).catch(function () {
+            el.style.color = '#e74c3c';
+            el.textContent = '❌ ' + I18N.saveError;
+        }).then(function () {
+            el.style.display = 'inline';
+            clearTimeout(channelMsgTimer);
+            channelMsgTimer = setTimeout(function () { el.style.display = 'none'; }, 4000);
+        });
+    }
+
+    // --- Токен GitHub ---
+    function showTokenStatus(data) {
+        const st = $('tokenStatus');
+        if (!st) return;
+        st.style.color = data.success ? '#2ecc71' : '#e74c3c';
+        const base = data.set ? I18N.tokenSet.replace('%s', data.hint) : I18N.tokenUnset;
+        st.textContent = (data.message || '') + ' (' + base + ')';
+    }
+
+    function saveGithubToken(clear) {
+        const inp = $('githubToken');
+        const value = clear ? '' : (inp.value || '').trim();
+        if (!clear && value === '') {
+            showTokenStatus({ success: false, message: I18N.tokenEmpty, set: false, hint: '' });
+            return;
+        }
+        post({ ajax: 'save_github_token', token: value }).then(function (data) {
+            if (data.success) inp.value = '';
+            showTokenStatus(data);
+        }).catch(function () { showTokenStatus({ success: false, message: I18N.saveError }); });
+    }
+
     // --- Настройки ---
     function saveUpdateSettings() {
         const msg = $('settingsMessage');
@@ -488,7 +553,11 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         if (gitHubBtn) gitHubBtn.onclick = checkGitHubAccess;
         if (runBtn) runBtn.onclick = runUpdate;
         if (startBtn) startBtn.onclick = startUpdate;
-        if (typeSel) typeSel.onchange = function () { renderState(lastData); markSelected(); };
+        if (typeSel) typeSel.onchange = function () { renderState(lastData); markSelected(); saveChannel(); };
+        const tokBtn = $('saveTokenBtn');
+        const tokClr = $('clearTokenBtn');
+        if (tokBtn) tokBtn.onclick = function () { saveGithubToken(false); };
+        if (tokClr) tokClr.onclick = function () { saveGithubToken(true); };
 
         markSelected();
         if (!lastData) loadState();

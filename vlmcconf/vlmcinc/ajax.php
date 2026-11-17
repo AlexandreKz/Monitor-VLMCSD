@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.5.3
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 3.6.0
+// ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
@@ -64,6 +64,7 @@ function ajaxActionPermissions() {
         'get_update_files'      => $toolsEdit,
         'perform_update'        => $toolsEdit,
         'save_update_settings'  => $toolsEdit,
+        'save_github_token'     => $toolsEdit,
 
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
@@ -738,7 +739,7 @@ if (isset($_POST['ajax'])) {
         
         $alwaysExclude = [
             '.git', '.gitignore', '.DS_Store', 'Thumbs.db',
-            'cache', 'tmp', 'temp', 'data_dir.local.php'
+            'cache', 'tmp', 'temp', 'data_dir.local.php', 'github_token.json'
         ];
         
         $shouldExclude = function($item, $currentPath, $exportType) use ($alwaysExclude) {
@@ -1201,7 +1202,7 @@ if (isset($_POST['ajax'])) {
 // ============================================
 // AJAX: Обновление панели с GitHub (проверка связи, проверка каналов, список файлов, установка, настройки)
 // ============================================
-if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_auto_check', 'get_update_files', 'perform_update', 'save_update_settings'], true)) {
+if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_auto_check', 'get_update_files', 'perform_update', 'save_update_settings', 'save_github_token'], true)) {
     require_once __DIR__ . '/updater.php';
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close(); // долгие сетевые запросы не должны держать сессию
@@ -1219,7 +1220,8 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
     if ($action === 'check_github_access') {
         $r = $updater->checkGitHubAccess();
         if ($r['success']) {
-            $r['message'] = sprintf(__('update_github_ok'), $r['remaining'], $r['limit']);
+            $r['message'] = sprintf(__('update_github_ok'), $r['remaining'], $r['limit'])
+                . (!empty($r['authenticated']) ? ' ' . __('update_github_with_token') : '');
         } else {
             $r['message'] = Updater::errorText($r['error'], $r);
             $r['ssl_help'] = in_array($r['error'], ['ssl_ca', 'ssl'], true);
@@ -1302,6 +1304,38 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
             $r['message'] = sprintf(__('update_done'), (int)$r['updated_count'], basename((string)$r['backup_dir']));
         }
         echo json_encode($r, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // --- Токен GitHub: сохранить (с проверкой) или удалить (пустое значение). Токен клиенту не возвращается ---
+    if ($action === 'save_github_token') {
+        $token = trim((string)($_POST['token'] ?? ''));
+        if ($token === '') {
+            $ok = $updater->clearToken();
+            echo json_encode(['success' => $ok, 'message' => __($ok ? 'update_token_cleared' : 'msg_save_error')] + $updater->tokenInfo(), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if (!Updater::isValidToken($token)) {
+            echo json_encode(['success' => false, 'message' => __('update_token_bad_format')] + $updater->tokenInfo(), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $previous = $updater->getToken();
+        if (!$updater->saveToken($token)) {
+            echo json_encode(['success' => false, 'message' => __('msg_save_error')] + $updater->tokenInfo(), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $check = $updater->checkGitHubAccess();
+        if (!$check['success'] && $check['error'] === 'bad_token') {
+            // GitHub отверг токен: возвращаем прежнее состояние
+            if ($previous !== '') { $updater->saveToken($previous); } else { $updater->clearToken(); }
+            echo json_encode(['success' => false, 'message' => Updater::errorText('bad_token')] + $updater->tokenInfo(), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $msg = __('update_token_saved');
+        if ($check['success']) {
+            $msg .= ' ' . sprintf(__('update_github_ok'), $check['remaining'], $check['limit']);
+        }
+        echo json_encode(['success' => true, 'message' => $msg] + $updater->tokenInfo(), JSON_UNESCAPED_UNICODE);
         exit;
     }
 

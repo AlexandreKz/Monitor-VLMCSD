@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.0.2
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 3.1.0
+// ДАТА: 2026-11-17
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
 // ============================================
@@ -134,18 +134,78 @@ class Updater {
     // ЗАПРОСЫ К GITHUB
     // ============================================
 
+    // ============================================
+    // ТОКЕН GITHUB (необязательный: поднимает лимит API с 60 до 5000 запросов в час)
+    // ============================================
+
+    private function tokenPath() {
+        return vlmcDataFile('github_token.json');
+    }
+
+    /** Токен или пустая строка. Хранится в папке данных (вне веб-папки), права 0600. */
+    public function getToken() {
+        $file = $this->tokenPath();
+        if (!is_file($file)) {
+            return '';
+        }
+        $d = json_decode((string)@file_get_contents($file), true);
+        $t = is_array($d) ? (string)($d['token'] ?? '') : '';
+        return self::isValidToken($t) ? $t : '';
+    }
+
+    public static function isValidToken($t) {
+        return is_string($t) && preg_match('/^[A-Za-z0-9_]{20,255}$/', $t) === 1;
+    }
+
+    /** Сведения для интерфейса: токен сам клиенту не отдаётся, только последние 4 символа. */
+    public function tokenInfo() {
+        $t = $this->getToken();
+        return ['set' => $t !== '', 'hint' => $t !== '' ? substr($t, -4) : ''];
+    }
+
+    public function saveToken($t) {
+        if (!self::isValidToken($t)) {
+            return false;
+        }
+        $file = $this->tokenPath();
+        $tmp = $file . '.' . getmypid() . '.tmp';
+        $json = json_encode(['token' => $t]);
+        if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+            return false;
+        }
+        @chmod($tmp, 0600);
+        if (!@rename($tmp, $file)) {
+            @unlink($tmp);
+            return false;
+        }
+        return true;
+    }
+
+    public function clearToken() {
+        $file = $this->tokenPath();
+        return !is_file($file) || @unlink($file);
+    }
+
     private function github($path) {
+        $token = $this->getToken();
+        $headers = ['Accept: application/vnd.github+json', 'X-GitHub-Api-Version: 2022-11-28'];
+        if ($token !== '') {
+            $headers[] = 'Authorization: Bearer ' . $token;
+        }
         $r = vlmcHttpRequest(self::API . $path, [
             'timeout'         => 15,
             'connect_timeout' => 5,
-            'user_agent'      => 'KMS-Monitor-Updater/3.0',
-            'headers'         => ['Accept: application/vnd.github+json', 'X-GitHub-Api-Version: 2022-11-28']
+            'user_agent'      => 'KMS-Monitor-Updater/3.1',
+            'headers'         => $headers
         ]);
         if ($r['error'] !== '') {
             return ['ok' => false, 'error' => $r['error'], 'detail' => $r['detail']];
         }
         if ($r['status'] === 429 || ($r['status'] === 403 && ($r['headers']['x-ratelimit-remaining'] ?? '') === '0')) {
             return ['ok' => false, 'error' => 'rate_limit', 'reset' => (int)($r['headers']['x-ratelimit-reset'] ?? 0)];
+        }
+        if ($r['status'] === 401 && $token !== '') {
+            return ['ok' => false, 'error' => 'bad_token', 'status' => 401];
         }
         if ($r['status'] === 404) {
             return ['ok' => false, 'error' => 'not_found', 'status' => 404];
@@ -170,7 +230,7 @@ class Updater {
         }
         $core = $r['data']['resources']['core'] ?? [];
         return ['success' => true, 'remaining' => (int)($core['remaining'] ?? 0), 'limit' => (int)($core['limit'] ?? 0),
-                'reset' => (int)($core['reset'] ?? 0), 'ssl' => $ssl];
+                'reset' => (int)($core['reset'] ?? 0), 'ssl' => $ssl, 'authenticated' => $this->getToken() !== ''];
     }
 
     private function versionFromTag($tag) {

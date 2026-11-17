@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/http_client.php
-// ВЕРСИЯ: 1.0.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 1.1.0
+// ДАТА: 2026-11-17
 // @description: HTTPS-запросы с обязательной проверкой SSL-сертификата (curl или потоки PHP), диагностика для Windows
 // ============================================
 
@@ -121,6 +121,12 @@ function vlmcHttpRequest($url, array $opts = []) {
         return $result;
     }
 
+    // Заголовок Authorization не должен уходить на другой хост при редиректе: редиректы с ним обрабатываются вручную
+    $hasAuth = false;
+    foreach ($headers as $h) {
+        if (stripos(ltrim($h), 'authorization:') === 0) { $hasAuth = true; break; }
+    }
+
     $ssl = ['verify_peer' => true, 'verify_peer_name' => true];
     $caFile = trim((string)ini_get('openssl.cafile'));
     if ($caFile !== '') {
@@ -132,7 +138,7 @@ function vlmcHttpRequest($url, array $opts = []) {
             'timeout'         => $timeout,
             'user_agent'      => $userAgent,
             'header'          => implode("\r\n", $headers),
-            'follow_location' => 1,
+            'follow_location' => $hasAuth ? 0 : 1,
             'max_redirects'   => 3,
             'ignore_errors'   => true
         ],
@@ -157,6 +163,16 @@ function vlmcHttpRequest($url, array $opts = []) {
             $responseHeaders = [];
         } elseif (($pos = strpos($line, ':')) !== false) {
             $responseHeaders[strtolower(trim(substr($line, 0, $pos)))] = trim(substr($line, $pos + 1));
+        }
+    }
+
+    if ($hasAuth && in_array($status, [301, 302, 307, 308], true) && !empty($responseHeaders['location'])
+        && (int)($opts['_depth'] ?? 0) < 3) {
+        $next = parse_url($responseHeaders['location']);
+        if (is_array($next) && strtolower($next['scheme'] ?? '') === 'https'
+            && strtolower($next['host'] ?? '') === strtolower($parts['host'])) {
+            $opts['_depth'] = (int)($opts['_depth'] ?? 0) + 1;
+            return vlmcHttpRequest($responseHeaders['location'], $opts);
         }
     }
 
