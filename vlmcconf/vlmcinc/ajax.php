@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.13.1
+// ВЕРСИЯ: 3.13.2
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -1399,12 +1399,15 @@ if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_chann
     }
 
     if ($ntfAct === 'notify_rule_save') {
-        $res = notifyMutate(function (&$s) use ($ntfId) {
+        $wantActive = !empty(json_decode((string)($_POST['data'] ?? ''), true)['active'] ?? false);
+        $savedOff = false;
+        $res = notifyMutate(function (&$s) use ($ntfId, $wantActive, &$savedOff) {
             $old = null; $idx = -1;
             foreach ($s['rules'] as $i => $r) { if (($r['id'] ?? '') === $ntfId) { $old = $r; $idx = $i; } }
             if ($ntfId !== '' && $old === null) { return 'notify_err_notfound'; }
             [$r, $err] = notifyRuleBuild($_POST, $s, $old);
             if ($r === null) { return $err; }
+            $savedOff = $wantActive && empty($r['active']);
             if ($old === null) {
                 if (count($s['rules']) >= NOTIFY_MAX_RULES) { return 'notify_err_limit'; }
                 $r['id'] = notifyNextId($s, 'r');
@@ -1414,7 +1417,7 @@ if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_chann
             }
             return true;
         });
-        if ($res === true) { $ntfOut(true, 'notify_saved', $ntfView()); }
+        if ($res === true) { $ntfOut(true, $savedOff ? 'notify_saved_off' : 'notify_saved', $ntfView()); }
         echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
         exit;
     }

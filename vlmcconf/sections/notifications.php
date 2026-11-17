@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.3.1
+// ВЕРСИЯ: 3.3.2
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -365,14 +365,9 @@ $ntfT['saveError'] = __('msg_save_error');
         const save = btn('ntf-prim', '💾 ' + T.btn_save, function () {
             const data = { events: st.events, channels: st.channels, groups: st.groups, devices: st.devices, throttle: thr.value, quiet_enabled: qk.box.checked,
                 quiet_from: qf.value, quiet_to: qt.value, active: ak.box.checked, params: st.params };
-            if (data.active && !data.channels.length) {
-                chSec.classList.remove('ntf-bad'); void chSec.offsetWidth; chSec.classList.add('ntf-bad');
-                chSec.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                say(msg, T.err_no_channels, false); return;
-            }
             save.disabled = true;
             post({ ajax: 'notify_rule_save', id: isNew ? '' : rule.id, name: name.value, data: JSON.stringify(data) }).then(function (d) {
-                if (d.success) { close(); apply(d); say(pageMsg(), d.message, true); } else { say(msg, d.message, false); }
+                if (d.success) { close(); apply(d); say(pageMsg(), d.message, d.message.indexOf('⚠️') < 0); } else { say(msg, d.message, false); }
             }).catch(function (e) { failMsg(msg, e); }).then(function () { save.disabled = false; });
         });
         const foot = [save, btn('ntf-flat', T.btn_cancel, function () { close(); })];
