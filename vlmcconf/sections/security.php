@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.4.0
+// ВЕРСИЯ: 5.4.1
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -306,6 +306,8 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 .security-whitelist-column > .privacy-card { flex: 0 0 auto; height: auto; }
 .session-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 13px; }
 .session-row input { width: 80px; flex: 0 0 auto; }
+.session-row input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+.session-row input[type=number]::-webkit-outer-spin-button, .session-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .session-row span { white-space: nowrap; }
 .session-row .btn { white-space: nowrap; }
 .privacy-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 500; }

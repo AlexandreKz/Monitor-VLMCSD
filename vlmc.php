@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.6.2
+// ВЕРСИЯ: 5.6.3
 // ДАТА: 2026-11-18
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.6.2
+ * Version: 5.6.3
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -538,10 +538,6 @@ if ($hideIps) {
         $unknownDevicesArray[$k]['last_ip'] = '';
         $unknownDevicesArray[$k]['masked'] = true;
     }
-    foreach ($suspiciousIpsArray as $k => $row) {
-        $suspiciousIpsArray[$k]['ip'] = '';
-        $suspiciousIpsArray[$k]['masked'] = true;
-    }
 }
 
 // Подготовка данных для лога
@@ -757,7 +753,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-item:hover { background: <?= $themeCSS['hover'] ?>; border-left-width: 5px; }
         .suspicious-ip { color: <?= $themeCSS['danger'] ?>; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; text-decoration: underline dotted; }
         .suspicious-ip:hover { color: #ff6b6b; }
-        .ip-blur, .unknown-ip.ip-blur, .suspicious-ip.ip-blur { filter: blur(4px); user-select: none; pointer-events: none; cursor: default; text-decoration: none; }
+        .ip-blur, .unknown-ip.ip-blur { filter: blur(4px); user-select: none; pointer-events: none; cursor: default; text-decoration: none; }
         .suspicious-count { color: <?= $themeCSS['warning'] ?>; font-weight: 600; font-size: 10px; text-align: center; }
         .suspicious-actions { display: flex; justify-content: center; gap: 4px; }
         .suspicious-country { color: <?= $themeCSS['text'] ?>; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
@@ -1305,22 +1301,19 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             let html = '';
             sorted.forEach(item => {
                 const escapedIp = escapeHtml(item.ip);
-                const ipMasked = item.masked === true;
                 const countryCode = item.country_code || '';
                 const countryName = escapeHtml(item.country_name || item.country || 'Unknown');
                 const flagUrl = countryCode ? `https://cdn.jsdelivr.net/npm/flag-icons@7.5.0/flags/4x3/${countryCode}.svg` : '';
                 
-                const whitelistButton = ipMasked
-                    ? ''
-                    : canAddToWhitelist
+                const whitelistButton = canAddToWhitelist
                     ? `<button class="add-whitelist-btn" onclick="addToWhitelist('${escapedIp}')" title="<?= __('whitelist_add_ip') ?>">➕</button>`
                     : `<span class="add-whitelist-lock" title="<?= __('whitelist_auth_required') ?>">🔒</span>`;
                 
                 html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
                     <span class="suspicious-actions">
-                        ${ipMasked ? '' : `<button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>`}
+                        <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>
                     </span>
-                    ${ipMasked ? '<span class="suspicious-ip ip-blur">•••.•••.•••.•••</span>' : `<span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>`}
+                    <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
                     <span class="suspicious-count">${item.count}</span>
                     <span class="suspicious-actions">
                         ${whitelistButton}
