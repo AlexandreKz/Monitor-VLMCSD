@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.3.2
+// ВЕРСИЯ: 3.4.0
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -13,6 +13,37 @@ if (!canEditNotifications($currentUserPermissions)) {
     return;
 }
 require_once __DIR__ . '/../vlmcinc/notify.php';
+
+// Читаемость в любой теме: контраст цвета с фоном не ниже порога, иначе берётся запасной цвет
+if (!function_exists('ntfLum')) {
+    function ntfLum($hex) {
+        $hex = ltrim((string)$hex, '#');
+        if (strlen($hex) === 3) { $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2]; }
+        if (strlen($hex) !== 6) { return 0.5; }
+        $l = 0;
+        foreach ([0.2126, 0.7152, 0.0722] as $i => $k) {
+            $v = hexdec(substr($hex, $i * 2, 2)) / 255;
+            $l += $k * ($v <= 0.03928 ? $v / 12.92 : pow(($v + 0.055) / 1.055, 2.4));
+        }
+        return $l;
+    }
+    function ntfContrast($a, $b) {
+        $x = ntfLum($a); $y = ntfLum($b);
+        return (max($x, $y) + 0.05) / (min($x, $y) + 0.05);
+    }
+    function ntfReadable($fg, $bgs, $fallback, $min = 3.5) {
+        foreach ((array)$bgs as $bg) { if (ntfContrast($fg, $bg) < $min) { return $fallback; } }
+        return $fg;
+    }
+    function ntfOn($bg) {   // текст на цветной плашке: белый или тёмный — что контрастнее
+        return ntfContrast('#ffffff', $bg) >= ntfContrast('#111111', $bg) ? '#ffffff' : '#111111';
+    }
+}
+$ntfBgs = [$themeCSS['card'], $themeCSS['input'], $themeCSS['bg']];
+$ntfMuted = ntfReadable('#8aa0bb', $ntfBgs, $themeCSS['text']);
+$ntfDanger = ntfReadable($themeCSS['danger'], $ntfBgs, $themeCSS['text']);
+$ntfOk = ntfReadable($themeCSS['success'], $ntfBgs, $themeCSS['text']);
+$ntfTabOn = ntfReadable($themeCSS['primary'], [$themeCSS['card']], $themeCSS['text']);
 
 $ntfEv = [];
 foreach (notifyCatalog() as $id => $e) {
@@ -70,21 +101,21 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-tabs { display: flex; gap: 10px; margin-left: auto; flex-wrap: wrap; }
 .ntf-tab { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .ntf-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
-.ntf-tab.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
+.ntf-tab.active { opacity: 1; color: <?= $ntfTabOn ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .ntf-page { display: none; }
 .ntf-page.active { display: block; }
 .ntf-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ntf-top { margin: 0 0 12px; }
-.ntf-hint { font-size: 12px; color: #8aa0bb; }
+.ntf-hint { font-size: 12px; color: <?= $ntfMuted ?>; }
 .ntf-wrap { overflow: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .ntf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.ntf-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.ntf-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: <?= $ntfMuted ?>; font-weight: 600; white-space: nowrap; }
 .ntf-table td { padding: 6px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: middle; }
 .ntf-table tr.ntf-click { cursor: pointer; }
 .ntf-table tr.ntf-click:hover td { background: <?= $themeCSS['hover'] ?>; }
-.ntf-none { color: <?= $themeCSS['danger'] ?>; }
-.ntf-badge { font-size: 10px; line-height: 16px; padding: 1px 9px; border-radius: 9px; font-weight: 500; white-space: nowrap; background: <?= $themeCSS['border'] ?>; display: inline-block; }
-.ntf-badge.on { background: <?= $themeCSS['success'] ?>; color: #fff; }
+.ntf-none { color: <?= $ntfDanger ?>; }
+.ntf-badge { font-size: 10px; line-height: 16px; padding: 1px 9px; border-radius: 9px; font-weight: 500; white-space: nowrap; background: <?= $themeCSS['border'] ?>; color: <?= ntfOn($themeCSS['border']) ?>; display: inline-block; }
+.ntf-badge.on { background: <?= $themeCSS['success'] ?>; color: <?= ntfOn($themeCSS['success']) ?>; }
 .ntf-badge.ntf-tg { cursor: pointer; transition: filter .15s; }
 .ntf-badge.ntf-tg:hover { filter: brightness(1.15); }
 .ntf-sec.ntf-bad { border-color: <?= $themeCSS['danger'] ?>; box-shadow: 0 0 0 2px <?= $themeCSS['danger'] ?>33; animation: ntfShake .35s; }
@@ -94,13 +125,13 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-sev.mid { background: <?= $themeCSS['warning'] ?>33; color: <?= $themeCSS['warning'] ?>; }
 .ntf-sev.low { background: <?= $themeCSS['primary'] ?>33; color: <?= $themeCSS['primary'] ?>; }
 .ntf-msg { font-size: 13px; }
-.ntf-msg.ok { color: <?= $themeCSS['success'] ?>; }
-.ntf-msg.err { color: <?= $themeCSS['danger'] ?>; }
+.ntf-msg.ok { color: <?= $ntfOk ?>; }
+.ntf-msg.err { color: <?= $ntfDanger ?>; }
 .ntf-flat { box-sizing: border-box; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 16px; height: 30px; font-size: 12px; line-height: 28px; cursor: pointer; white-space: nowrap; font-family: inherit; transition: border-color .15s, color .15s; }
 .ntf-flat:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
 .ntf-flat:disabled { opacity: 0.5; cursor: default; }
 .ntf-flat.danger:hover:not(:disabled) { border-color: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['danger'] ?>; }
-.ntf-prim { box-sizing: border-box; background: <?= $themeCSS['primary'] ?>; color: #fff; border: 1px solid <?= $themeCSS['primary'] ?>; border-radius: 6px; padding: 0 18px; height: 30px; font-size: 12px; cursor: pointer; font-family: inherit; }
+.ntf-prim { box-sizing: border-box; background: <?= $themeCSS['primary'] ?>; color: <?= ntfOn($themeCSS['primary']) ?>; border: 1px solid <?= $themeCSS['primary'] ?>; border-radius: 6px; padding: 0 18px; height: 30px; font-size: 12px; cursor: pointer; font-family: inherit; }
 .ntf-prim:disabled { opacity: 0.5; cursor: default; }
 .ntf-num { -moz-appearance: textfield; appearance: textfield; }
 .ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -119,8 +150,8 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
 .ntf-f { margin-bottom: 14px; }
 .ntf-sec .ntf-f:last-child { margin-bottom: 0; }
-.ntf-l { display: block; font-size: 12px; color: #8aa0bb; margin-bottom: 5px; }
-.ntf-gh { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #8aa0bb; }
+.ntf-l { display: block; font-size: 12px; color: <?= $ntfMuted ?>; margin-bottom: 5px; }
+.ntf-gh { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: <?= $ntfMuted ?>; }
 .ntf-evg { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; }
 .ntf-chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin: 0; }
 .ntf-chk.dis { opacity: .5; cursor: default; }
