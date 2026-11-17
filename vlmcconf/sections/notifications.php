@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): каналы Email/Telegram, события журнала и обновлений, правила (пороги, антиспам, тихие часы), тест и история отправок
 // ============================================
@@ -39,7 +39,7 @@ $ntfI18n = [
             <label class="ntf-chk"><input type="checkbox" id="mailOn"> <?= __('update_notify_enable') ?></label>
             <div class="ntf-grid">
                 <div><label><?= __('notify_host') ?></label><input type="text" id="mailHost" class="form-control" placeholder="smtp.example.com" autocomplete="off"></div>
-                <div><label><?= __('notify_port') ?></label><input type="number" id="mailPort" class="form-control" min="1" max="65535"></div>
+                <div><label><?= __('notify_port') ?></label><input type="number" id="mailPort" class="form-control ntf-num" min="1" max="65535"></div>
                 <div><label><?= __('notify_secure') ?></label>
                     <select id="mailSecure" class="form-control">
                         <option value="tls"><?= __('notify_secure_tls') ?></option>
@@ -53,7 +53,8 @@ $ntfI18n = [
             <div style="margin-top: 10px;"><label><?= __('notify_to') ?></label><input type="text" id="mailTo" class="form-control" placeholder="admin@example.com, security@example.com" autocomplete="off"></div>
             <div class="ntf-row">
                 <button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button>
-                <button type="button" class="btn ntf-btn" data-test="mail">✉️ <?= __('notify_test_mail') ?></button>
+                <button type="button" class="ntf-flat" data-test="mail">✉️ <?= __('notify_test_mail') ?></button>
+                <span class="ntf-msg"></span>
                 <span class="ntf-hint"><?= __('notify_secret_hint') ?></span>
             </div>
         </div>
@@ -67,7 +68,8 @@ $ntfI18n = [
             </div>
             <div class="ntf-row">
                 <button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button>
-                <button type="button" class="btn ntf-btn" data-test="tg">✈️ <?= __('notify_test_tg') ?></button>
+                <button type="button" class="ntf-flat" data-test="tg">✈️ <?= __('notify_test_tg') ?></button>
+                <span class="ntf-msg"></span>
             </div>
         </div>
     </div>
@@ -76,37 +78,40 @@ $ntfI18n = [
         <div class="ntf-blk">
             <table class="ntf-table" id="ntfEvTable"></table>
             <div class="ntf-hint" style="margin-top: 10px;">ℹ️ <?= __('notify_future') ?></div>
-            <div class="ntf-row"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button></div>
+            <div class="ntf-row"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
         </div>
     </div>
 
     <div id="ntfRl" class="ntf-page">
-        <div class="ntf-blk">
-            <h3>🔐 <?= __('notify_rules_thresholds') ?></h3>
-            <div class="ntf-grid">
-                <div><label><?= __('notify_fail_count') ?></label><input type="number" id="rFailN" class="form-control" min="2" max="100"></div>
-                <div><label><?= __('notify_fail_minutes') ?></label><input type="number" id="rFailM" class="form-control" min="1" max="1440"></div>
+        <div class="ntf-two">
+            <div class="ntf-blk">
+                <h3>🔐 <?= __('notify_rules_thresholds') ?></h3>
+                <div class="ntf-fields">
+                    <div><label><?= __('notify_fail_count') ?></label><input type="number" id="rFailN" class="form-control ntf-num ntf-w" min="2" max="100"></div>
+                    <div><label><?= __('notify_fail_minutes') ?></label><input type="number" id="rFailM" class="form-control ntf-num ntf-w" min="1" max="1440"></div>
+                </div>
+            </div>
+            <div class="ntf-blk">
+                <h3>🛡️ <?= __('notify_rules_spam') ?></h3>
+                <div class="ntf-fields">
+                    <div><label><?= __('notify_antispam') ?></label><input type="number" id="rSpam" class="form-control ntf-num ntf-w" min="0" max="1440"></div>
+                </div>
+                <label class="ntf-chk" style="margin-top: 12px;"><input type="checkbox" id="rQuiet"> <?= __('notify_quiet') ?></label>
+                <div class="ntf-row" style="margin-top: 6px;">
+                    <span><?= __('notify_quiet_from') ?></span>
+                    <select id="rQFromH" class="form-control ntf-time"></select><span>:</span><select id="rQFromM" class="form-control ntf-time"></select>
+                    <span style="margin-left: 8px;"><?= __('notify_quiet_to') ?></span>
+                    <select id="rQToH" class="form-control ntf-time"></select><span>:</span><select id="rQToM" class="form-control ntf-time"></select>
+                </div>
             </div>
         </div>
-        <div class="ntf-blk">
-            <h3>🛡️ <?= __('notify_rules_spam') ?></h3>
-            <div class="ntf-grid">
-                <div><label><?= __('notify_antispam') ?></label><input type="number" id="rSpam" class="form-control" min="0" max="1440"></div>
-            </div>
-            <label class="ntf-chk" style="margin-top: 12px;"><input type="checkbox" id="rQuiet"> <?= __('notify_quiet') ?></label>
-            <div class="ntf-row" style="margin-top: 6px;">
-                <span><?= __('notify_quiet_from') ?></span><input type="time" id="rQFrom" class="form-control" style="width: 120px;">
-                <span><?= __('notify_quiet_to') ?></span><input type="time" id="rQTo" class="form-control" style="width: 120px;">
-            </div>
-            <div class="ntf-row"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button></div>
-        </div>
+        <div class="ntf-row" style="margin: 0 0 12px;"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-blk">
             <h3>🕘 <?= __('notify_history') ?></h3>
             <table class="ntf-table" id="ntfHist"></table>
         </div>
     </div>
 
-    <div id="ntfMsg" class="ntf-msg"></div>
 </div>
 
 <style>
@@ -135,9 +140,21 @@ $ntfI18n = [
 .ntf-sev.high { background: <?= $themeCSS['danger'] ?>33; color: <?= $themeCSS['danger'] ?>; }
 .ntf-sev.mid { background: <?= $themeCSS['warning'] ?>33; color: <?= $themeCSS['warning'] ?>; }
 .ntf-sev.low { background: <?= $themeCSS['primary'] ?>33; color: <?= $themeCSS['primary'] ?>; }
-.ntf-msg { min-height: 18px; font-size: 13px; margin-top: 4px; }
+.ntf-msg { font-size: 13px; }
 .ntf-msg.ok { color: <?= $themeCSS['success'] ?>; }
 .ntf-msg.err { color: <?= $themeCSS['danger'] ?>; }
+.ntf-flat { box-sizing: border-box; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 16px; height: 30px; font-size: 12px; line-height: 28px; cursor: pointer; white-space: nowrap; font-family: inherit; transition: border-color .15s, color .15s; }
+.ntf-flat:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.ntf-flat:disabled { opacity: 0.5; cursor: default; }
+.ntf-num { -moz-appearance: textfield; appearance: textfield; }
+.ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ntf-w { width: 120px; }
+.ntf-fields { display: flex; gap: 16px; flex-wrap: wrap; }
+.ntf-fields label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
+.ntf-time { width: 68px; padding-right: 4px; cursor: pointer; }
+.ntf-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+.ntf-two .ntf-blk { margin-bottom: 0; height: 100%; box-sizing: border-box; }
+@media (max-width: 1000px) { .ntf-two { grid-template-columns: 1fr; } }
 </style>
 
 <script>
@@ -152,16 +169,29 @@ $ntfI18n = [
         Object.keys(params).forEach(function (k) { fd.append(k, params[k]); });
         return fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); });
     }
-    function msg(text, ok) {
-        const m = $('ntfMsg'); m.textContent = text || ''; m.className = 'ntf-msg ' + (ok ? 'ok' : 'err');
-        if (ok) setTimeout(function () { if (m.textContent === text) m.textContent = ''; }, 4000);
+    // Сообщение показывается рядом с нажатой кнопкой и только на своей вкладке; само исчезает
+    function clearMsgs() { document.querySelectorAll('#section-notifications .ntf-msg').forEach(function (m) { m.textContent = ''; }); }
+    function msg(btn, text, ok) {
+        clearMsgs();
+        const row = btn && btn.parentNode, m = row && row.querySelector('.ntf-msg');
+        if (!m) return;
+        m.textContent = text || ''; m.className = 'ntf-msg ' + (ok ? 'ok' : 'err');
+        setTimeout(function () { if (m.textContent === text) m.textContent = ''; }, ok ? 4000 : 8000);
     }
+    function fillTime(hId, mId) {
+        const h = $(hId), m = $(mId);
+        for (let i = 0; i < 24; i++) h.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
+        for (let i = 0; i < 60; i++) m.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
+    }
+    function setTime(hId, mId, v) { const p = String(v || '00:00').split(':'); $(hId).value = p[0]; $(mId).value = p[1]; }
+    function getTime(hId, mId) { return $(hId).value + ':' + $(mId).value; }
+    fillTime('rQFromH', 'rQFromM'); fillTime('rQToH', 'rQToM');
     function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
     document.querySelectorAll('#section-notifications .ntf-tab').forEach(function (b) {
         b.onclick = function () {
             document.querySelectorAll('#section-notifications .ntf-tab, #section-notifications .ntf-page').forEach(function (x) { x.classList.remove('active'); });
-            b.classList.add('active'); $(b.dataset.p).classList.add('active');
+            b.classList.add('active'); $(b.dataset.p).classList.add('active'); clearMsgs();
         };
     });
 
@@ -178,7 +208,7 @@ $ntfI18n = [
         badge('ntfMailBadge', s.email.enabled); badge('ntfTgBadge', s.telegram.enabled);
         const r = s.rules;
         $('rFailN').value = r.fail_count; $('rFailM').value = r.fail_minutes; $('rSpam').value = r.antispam_minutes;
-        $('rQuiet').checked = !!r.quiet_enabled; $('rQFrom').value = r.quiet_from; $('rQTo').value = r.quiet_to;
+        $('rQuiet').checked = !!r.quiet_enabled; setTime('rQFromH', 'rQFromM', r.quiet_from); setTime('rQToH', 'rQToM', r.quiet_to);
         events = JSON.parse(JSON.stringify(s.events));
         renderEvents();
     }
@@ -226,30 +256,30 @@ $ntfI18n = [
             tg_on: $('tgOn').checked ? 1 : '', tg_token: $('tgToken').value, tg_chat: $('tgChat').value,
             events: JSON.stringify(events),
             rules: JSON.stringify({ fail_count: $('rFailN').value, fail_minutes: $('rFailM').value, antispam_minutes: $('rSpam').value,
-                quiet_enabled: $('rQuiet').checked, quiet_from: $('rQFrom').value, quiet_to: $('rQTo').value })
+                quiet_enabled: $('rQuiet').checked, quiet_from: getTime('rQFromH', 'rQFromM'), quiet_to: getTime('rQToH', 'rQToM') })
         };
     }
 
     function load() {
         post({ ajax: 'get_notify' }).then(function (d) {
             if (d.success) { fill(d.settings); renderHistory(d.history); loaded = true; }
-        }).catch(function () { msg(T.saveError, false); });
+        }).catch(function () {});
     }
 
     document.querySelectorAll('#section-notifications [data-save]').forEach(function (b) {
         b.onclick = function () {
             const p = form(); p.ajax = 'save_notify';
             post(p).then(function (d) {
-                msg(d.message || (d.success ? '' : T.saveError), !!d.success);
+                msg(b, d.message || (d.success ? '' : T.saveError), !!d.success);
                 if (d.success) { fill(d.settings); }
-            }).catch(function () { msg(T.saveError, false); });
+            }).catch(function (e) { msg(b, T.saveError + ' (' + (e && e.message ? e.message : '?') + ')', false); });
         };
     });
     document.querySelectorAll('#section-notifications [data-test]').forEach(function (b) {
         b.onclick = function () {
             const p = form(); p.ajax = 'test_notify'; p.channel = b.dataset.test; b.disabled = true;
-            post(p).then(function (d) { msg(d.message, !!d.success); load(); })
-                .catch(function () { msg(T.saveError, false); })
+            post(p).then(function (d) { msg(b, d.message, !!d.success); load(); })
+                .catch(function (e) { msg(b, T.saveError + ' (' + (e && e.message ? e.message : '?') + ')', false); })
                 .then(function () { b.disabled = false; });
         };
     });

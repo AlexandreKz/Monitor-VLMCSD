@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-17
 // @description: Уведомления (пункт 27): Email по SMTP (сокеты, без внешних пакетов) и Telegram; события журнала и обновлений, антиспам, тихие часы, история отправок; секреты хранятся зашифрованными
 // ============================================
@@ -114,13 +114,23 @@ function notifyLoad() {
     return $d;
 }
 
+/** Сохранение настроек: атомарно (как конфиг панели). При сбое причина в $GLOBALS['notify_save_error']. */
 function notifySave(array $s) {
+    require_once __DIR__ . '/safe_json.php';
     $f = notifyFile();
-    $ok = @file_put_contents($f, json_encode($s, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX) !== false;
-    if ($ok) {
-        @chmod($f, 0600);
+    $GLOBALS['notify_save_error'] = '';
+    $json = json_encode($s, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($json === false) {
+        $GLOBALS['notify_save_error'] = 'json: ' . json_last_error_msg();
+        return false;
     }
-    return $ok;
+    if (!config_write_atomic($f, $json)) {
+        $err = error_get_last();
+        $GLOBALS['notify_save_error'] = $f . (is_dir(dirname($f)) && !is_writable(dirname($f)) ? ' (нет прав на запись в папку)' : '') . ($err ? ': ' . $err['message'] : '');
+        return false;
+    }
+    @chmod($f, 0600);
+    return true;
 }
 
 /** Настройки для интерфейса: без секретов, с признаками «задан». */

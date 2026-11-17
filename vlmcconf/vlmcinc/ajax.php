@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.11.0
+// ВЕРСИЯ: 3.11.1
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -1305,7 +1305,7 @@ if ($_POST['ajax'] === 'save_notify') {
         exit;
     }
     $ok = notifySave($new);
-    echo json_encode(['success' => $ok, 'message' => __($ok ? 'notify_saved' : 'msg_save_error'), 'settings' => notifyPublic($new)], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_saved') : (__('msg_save_error') . ' ' . ($GLOBALS['notify_save_error'] ?? '')), 'settings' => notifyPublic($new)], JSON_UNESCAPED_UNICODE);
     exit;
 }
 if ($_POST['ajax'] === 'test_notify') {
