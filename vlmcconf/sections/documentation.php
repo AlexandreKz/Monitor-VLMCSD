@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.2.4
+// ВЕРСИЯ: 5.3.0
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -383,7 +383,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
         <p>Скрипт <code>update_check.php</code> завершается с кодом 0 (обновлений нет), 10 (есть обновление) или 1 (ошибка проверки).</p>
         <p><strong>Как идёт установка:</strong> файлы скачиваются во временную папку и сверяются с репозиторием по SHA, затем делается резервная копия заменяемых файлов (в <code>backups/update_…</code> папки данных) и файлы заменяются. Если что-то пошло не так, выполняется откат. Папки <code>pic/</code> и <code>screen/</code>, настройки и данные панели не обновляются, файлы, которых нет в репозитории, не удаляются.</p>
-        <div class="note">🚧 Автоматическая установка, расписание и уведомления пока в разработке.</div>
+        <div class="note">🚧 Автоматическая установка и расписание пока в разработке. Уведомления о новой версии настраиваются в разделе «Уведомления».</div>
         <div class="note">⚠️ Если вы вносили в файлы панели собственные правки, ранний доступ предложит заменить их версией из репозитория: сначала загрузите свои правки в репозиторий.</div>
     </div>
     
@@ -802,7 +802,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
         <p>The <code>update_check.php</code> script exits with code 0 (no updates), 10 (an update is available) or 1 (check error).</p>
         <p><strong>How installation works:</strong> files are downloaded to a temporary folder and verified against the repository by SHA, then the files being replaced are backed up (to <code>backups/update_…</code> in the data folder) and replaced. If anything goes wrong, the changes are rolled back. The <code>pic/</code> and <code>screen/</code> folders, settings and panel data are not updated; files that are not in the repository are not deleted.</p>
-        <div class="note">🚧 Automatic installation, schedule and notifications are still in development.</div>
+        <div class="note">🚧 Automatic installation and schedule are still in development. Notifications about a new version are set up in the “Notifications” section.</div>
         <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
     </div>
     

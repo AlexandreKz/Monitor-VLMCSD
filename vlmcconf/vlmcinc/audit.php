@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/audit.php
-// ВЕРСИЯ: 2.0.1
+// ВЕРСИЯ: 2.1.0
 // ДАТА: 2026-11-17
 // @description: Журнал действий пользователей панели: запись (с изменениями «было → стало»), срок хранения, очистка, фильтры, поиск, сводка по пользователю, активность по часам и дням
 // ============================================
@@ -26,7 +26,8 @@ function auditAjaxActions() {
         'add_user', 'update_user', 'delete_user', 'change_user_password',
         'rename_group', 'delete_group', 'save_group_changes', 'add_device', 'mass_move_devices',
         'add_whitelist_ip', 'remove_whitelist_ip',
-        'save_audit_settings', 'clear_audit'
+        'save_audit_settings', 'clear_audit',
+        'save_notify', 'test_notify'
     ];
 }
 
@@ -294,7 +295,7 @@ function auditCleanParams(array $src) {
         }
         if (is_array($v)) {
             $val = '[' . count($v) . ']';
-        } elseif (is_string($v) && isset($v[0]) && $v[0] === '[' && is_array($arr = json_decode($v, true))) {
+        } elseif (is_string($v) && isset($v[0]) && ($v[0] === '[' || $v[0] === '{') && is_array($arr = json_decode($v, true))) {
             $val = '[' . count($arr) . ']';   // список (например, файлы обновления) — только количество
         } elseif (is_scalar($v)) {
             $val = preg_replace('/[\r\n\t]+/', ' ', trim((string)$v));
@@ -313,13 +314,12 @@ function auditCleanParams(array $src) {
     return implode('; ', $parts);
 }
 
-/**
- * ЗАГОТОВКА уведомлений (пункт 27 бэклога): сюда будет приходить каждая запись журнала,
- * чтобы по правилам (серия неудачных входов, отказы в доступе, удаление пользователей)
- * отправлять письмо или сообщение в Telegram. Пока ничего не делает.
- */
+/** Передача записи журнала в уведомления (правила и каналы — раздел «Уведомления»). */
 function auditNotify(array $entry) {
-    // не реализовано
+    if (!function_exists('notifyOnAudit')) {
+        require_once __DIR__ . '/notify.php';
+    }
+    notifyOnAudit($entry);
 }
 
 /**

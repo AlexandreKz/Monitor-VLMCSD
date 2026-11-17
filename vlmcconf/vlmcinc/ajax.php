@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.10.0
+// ВЕРСИЯ: 3.11.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -14,6 +14,7 @@ if (session_status() === PHP_SESSION_NONE && !defined('VLMC_SESSION_CLOSED')) {
 }
 require_once __DIR__ . '/users.php';
 require_once __DIR__ . '/audit.php';
+require_once __DIR__ . '/notify.php';
 
 // CSRF при прямом обращении к ajax.php (например, из vlmc.php). Запросы через vlmcconf.php
 // уже проверены там (VLMC_CSRF_CHECKED). check_permission только читает и вызывается и для гостей.
@@ -74,6 +75,11 @@ function ajaxActionPermissions() {
         'export_audit'          => PERM_LOGS_VIEW,
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
+
+        // Уведомления (Email, Telegram): только администратор
+        'get_notify'            => PERM_ADMIN_FULL,
+        'save_notify'           => PERM_ADMIN_FULL,
+        'test_notify'           => PERM_ADMIN_FULL,
 
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
@@ -1285,6 +1291,39 @@ if (isset($_POST['ajax'])) {
 		exit;
 	}
 	
+// ============================================
+// AJAX: Уведомления (пункт 27): настройки каналов, события, правила, тест, история
+// ============================================
+if ($_POST['ajax'] === 'get_notify') {
+    echo json_encode(['success' => true, 'settings' => notifyPublic(notifyLoad()), 'history' => notifyHistory(10)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+if ($_POST['ajax'] === 'save_notify') {
+    [$new, $err] = notifyBuild($_POST, notifyLoad());
+    if ($new === null) {
+        echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $ok = notifySave($new);
+    echo json_encode(['success' => $ok, 'message' => __($ok ? 'notify_saved' : 'msg_save_error'), 'settings' => notifyPublic($new)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+if ($_POST['ajax'] === 'test_notify') {
+    $ch = ($_POST['channel'] ?? '') === 'tg' ? 'tg' : 'mail';
+    $in = $_POST;
+    $in[$ch === 'tg' ? 'tg_on' : 'mail_on'] = '1';   // проверяем поля канала, даже если он ещё не включён
+    [$new, $err] = notifyBuild($in, notifyLoad());
+    if ($new === null) {
+        echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $text = 'KMS Monitor: ' . __('notify_test_text') . ' ' . date('Y-m-d H:i:s');
+    [$ok, $detail] = $ch === 'tg' ? notifySendTelegram($new['telegram'], $text) : notifySendEmail($new['email'], '[KMS Monitor] ' . __('notify_test_subject'), $text);
+    notifyHistoryAdd('test', __('notify_test_subject'), [$ch], $ok, $detail);
+    echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_test_ok') : (__('notify_test_fail') . ' ' . $detail)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // ============================================
 // AJAX: Журнал действий (просмотр с фильтрами и экспорт CSV)
 // ============================================

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.3.0
 // ДАТА: 2026-11-17
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
@@ -494,6 +494,10 @@ class Updater {
             $state['checked_at'] = time() - (int)$settings['interval'] * 3600 + 900;
         }
         $this->saveState($state);
+        if (is_file(__DIR__ . '/notify.php')) {
+            require_once __DIR__ . '/notify.php';
+            notifyOnUpdateCheck($state);   // уведомление о новой версии (один раз на версию)
+        }
         return ['cached' => false, 'state' => $state];
     }
 

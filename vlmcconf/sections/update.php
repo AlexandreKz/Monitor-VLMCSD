@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.4.1
+// ВЕРСИЯ: 5.5.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -132,12 +132,19 @@ $updI18n = [
                 </select>
                 <div id="autoSavedMsg" style="visibility: hidden; min-height: 16px; font-size: 12px; margin-top: 4px;"></div>
             </div>
-            <!-- Автообновление, расписание и уведомления: в разработке -->
-            <div class="upd-col" style="opacity: 0.55;">
+            <div class="upd-col">
+                <div style="opacity: 0.55;">
                 <div class="upd-col-title">🛠️ <?= __('update_auto_install_title') ?> <span class="update-dev-badge">🚧 <?= __('update_in_dev') ?></span></div>
                 <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_mode_auto') ?></label>
                 <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_schedule_enable') ?></label>
-                <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_notify_enable') ?></label>
+                </div>
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>;">
+                    <div class="upd-col-title">🔔 <?= __('update_notifications_label') ?></div>
+                    <div style="font-size: 12px; color: #8aa0bb; line-height: 1.4;"><?= __('notify_open_hint') ?></div>
+                    <?php if (hasPermission($currentUserPermissions, PERM_ADMIN_FULL)): ?>
+                    <button type="button" class="btn" style="margin-top: 8px; height: 30px; padding: 0 16px; font-size: 12px;" onclick="var m=document.querySelector('.menu-item[onclick*=&quot;notifications&quot;]'); if (m) m.click();">🔔 <?= __('notify_open_settings') ?></button>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

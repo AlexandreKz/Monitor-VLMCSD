@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.9.1
+// ВЕРСИЯ: 5.10.0
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1480,6 +1480,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         if (section === 'tools' && typeof window.fitUpdateConsole === 'function') {
             setTimeout(window.fitUpdateConsole, 0);   // консоль обновления подгоняется под высоту окна
         }
+        if (section === 'notifications' && typeof window.loadNotify === 'function') {
+            window.loadNotify();
+        }
         if (section === 'audit' && typeof window.loadAudit === 'function') {
             window.loadAudit();
         }
@@ -1765,6 +1768,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         <span><?= __('menu_audit') ?></span>
     </div>
     <?php endif; ?>
+
+    <!-- Уведомления - только администратор -->
+    <?php if (hasPermission($currentUserPermissions, PERM_ADMIN_FULL)): ?>
+    <div class="menu-item <?= $activeSection === 'notifications' ? 'active' : '' ?>" onclick="showSection('notifications', this)">
+        <span class="menu-item-icon">🔔</span>
+        <span><?= __('menu_notify') ?></span>
+    </div>
+    <?php endif; ?>
     
     <!-- Статистика - доступна всем -->
     <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
@@ -1828,6 +1839,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 <?php if (hasPermission($currentUserPermissions, PERM_DEVICES_VIEW)) include __DIR__ . '/sections/devices.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)) include __DIR__ . '/sections/security.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW)) include __DIR__ . '/sections/audit.php'; ?>
+                <?php if (hasPermission($currentUserPermissions, PERM_ADMIN_FULL)) include __DIR__ . '/sections/notifications.php'; ?>
                 <?php include __DIR__ . '/sections/stats.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)) include __DIR__ . '/sections/info.php'; ?>
                 <?php include __DIR__ . '/sections/tools.php'; ?>

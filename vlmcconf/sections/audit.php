@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.6
+// ВЕРСИЯ: 3.1.0
 // ДАТА: 2026-11-17
-// @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
+// @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), ссылка на уведомления
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'audit.php') {
@@ -157,14 +157,14 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         <div class="audit-hint"><?= __('audit_retention_hint') ?></div>
     </div>
 
-    <!-- Заготовка уведомлений (пункт 27 бэклога) -->
-    <div class="audit-panel" style="opacity: 0.55;">
-        <div class="audit-panel-title">🔔 <?= __('audit_notify_title') ?> <span class="update-dev-badge">🚧 <?= __('update_in_dev') ?></span></div>
-        <div style="display: flex; gap: 25px; flex-wrap: wrap;">
-            <label class="audit-check"><input type="checkbox" disabled> <?= __('audit_notify_failed_logins') ?></label>
-            <label class="audit-check"><input type="checkbox" disabled> <?= __('audit_notify_denied') ?></label>
-            <label class="audit-check"><input type="checkbox" disabled> <?= __('audit_notify_user_delete') ?></label>
-        </div>
+    <!-- Уведомления журнала: настройка в разделе «Уведомления» (пункт 27) -->
+    <div class="audit-panel">
+        <div class="audit-panel-title">🔔 <?= __('audit_notify_title') ?></div>
+        <div class="audit-hint"><?= __('notify_open_hint') ?></div>
+        <?php if ($canAuditAdmin): ?>
+        <div style="margin-top: 8px;"><button type="button" class="btn" style="height: 30px; padding: 0 16px; font-size: 12px;" onclick="var m=document.querySelector('.menu-item[onclick*=&quot;notifications&quot;]'); if (m) m.click();">🔔 <?= __('notify_open_settings') ?></button></div>
+        <?php endif; ?>
+    </div>
     </div>
     </div>
 
