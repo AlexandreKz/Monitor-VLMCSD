@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.1.2
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 4.2.0
+// ДАТА: 2026-11-17
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
 require_once __DIR__ . '/vlmcinc/csrf.php';
@@ -11,6 +11,7 @@ vlmcSessionStart();
 require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/login_limiter.php';
+require_once __DIR__ . '/vlmcinc/audit.php';
 
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
@@ -115,6 +116,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
             $_SESSION['vlmc_login_time'] = time();
             
             updateLastLogin($user['username']);
+            auditLog('password_changed', '', 'ok', $user['username']);
             
             header('Location: vlmcconf.php');
             exit;
@@ -140,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         http_response_code(429);
         header('Retry-After: ' . $lockedFor);
         $error = sprintf(__('login_too_many_attempts'), (int)ceil($lockedFor / 60));
+        auditLog('login_locked', '', 'denied', $username);
     } elseif (authenticate_user($username, $password)) {
         $user = getUserByUsername($username);
         loginLimiterSuccess($username);
@@ -159,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
             $_SESSION['vlmc_login_time'] = time();
             
             updateLastLogin($username);
+            auditLog('login', '', 'ok', $user['username']);
             
             header('Location: vlmcconf.php');
             exit;
@@ -182,6 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
                     $_SESSION['vlmc_login_time'] = time();
                     
                     updateLastLogin($ad_user['username']);
+                    auditLog('login', 'AD', 'ok', $user['username']);
                     
                     header('Location: vlmcconf.php');
                     exit;
@@ -192,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         // Если ни локальная, ни AD-аутентификация не прошли
         $error = __('invalid_login');
         loginLimiterFail($username);
+        auditLog('login_failed', '', 'error', $username);
     }
 }
 

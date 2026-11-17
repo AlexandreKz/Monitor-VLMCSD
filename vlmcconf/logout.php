@@ -1,13 +1,19 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/logout.php
-// ВЕРСИЯ: 1.0.1
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 1.1.0
+// ДАТА: 2026-11-17
 // @description: Выход из панели управления
 // ============================================
 
 require_once __DIR__ . '/vlmcinc/csrf.php';
 vlmcSessionStart();
+
+// Выход фиксируется в журнале действий
+if (!empty($_SESSION['vlmc_username'])) {
+    require_once __DIR__ . '/vlmcinc/audit.php';
+    auditLog('logout');
+}
 
 // Очищаем все данные сессии
 $_SESSION = array();

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.6.0
+// ВЕРСИЯ: 3.7.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -13,6 +13,7 @@ if (session_status() === PHP_SESSION_NONE && !defined('VLMC_SESSION_CLOSED')) {
     vlmcSessionStart();
 }
 require_once __DIR__ . '/users.php';
+require_once __DIR__ . '/audit.php';
 
 // CSRF при прямом обращении к ajax.php (например, из vlmc.php). Запросы через vlmcconf.php
 // уже проверены там (VLMC_CSRF_CHECKED). check_permission только читает и вызывается и для гостей.
@@ -66,6 +67,10 @@ function ajaxActionPermissions() {
         'save_update_settings'  => $toolsEdit,
         'save_github_token'     => $toolsEdit,
 
+        // Журнал действий
+        'get_audit'             => PERM_LOGS_VIEW,
+        'export_audit'          => PERM_LOGS_VIEW,
+
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
         'add_user'              => PERM_USERS_EDIT,
@@ -95,7 +100,11 @@ function ajaxAuthorizeOrDie($action) {
         return;
     }
 
-    $deny = function () {
+    $deny = function () use ($action) {
+        // Отказ вошедшему пользователю фиксируется в журнале
+        if (($_SESSION['vlmc_admin'] ?? false) === true) {
+            auditLog('access_denied', 'action=' . (is_string($action) ? auditSub($action, 60) : ''), 'denied');
+        }
         $message = function_exists('__') ? __('access_denied') : 'Access denied';
         if (!headers_sent()) {
             http_response_code(403);
@@ -119,6 +128,7 @@ function ajaxAuthorizeOrDie($action) {
     }
     foreach ((array)$need as $mask) {
         if (($perms & $mask) === $mask) {
+            auditBeginAjax($action); // изменяющие действия попадают в журнал с результатом
             return;
         }
     }
@@ -1199,6 +1209,31 @@ if (isset($_POST['ajax'])) {
 		exit;
 	}
 	
+// ============================================
+// AJAX: Журнал действий (просмотр с фильтрами и экспорт CSV)
+// ============================================
+if (in_array($_POST['ajax'], ['get_audit', 'export_audit'], true)) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    $dateOk = function ($v) { return is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : ''; };
+    $auditFilters = [
+        'q'      => auditSub((string)($_POST['q'] ?? ''), 200),
+        'user'   => auditSub((string)($_POST['user'] ?? ''), 64),
+        'action' => in_array($_POST['action'] ?? '', auditAllActions(), true) ? $_POST['action'] : '',
+        'result' => in_array($_POST['result'] ?? '', ['ok', 'error', 'denied'], true) ? $_POST['result'] : '',
+        'from'   => $dateOk($_POST['from'] ?? ''),
+        'to'     => $dateOk($_POST['to'] ?? '')
+    ];
+    if ($_POST['ajax'] === 'export_audit') {
+        echo json_encode(['success' => true, 'csv' => auditExportCsv($auditFilters)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $res = auditQuery($auditFilters, (int)($_POST['page'] ?? 1), (int)($_POST['per_page'] ?? 50));
+    echo json_encode(['success' => true] + $res, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // ============================================
 // AJAX: Обновление панели с GitHub (проверка связи, проверка каналов, список файлов, установка, настройки)
 // ============================================
