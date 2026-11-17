@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.0.0
+// ВЕРСИЯ: 5.0.1
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -59,7 +59,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- БЛОК 1: РЕПОЗИТОРИЙ, ВЕРСИЯ, СТАТУС, КНОПКИ  -->
     <!-- ============================================ -->
-    <div class="upd-frame" style="margin-bottom: 15px;">
+    <div class="upd-frame" style="margin-bottom: 15px; padding: 10px 15px;">
         <div class="upd-info-grid">
             <div class="upd-info-item"><span class="upd-info-label">📦 <?= __('update_repository') ?></span><code>AlexandreKz/Monitor-VLMCSD</code></div>
             <div class="upd-info-item"><span class="upd-info-label">🌿 <?= __('update_branch') ?></span><code>main</code></div>
@@ -199,10 +199,12 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-channel-card.selected { box-shadow: 0 0 0 1px <?= $themeCSS['primary'] ?> inset; }
 .upd-frame { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; }
 .upd-frame-title { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 10px; gap: 10px; }
-.upd-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.upd-info-item { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; min-width: 0; word-break: break-word; }
-.upd-info-label { font-size: 10px; color: #8aa0bb; text-transform: uppercase; letter-spacing: 0.3px; }
-.upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
+.upd-info-grid { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; font-size: 11px; }
+.upd-info-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; word-break: break-word; }
+.upd-info-label { color: #8aa0bb; white-space: nowrap; }
+.upd-info-label::after { content: ':'; }
+.upd-info-item code { font-size: 11px; }
+.upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
 .upd-extra-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 1000px) { .upd-extra-row { grid-template-columns: 1fr; } .update-channels { grid-template-columns: 1fr !important; } }
 .upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px; min-width: 0; }
