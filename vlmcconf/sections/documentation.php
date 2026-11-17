@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.5.0
+// ВЕРСИЯ: 5.5.1
 // ДАТА: 2026-11-18
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -34,7 +34,7 @@ $docWebRu = <<<'HTML_WEB_RU'
         <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
 less install.sh
 sudo bash install.sh</pre></div>
-        <p>Полезные ключи: <code>--domain example.com</code> (виртуальный хост и сертификат Let's Encrypt), <code>--dir</code> (папка установки, по умолчанию /var/www/html), <code>--release v5.9.3</code> (конкретная версия), <code>--branch main</code> (ранний доступ), <code>--kms-log /var/log/vlmcsd.log</code> (права на лог и ссылка), <code>--dry-run</code> (только показать действия). Справка: <code>bash install.sh --help</code>.</p>
+        <p>Полезные ключи: <code>--domain example.com</code> (виртуальный хост и сертификат Let's Encrypt), <code>--dir</code> (папка установки, по умолчанию /var/www/html), <code>--release 6.0.0</code> (конкретная версия), <code>--branch main</code> (ранний доступ), <code>--kms-log /var/log/vlmcsd.log</code> (права на лог и ссылка), <code>--dry-run</code> (только показать действия). Справка: <code>bash install.sh --help</code>.</p>
         <div class="note">💡 Повторный запуск безопасен: файлы панели обновятся, а настройки, пользователи и данные останутся. После установки перейдите к этапу «Первый вход в панель управления». Если вы ставите вручную, пропустите этот блок и следуйте этапам ниже.</div>
     </div>
     
@@ -465,7 +465,7 @@ $docWebEn = <<<'HTML_WEB_EN'
         <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
 less install.sh
 sudo bash install.sh</pre></div>
-        <p>Useful options: <code>--domain example.com</code> (virtual host and Let's Encrypt certificate), <code>--dir</code> (install folder, default /var/www/html), <code>--release v5.9.3</code> (specific version), <code>--branch main</code> (early access), <code>--kms-log /var/log/vlmcsd.log</code> (log permissions and link), <code>--dry-run</code> (only show actions). Help: <code>bash install.sh --help</code>.</p>
+        <p>Useful options: <code>--domain example.com</code> (virtual host and Let's Encrypt certificate), <code>--dir</code> (install folder, default /var/www/html), <code>--release 6.0.0</code> (specific version), <code>--branch main</code> (early access), <code>--kms-log /var/log/vlmcsd.log</code> (log permissions and link), <code>--dry-run</code> (only show actions). Help: <code>bash install.sh --help</code>.</p>
         <div class="note">💡 Running it again is safe: panel files are updated while settings, users and data are kept. After installation go to the “First login to control panel” step. If you install manually, skip this block and follow the steps below.</div>
     </div>
     
