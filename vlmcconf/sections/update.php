@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.0.2
+// ВЕРСИЯ: 5.1.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -45,6 +45,8 @@ $updI18n = [
     'failedFiles'    => __('update_failed_files'),
     'selected'       => __('update_channel_selected'),
     'settingsSaved'  => __('update_settings_saved'),
+    'toastRelease'   => __('update_toast_release'),
+    'toastEarly'     => __('update_toast_early'),
     'checkingGitHub' => __('update_checking_github'),
     'saveError'      => __('msg_save_error'),
     'ready'          => __('update_ready'),
@@ -365,6 +367,31 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         setSslHelp(!!data.ssl_help);
     }
 
+    // Всплывающее сообщение в шапке раздела «Инструменты» (на 5 секунд)
+    function sectionToast(text, type) {
+        const title = document.querySelector('#section-tools .section-title');
+        if (!title) return;
+        title.querySelectorAll('.section-message').forEach(function (m) { m.remove(); });
+        const msg = document.createElement('div');
+        msg.className = 'section-message ' + type;
+        msg.textContent = text;
+        title.appendChild(msg);
+        setTimeout(function () { msg.remove(); }, 5200);
+    }
+
+    // Есть обновление: сообщение с числом файлов (для выбранного канала, иначе для другого, где оно есть)
+    function toastIfAvailable(data) {
+        const ch = data.channels || {};
+        const order = [selectedChannel(), selectedChannel() === 'release' ? 'early' : 'release'];
+        for (let i = 0; i < order.length; i++) {
+            const c = ch[order[i]];
+            if (!c || !c.success || !c.available) continue;
+            const files = (c.new_count || 0) + (c.changed_count || 0);
+            sectionToast(order[i] === 'release' ? fmt(I18N.toastRelease, c.version, files) : fmt(I18N.toastEarly, files), 'warning');
+            return;
+        }
+    }
+
     // --- Проверка обоих каналов ---
     function checkForUpdates() {
         const btn = $('checkUpdatesBtn');
@@ -377,6 +404,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
             }
             renderState(data);
             if (window.vlmcRenderUpdateBanner && data.banner) window.vlmcRenderUpdateBanner(data.banner);
+            toastIfAvailable(data);
             ['release', 'early'].forEach(function (name) {
                 const c = data.channels[name];
                 if (!c) return;
