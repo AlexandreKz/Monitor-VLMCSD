@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.1.0
+// ВЕРСИЯ: 3.1.1
 // ДАТА: 2026-11-17
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
@@ -122,8 +122,17 @@ class Updater {
 
     /** Что показать в уведомлении: версия релиза и число файлов раннего доступа. */
     public function bannerData(array $state) {
-        $rel = is_array($state['release'] ?? null) ? $state['release'] : [];
-        $early = is_array($state['early'] ?? null) ? $state['early'] : [];
+        // Если последняя проверка канала не удалась, берём его последний успешный результат
+        $pick = function ($ch) use ($state) {
+            $r = $state[$ch] ?? null;
+            if (is_array($r) && !empty($r['success'])) {
+                return $r;
+            }
+            $ok = $state['last_ok'][$ch] ?? null;
+            return is_array($ok) ? $ok : [];
+        };
+        $rel = $pick('release');
+        $early = $pick('early');
         return [
             'release' => !empty($rel['available']) ? (string)($rel['version'] ?? '') : '',
             'early'   => !empty($early['available']) ? (int)($early['new_count'] ?? 0) + (int)($early['changed_count'] ?? 0) : 0
@@ -450,6 +459,7 @@ class Updater {
         }
 
         $state['checked_at'] = time();
+        $failed = false;
         foreach (self::CHANNELS as $channel) {
             $res = $this->checkChannel($channel);
             foreach (['new', 'changed', 'obsolete'] as $key) {   // в состоянии держим не более 100 имён
@@ -458,6 +468,15 @@ class Updater {
                 }
             }
             $state[$channel] = $res;
+            if (!empty($res['success'])) {
+                $state['last_ok'][$channel] = $res;   // последний успешный результат: уведомление в шапке не пропадает при сбое проверки
+            } else {
+                $failed = true;
+            }
+        }
+        if ($failed && !$force) {
+            // Автопроверка не удалась (лимит GitHub, сеть): повторить через 15 минут, а не через весь интервал
+            $state['checked_at'] = time() - (int)$settings['interval'] * 3600 + 900;
         }
         $this->saveState($state);
         return ['cached' => false, 'state' => $state];
@@ -644,7 +663,7 @@ class Updater {
 
             // после установки прежние результаты проверки устарели
             $state = $this->loadState();
-            unset($state['release'], $state['early']);
+            unset($state['release'], $state['early'], $state['last_ok']);
             $state['checked_at'] = 0;
             $state['installed'] = [
                 'channel' => $channel, 'ref' => $info['ref'], 'commit' => $info['commit'],
