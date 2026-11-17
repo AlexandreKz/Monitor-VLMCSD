@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.3.2
+// ВЕРСИЯ: 5.4.0
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -406,25 +406,29 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="file-tree">
             <div>📁 /var/www/html/</div>
             <div style="margin-left: 20px;">├── 📄 vlmc.php — главная страница мониторинга</div>
-            <div style="margin-left: 20px;">├── 📄 index.php — редирект</div>
-            <div style="margin-left: 20px;">├── 📄 .htaccess — защита конфигурационных файлов</div>
-            <div style="margin-left: 20px;">├── 📁 vlmcconf/ — панель управления</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 login.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 logout.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcgeoip.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">│   ├── 📁 cache/ — кэш геолокации (создаётся автоматически)</div>
-            <div style="margin-left: 40px;">│   ├── 📁 locale/ — языковые файлы</div>
-            <div style="margin-left: 40px;">│   ├── 📁 sections/ — секции панели управления</div>
-            <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
-            <div style="margin-left: 20px;">└── 📁 pic/ — иконки</div>
+            <div style="margin-left: 20px;">└── 📁 vlmcconf/ — панель управления</div>
+            <div style="margin-left: 40px;">    ├── 📄 .htaccess — защита служебных файлов</div>
+            <div style="margin-left: 40px;">    ├── 📄 index.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcconf.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 login.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 update_check.php — проверка обновлений по расписанию (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 flags.php</div>
+            <div style="margin-left: 40px;">    ├── 📁 cache/ — кэш геолокации и лога (создаётся автоматически)</div>
+            <div style="margin-left: 40px;">    ├── 📁 locale/ — языковые файлы</div>
+            <div style="margin-left: 40px;">    ├── 📁 sections/ — секции панели управления</div>
+            <div style="margin-left: 40px;">    └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — данные панели (вне веб-папки)</div>
             <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки (создаётся панелью автоматически при первом запуске)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — пользователи</div>
-            <div style="margin-left: 20px;">└── 📁 backups/ — копии «до переноса»</div>
+            <div style="margin-left: 20px;">├── 📄 audit.log — журнал действий</div>
+            <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — каналы, правила и история уведомлений, ключ шифрования</div>
+            <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — состояние проверки обновлений, токен GitHub</div>
+            <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — журналы изменений и служебные блокировки</div>
+            <div style="margin-left: 20px;">└── 📁 backups/ — резервные копии настроек, пользователей и обновлений</div>
         </div>
     </div>
 </div>
@@ -825,25 +829,29 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="file-tree">
             <div>📁 /var/www/html/</div>
             <div style="margin-left: 20px;">├── 📄 vlmc.php — main monitoring page</div>
-            <div style="margin-left: 20px;">├── 📄 index.php — redirect</div>
-            <div style="margin-left: 20px;">├── 📄 .htaccess — config file protection</div>
-            <div style="margin-left: 20px;">├── 📁 vlmcconf/ — control panel</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcconf.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 login.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 logout.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcgeoip.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmcloghandler.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 vlmctheme.php</div>
-            <div style="margin-left: 40px;">│   ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">│   ├── 📁 cache/ — geolocation cache (auto-created)</div>
-            <div style="margin-left: 40px;">│   ├── 📁 locale/ — language files</div>
-            <div style="margin-left: 40px;">│   ├── 📁 sections/ — control panel sections</div>
-            <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — helper libraries</div>
-            <div style="margin-left: 20px;">└── 📁 pic/ — icons</div>
+            <div style="margin-left: 20px;">└── 📁 vlmcconf/ — control panel</div>
+            <div style="margin-left: 40px;">    ├── 📄 .htaccess — protection of service files</div>
+            <div style="margin-left: 40px;">    ├── 📄 index.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcconf.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 login.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 update_check.php — scheduled update check (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
+            <div style="margin-left: 40px;">    ├── 📄 flags.php</div>
+            <div style="margin-left: 40px;">    ├── 📁 cache/ — geolocation and log cache (auto-created)</div>
+            <div style="margin-left: 40px;">    ├── 📁 locale/ — language files</div>
+            <div style="margin-left: 40px;">    ├── 📁 sections/ — control panel sections</div>
+            <div style="margin-left: 40px;">    └── 📁 vlmcinc/ — helper libraries</div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — panel data (outside the web root)</div>
             <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings (created by the panel automatically on first run)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — users</div>
-            <div style="margin-left: 20px;">└── 📁 backups/ — pre-migration copies</div>
+            <div style="margin-left: 20px;">├── 📄 audit.log — action log</div>
+            <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — notification channels, rules, history and encryption key</div>
+            <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — update check state, GitHub token</div>
+            <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — change logs and service locks</div>
+            <div style="margin-left: 20px;">└── 📁 backups/ — backups of settings, users and updates</div>
         </div>
     </div>
 </div>
@@ -1070,7 +1078,7 @@ function getFullDownloadHtml() {
 <div class="container">
     <div class="header">
         <h1>📦 KMS Monitor</h1>
-        <div class="version">Версия 5.0.0 | Полное руководство по развёртыванию | Май 2026</div>
+        <div class="version">Версия ' . VLMC_VERSION . ' | Полное руководство по развёртыванию | ' . VLMC_DATE . '</div>
     </div>
     
     <div class="tabs-wrapper">
