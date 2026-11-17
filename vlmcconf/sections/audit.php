@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.2
+// ВЕРСИЯ: 3.0.3
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -381,7 +381,9 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         const top = wr.top - cont.getBoundingClientRect().top + cont.scrollTop;
         const below = sec.lastElementChild.getBoundingClientRect().bottom - wr.bottom;   // всё, что ниже таблицы
         const pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
-        const h = cont.clientHeight - top - below - pad - 4;
+        const trim = Math.min(14, pad);               // часть нижнего отступа отдаём под журнал
+        sec.style.marginBottom = (-trim) + 'px';
+        const h = cont.clientHeight - top - below - (pad - trim) - 2;
         wrap.style.maxHeight = 'none';
         wrap.style.height = Math.max(140, Math.floor(h)) + 'px';
     }
