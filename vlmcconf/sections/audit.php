@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.4
+// ВЕРСИЯ: 3.0.5
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -197,9 +197,8 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-pager-left { justify-self: start; }
 .audit-pager-right { justify-self: end; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
-.audit-f-reset { display: flex; flex-direction: column; }
-.audit-f-reset .audit-flat { flex: 1; }
-.audit-flat { box-sizing: border-box; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 10px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.audit-f-reset { display: flex; flex-direction: column; justify-content: flex-end; }
+.audit-flat { box-sizing: border-box; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 8px 18px; min-height: 36px; font-size: 13px; line-height: 1.3; cursor: pointer; white-space: nowrap; font-family: inherit; transition: border-color .15s, color .15s; }
 .audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
 
 .audit-range { position: relative; }
