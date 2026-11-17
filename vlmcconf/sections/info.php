@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.9.1
+// ВЕРСИЯ: 1.9.2
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -83,6 +83,8 @@ if (!$canViewInfo) {
                 <?php if ($isUnix): ?><code><?= htmlspecialchars($dataInfo['dir']) ?></code><?php else: ?><span><?= __('info_data_dir_hidden') ?></span><?php endif; ?>
                 <?php if (!empty($dataInfo['legacy'])): ?><span class="info-data-warn">⚠️ <?= __('info_data_legacy') ?></span><?php endif; ?>
             </div>
+            <div class="info-hint info-hint-top"><?= __('info_data_hint') ?></div>
+            <div class="info-data-scroll">
             <table class="info-data-table">
                 <thead><tr>
                     <th><?= __('info_data_col_name') ?></th>
@@ -99,7 +101,7 @@ if (!$canViewInfo) {
                 <?php endforeach; ?>
                 </tbody>
             </table>
-            <div class="info-hint"><?= __('info_data_hint') ?></div>
+            </div>
         </div>
         </div>
     </div>
@@ -115,7 +117,7 @@ if (!$canViewInfo) {
 .info-page { display: none; flex: 1 1 auto; min-height: 0; }
 .info-page.active { display: flex; flex-direction: column; }
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
-#infoStructure .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
+#infoStructure .info-scroll, #infoData .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
 #infoStructure .struct-card { flex: 1 1 auto; }
 .info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
 .info-auto-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
@@ -123,8 +125,8 @@ if (!$canViewInfo) {
 .info-tab { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .info-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .info-tab.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
-.info-data-card { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 12px; }
-.info-data-head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: 12px; margin-bottom: 10px; }
+.info-data-card { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; box-sizing: border-box; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 12px; }
+.info-data-head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: 12px; margin-bottom: 4px; }
 .info-data-head code, .info-data-path code { font-family: 'JetBrains Mono', monospace; font-size: 11px; word-break: break-all; }
 .info-data-warn { color: <?= $themeCSS['warnText'] ?>; }
 .info-data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -133,6 +135,8 @@ if (!$canViewInfo) {
 .info-data-name { white-space: nowrap; font-weight: 600; }
 .info-data-absent td { opacity: 0.6; }
 .info-data-badge { font-size: 10px; font-weight: 400; padding: 1px 8px; border-radius: 10px; background: <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; margin-left: 6px; }
+.info-data-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.info-hint-top { margin: 0 0 10px; }
 .info-hint { margin-top: 10px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
 .info-server-card { padding: 8px 12px; margin-bottom: 10px; flex: 0 0 auto; height: auto; }
 .info-server-card .settings-card-title { margin-bottom: 6px; font-size: 12px; }

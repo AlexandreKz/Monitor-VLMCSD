@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.8
+// ВЕРСИЯ: 5.8.9
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1077,7 +1077,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'info_data_col_purpose' => 'Purpose',
     'info_data_col_path' => 'Full path (Ubuntu)',
     'info_data_absent' => 'not created',
-    'info_data_hint' => 'Files are created automatically on first use of the related feature. The directory can be changed with the VLMC_DATA_DIR variable or vlmcconf/data_dir.local.php.',
+    'info_data_hint' => 'Files are created automatically on first use of the related feature.',
     'info_data_config' => 'Panel settings (theme, language, section options)',
     'info_data_users' => 'Accounts, permissions and groups',
     'info_data_audit' => 'Action audit log',
