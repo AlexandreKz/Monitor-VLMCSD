@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.9.0
+// ВЕРСИЯ: 5.9.1
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1806,14 +1806,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         <span class="menu-item-icon">🖥️</span>
         <span><?= __('api') ?></span>
     </div>
-	
-	<!-- Документация - доступна всем -->
+    <?php endif; ?>
+
+    <!-- Документация - доступна всем (раньше пункт по ошибке был внутри проверки права на API) -->
     <div class="menu-item <?= $activeSection === 'documentation' ? 'active' : '' ?>" onclick="showSection('documentation', this)">
         <span class="menu-item-icon">📚</span>
         <span><?= __('menu_documentation') ?></span>
     </div>
-	
-    <?php endif; ?>
     
     <div style="flex: 1;"></div>
     
