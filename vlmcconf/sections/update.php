@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 4.1.0
+// ВЕРСИЯ: 4.2.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -58,7 +58,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- ЗАГОЛОВОК С ЭЛЕМЕНТАМИ УПРАВЛЕНИЯ / HEADER   -->
     <!-- ============================================ -->
-    <div class="update-header" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
+    <div class="update-header" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px;">
         <div>
             <button class="btn btn-primary" id="checkUpdatesBtn">🔍 <?= __('update_check_btn') ?></button>
         </div>
@@ -70,7 +70,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- НАСТРОЙКИ ОБНОВЛЕНИЙ / UPDATE SETTINGS      -->
     <!-- ============================================ -->
-    <div id="updateSettingsBlock" style="background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 12px 15px; margin-bottom: 15px;">
+    <div id="updateSettingsBlock" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
             <div style="display: flex; gap: 25px; flex-wrap: wrap; align-items: flex-end;">
                 <div>
@@ -126,7 +126,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- НАСТРОЙКИ GITHUB / GITHUB SETTINGS           -->
     <!-- ============================================ -->
-    <div id="updateGithubSettings" class="update-info-panel" style="background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px;">
+    <div id="updateGithubSettings" class="update-info-panel" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px;">
         <div style="display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
             <div><span style="color: #8aa0bb;">📦 <?= __('update_repository') ?>:</span> <code style="font-size: 11px;">AlexandreKz/Monitor-VLMCSD</code></div>
             <div><span style="color: #8aa0bb;">🌿 <?= __('update_branch') ?>:</span> <code style="font-size: 11px;">main</code></div>
@@ -154,7 +154,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- СТАТУС-БАР / STATUS BAR                      -->
     <!-- ============================================ -->
-    <div class="update-status-bar" style="background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 10px 12px; margin-bottom: 15px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
+    <div class="update-status-bar" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
         <div><span style="color: #8aa0bb;">📌 <?= __('update_current_version') ?>:</span> <strong><span id="currentVersion"><?= CONFIG_VERSION ?></span></strong></div>
         <div><span style="color: #8aa0bb;">🕒 <?= __('update_last_check') ?>:</span> <span id="lastCheckText"><?= __('update_never') ?></span></div>
         <div><span style="color: #8aa0bb;">📊 <?= __('update_status') ?>:</span> <span id="updateStatusText"><?= __('update_not_checked') ?></span></div>
@@ -179,7 +179,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     <!-- ============================================ -->
     <!-- КОНСОЛЬ ВЫВОДА / OUTPUT CONSOLE             -->
     <!-- ============================================ -->
-    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 6px; height: 250px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
+    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: 250px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
         <div>> <?= __('update_ready') ?></div>
     </div>
     
@@ -218,7 +218,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-console::-webkit-scrollbar-thumb { background: #00ff00; border-radius: 3px; }
 .update-console::-webkit-scrollbar-thumb:hover { background: #00cc00; }
 
-.update-channel-card { background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 12px 14px; border: 1px solid transparent; font-size: 12px; }
+.update-channel-card { background: <?= $themeCSS['input'] ?>; border-radius: 8px; padding: 12px 15px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; }
 .update-channel-card.selected { border-color: <?= $themeCSS['primary'] ?>; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
 .update-channel-card .uc-line { margin-top: 3px; }

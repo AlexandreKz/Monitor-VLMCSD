@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 2.0.0
+// ВЕРСИЯ: 2.1.0
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -76,9 +76,6 @@ $auditI18n = [
         </div>
     </div>
 
-    <!-- Сводка по выбранному пользователю -->
-    <div id="auditSummary" class="audit-summary" style="display: none;"></div>
-
     <div class="audit-bar">
         <div class="audit-bar-left">
             <button class="btn btn-primary" id="auditRefreshBtn" style="padding: 6px 14px; font-size: 12px;">🔄 <?= __('audit_refresh') ?></button>
@@ -98,18 +95,6 @@ $auditI18n = [
                 <option value="200">200</option>
             </select>
         </div>
-    </div>
-
-    <!-- Активность по часам и дням (по всем найденным записям) -->
-    <div class="audit-chart-box">
-        <div class="audit-chart-head">
-            <span>📈 <?= __('audit_chart_title') ?></span>
-            <span>
-                <button class="audit-tab active" id="auditTabHours" type="button"><?= __('audit_chart_hours') ?></button>
-                <button class="audit-tab" id="auditTabDays" type="button"><?= __('audit_chart_days') ?></button>
-            </span>
-        </div>
-        <div id="auditChart" class="audit-chart"></div>
     </div>
 
     <div class="audit-table-wrap">
@@ -132,6 +117,25 @@ $auditI18n = [
         <button class="btn" id="auditPrev" style="padding: 5px 12px;">←</button>
         <span id="auditPageInfo"></span>
         <button class="btn" id="auditNext" style="padding: 5px 12px;">→</button>
+    </div>
+
+    <!-- Статистика (внизу страницы, сворачивается): сводка по пользователю и активность по часам и дням -->
+    <div class="audit-stats-box" id="auditStatsBox">
+        <div class="audit-stats-head" id="auditStatsHead" role="button" tabindex="0" aria-expanded="true">
+            <span>📈 <?= __('audit_stats_title') ?></span>
+            <span id="auditStatsChevron" class="audit-chevron">▾</span>
+        </div>
+        <div id="auditStatsBody" class="audit-stats-body">
+            <div id="auditSummary" class="audit-summary" style="display: none;"></div>
+            <div class="audit-chart-head">
+                <span><?= __('audit_chart_title') ?></span>
+                <span>
+                    <button class="audit-tab active" id="auditTabHours" type="button"><?= __('audit_chart_hours') ?></button>
+                    <button class="audit-tab" id="auditTabDays" type="button"><?= __('audit_chart_days') ?></button>
+                </span>
+            </div>
+            <div id="auditChart" class="audit-chart"></div>
+        </div>
     </div>
 
     <!-- Срок хранения -->
@@ -168,16 +172,21 @@ $auditI18n = [
 </div>
 
 <style>
-.audit-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 12px 15px; margin-bottom: 12px; }
+.audit-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-f label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
-.audit-summary { background: <?= $themeCSS['input'] ?>; border-left: 3px solid <?= $themeCSS['primary'] ?>; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; }
+.audit-summary { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-left: 3px solid <?= $themeCSS['primary'] ?>; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; }
 .audit-summary b { color: <?= $themeCSS['primary'] ?>; }
-.audit-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.audit-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; }
 .audit-bar-left, .audit-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .audit-check { font-size: 12px; color: #8aa0bb; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 #auditFound { font-size: 12px; color: #8aa0bb; }
-.audit-chart-box { background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; }
+.audit-stats-box { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
+.audit-stats-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none; }
+.audit-stats-head:hover { color: <?= $themeCSS['primary'] ?>; }
+.audit-chevron { font-size: 14px; color: #8aa0bb; }
+.audit-stats-body { margin-top: 10px; padding-top: 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
+.audit-stats-box.collapsed .audit-stats-body { display: none; }
 .audit-chart-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #8aa0bb; margin-bottom: 8px; }
 .audit-tab { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; opacity: 0.7; }
 .audit-tab.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
@@ -186,9 +195,9 @@ $auditI18n = [
 .audit-colbar { width: 100%; background: <?= $themeCSS['primary'] ?>; border-radius: 2px 2px 0 0; min-height: 1px; opacity: 0.85; }
 .audit-colbar.zero { opacity: 0.15; }
 .audit-collabel { font-size: 9px; color: #8aa0bb; height: 12px; line-height: 12px; white-space: nowrap; }
-.audit-table-wrap { overflow-x: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; }
+.audit-table-wrap { overflow-x: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.audit-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['input'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.audit-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
 .audit-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: top; }
 .audit-table td.audit-time, .audit-table td.audit-ip { white-space: nowrap; font-family: monospace; }
 .audit-table td.audit-details { word-break: break-word; color: #8aa0bb; }
@@ -202,7 +211,7 @@ $auditI18n = [
 .audit-badge.error { color: #f39c12; border: 1px solid #f39c1255; }
 .audit-badge.denied { color: #e74c3c; border: 1px solid #e74c3c55; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px 0; font-size: 12px; }
-.audit-panel { background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 12px 15px; margin-bottom: 12px; }
+.audit-panel { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
 .audit-hint { font-size: 11px; color: #8aa0bb; }
 .audit-empty { text-align: center; padding: 24px; color: #8aa0bb; }
@@ -425,6 +434,19 @@ $auditI18n = [
             }, 15000);
         }
     });
+
+    // Сворачивание блока статистики (состояние запоминается в браузере)
+    function setStatsCollapsed(c) {
+        $('auditStatsBox').classList.toggle('collapsed', c);
+        $('auditStatsHead').setAttribute('aria-expanded', c ? 'false' : 'true');
+        $('auditStatsChevron').textContent = c ? '▸' : '▾';
+        try { localStorage.setItem('vlmcAuditStatsCollapsed', c ? '1' : '0'); } catch (e) {}
+    }
+    $('auditStatsHead').onclick = function () { setStatsCollapsed(!$('auditStatsBox').classList.contains('collapsed')); };
+    $('auditStatsHead').onkeydown = function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.onclick(); }
+    };
+    try { if (localStorage.getItem('vlmcAuditStatsCollapsed') === '1') setStatsCollapsed(true); } catch (e) {}
 
     window.loadAudit = function () { if (!loadedOnce) { reload(); } else { load(); } };
     if ($('section-audit').classList.contains('active')) window.loadAudit();

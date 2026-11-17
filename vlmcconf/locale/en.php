@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.1
+// ВЕРСИЯ: 5.6.2
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -614,6 +614,7 @@ return [
     'audit_sum_top' => 'Most frequent',
     'audit_filter_by_user' => 'Show this user\'s actions',
     'audit_chart_title' => 'Activity',
+    'audit_stats_title' => 'Statistics',
     'audit_chart_hours' => 'By hour',
     'audit_chart_days' => 'By day (up to 60)',
     'audit_chart_count' => 'actions',
