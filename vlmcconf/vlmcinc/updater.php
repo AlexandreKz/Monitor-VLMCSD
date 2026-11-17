@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.1.1
+// ВЕРСИЯ: 3.1.2
 // ДАТА: 2026-11-17
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
@@ -78,7 +78,9 @@ class Updater {
             $type = 'release';
         }
         $interval = (int)($u['check_interval_hours'] ?? 12);
-        if (!in_array($interval, [1, 3, 6, 12, 24, 72], true)) {
+        if ($interval > 0 && $interval < 6) {
+            $interval = 6; // автопроверка не чаще раза в 6 часов (прежние 1 и 3 часа поднимаются до 6)
+        } elseif (!in_array($interval, [6, 12, 24, 72], true)) {
             $interval = 12;
         }
         return [

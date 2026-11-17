@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 4.2.0
+// ВЕРСИЯ: 5.0.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -44,6 +44,7 @@ $updI18n = [
     'reload'         => __('update_reload_now'),
     'failedFiles'    => __('update_failed_files'),
     'selected'       => __('update_channel_selected'),
+    'settingsSaved'  => __('update_settings_saved'),
     'checkingGitHub' => __('update_checking_github'),
     'saveError'      => __('msg_save_error'),
     'ready'          => __('update_ready'),
@@ -56,108 +57,89 @@ $updI18n = [
 <div class="update-root"><!-- контейнер вкладки (id toolsTabUpdate и класс tools-tab-content задаёт tools.php) -->
     
     <!-- ============================================ -->
-    <!-- ЗАГОЛОВОК С ЭЛЕМЕНТАМИ УПРАВЛЕНИЯ / HEADER   -->
+    <!-- БЛОК 1: РЕПОЗИТОРИЙ, ВЕРСИЯ, СТАТУС, КНОПКИ  -->
     <!-- ============================================ -->
-    <div class="update-header" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px;">
-        <div>
-            <button class="btn btn-primary" id="checkUpdatesBtn">🔍 <?= __('update_check_btn') ?></button>
+    <div class="upd-frame" style="margin-bottom: 15px;">
+        <div class="upd-info-grid">
+            <div class="upd-info-item"><span class="upd-info-label">📦 <?= __('update_repository') ?></span><code>AlexandreKz/Monitor-VLMCSD</code></div>
+            <div class="upd-info-item"><span class="upd-info-label">🌿 <?= __('update_branch') ?></span><code>main</code></div>
+            <div class="upd-info-item"><span class="upd-info-label">📌 <?= __('update_current_version') ?></span><strong id="currentVersion"><?= CONFIG_VERSION ?></strong></div>
+            <div class="upd-info-item"><span class="upd-info-label">🕒 <?= __('update_last_check') ?></span><span id="lastCheckText"><?= __('update_never') ?></span></div>
+            <div class="upd-info-item"><span class="upd-info-label">📊 <?= __('update_status') ?></span><span id="updateStatusText"><?= __('update_not_checked') ?></span></div>
         </div>
-        <div>
-            <button class="btn btn-warning" id="runUpdateBtn" disabled>📥 <?= __('update_run_btn') ?></button>
-        </div>
-    </div>
-    
-    <!-- ============================================ -->
-    <!-- НАСТРОЙКИ ОБНОВЛЕНИЙ / UPDATE SETTINGS      -->
-    <!-- ============================================ -->
-    <div id="updateSettingsBlock" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-            <div style="display: flex; gap: 25px; flex-wrap: wrap; align-items: flex-end;">
-                <div>
-                    <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;"><?= __('update_type_label') ?></label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <select id="updateType" class="form-control" style="width: 200px;">
-                            <option value="release" <?= $updSettings['type'] === 'release' ? 'selected' : '' ?>><?= __('update_type_release') ?></option>
-                            <option value="early" <?= $updSettings['type'] === 'early' ? 'selected' : '' ?>><?= __('update_type_early') ?></option>
-                        </select>
-                        <span id="channelSavedMsg" style="display: none; font-size: 12px; white-space: nowrap;"></span>
-                    </div>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;">
-                        <input type="checkbox" id="autoCheckEnabled" <?= $updSettings['auto_check'] ? 'checked' : '' ?>>
-                        <?= __('update_auto_check_label') ?>
-                    </label>
-                    <select id="autoCheckInterval" class="form-control" style="width: 200px;">
-                        <?php foreach ([1, 3, 6, 12, 24, 72] as $hours): ?>
-                        <option value="<?= $hours ?>" <?= $updSettings['interval'] === $hours ? 'selected' : '' ?>><?= sprintf(__('update_auto_check_every'), $hours) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+        <div class="upd-actions">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="checkUpdatesBtn">🔍 <?= __('update_check_btn') ?></button>
+                <button class="btn btn-warning" id="runUpdateBtn" disabled>📥 <?= __('update_run_btn') ?></button>
             </div>
-            <button class="btn btn-primary" onclick="saveUpdateSettings()" style="padding: 6px 14px; font-size: 11px; flex-shrink: 0;">
-                💾 <?= __('save') ?>
-            </button>
+            <button class="btn btn-secondary btn-small" id="checkGitHubBtn" style="font-size: 11px; padding: 5px 12px;">🌐 <?= __('update_check_github') ?></button>
         </div>
-        
-        <!-- Токен GitHub (необязательно): лимит запросов к API 5000/ч вместо 60/ч -->
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed <?= $themeCSS['border'] ?>;">
-            <label style="display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px;">🔑 <?= __('update_token_label') ?></label>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input type="password" id="githubToken" class="form-control" style="width: 320px;" autocomplete="new-password" spellcheck="false" placeholder="<?= htmlspecialchars(__('update_token_placeholder')) ?>">
-                <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 14px; font-size: 11px;">💾 <?= __('save') ?></button>
-                <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 14px; font-size: 11px;">🗑️ <?= __('update_token_clear') ?></button>
-                <span id="tokenStatus" style="font-size: 12px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></span>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- БЛОК 2: ТИП ОБНОВЛЕНИЯ (нажатием на карточку) -->
+    <!-- ============================================ -->
+    <div class="upd-frame" style="margin-bottom: 15px;">
+        <div class="upd-frame-title">
+            <span>🎯 <?= __('update_type_label') ?></span>
+            <span id="channelSavedMsg" style="display: none; font-size: 12px; white-space: nowrap;"></span>
+        </div>
+        <input type="hidden" id="updateType" value="<?= htmlspecialchars($updSettings['type']) ?>">
+        <div class="update-channels" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div id="chCardRelease" class="update-channel-card" role="button" tabindex="0" aria-pressed="false">
+                <div class="uc-title">🏷️ <?= __('update_type_release') ?> <span class="uc-badge" id="chBadgeRelease"></span></div>
+                <div class="uc-line" id="chReleaseVersion">—</div>
+                <div class="uc-line uc-status" id="chReleaseStatus"><?= __('update_ch_not_checked') ?></div>
+                <div class="uc-line uc-small" id="chReleaseExtra"></div>
             </div>
-            <div style="font-size: 11px; color: #8aa0bb; margin-top: 6px;"><?= __('update_token_hint') ?></div>
-        </div>
-        
-        <!-- Автоматическая установка, расписание и уведомления: в разработке -->
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed <?= $themeCSS['border'] ?>; display: flex; gap: 25px; flex-wrap: wrap; align-items: center; opacity: 0.55;">
-            <span class="update-dev-badge">🚧 <?= __('update_in_dev') ?></span>
-            <label style="font-size: 11px; color: #8aa0bb;"><input type="checkbox" disabled> <?= __('update_mode_auto') ?></label>
-            <label style="font-size: 11px; color: #8aa0bb;"><input type="checkbox" disabled> <?= __('update_schedule_enable') ?></label>
-            <label style="font-size: 11px; color: #8aa0bb;"><input type="checkbox" disabled> <?= __('update_notify_enable') ?></label>
-        </div>
-        
-        <div id="settingsMessage" class="block-message" style="display: none; margin-top: 10px;"></div>
-    </div>
-    
-    <!-- ============================================ -->
-    <!-- НАСТРОЙКИ GITHUB / GITHUB SETTINGS           -->
-    <!-- ============================================ -->
-    <div id="updateGithubSettings" class="update-info-panel" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px;">
-        <div style="display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
-            <div><span style="color: #8aa0bb;">📦 <?= __('update_repository') ?>:</span> <code style="font-size: 11px;">AlexandreKz/Monitor-VLMCSD</code></div>
-            <div><span style="color: #8aa0bb;">🌿 <?= __('update_branch') ?>:</span> <code style="font-size: 11px;">main</code></div>
+            <div id="chCardEarly" class="update-channel-card" role="button" tabindex="0" aria-pressed="false">
+                <div class="uc-title">🧪 <?= __('update_type_early') ?> <span class="uc-badge" id="chBadgeEarly"></span></div>
+                <div class="uc-line" id="chEarlyVersion">—</div>
+                <div class="uc-line uc-status" id="chEarlyStatus"><?= __('update_ch_not_checked') ?></div>
+                <div class="uc-line uc-small" id="chEarlyExtra"></div>
+            </div>
         </div>
     </div>
     
     <!-- ============================================ -->
-    <!-- КАНАЛЫ ОБНОВЛЕНИЙ / UPDATE CHANNELS          -->
+    <!-- БЛОК 3: ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ (в одну строку) -->
     <!-- ============================================ -->
-    <div class="update-channels" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-        <div id="chCardRelease" class="update-channel-card">
-            <div class="uc-title">🏷️ <?= __('update_type_release') ?> <span class="uc-badge" id="chBadgeRelease"></span></div>
-            <div class="uc-line" id="chReleaseVersion">—</div>
-            <div class="uc-line uc-status" id="chReleaseStatus"><?= __('update_ch_not_checked') ?></div>
-            <div class="uc-line uc-small" id="chReleaseExtra"></div>
+    <div class="upd-frame" id="updateSettingsBlock" style="margin-bottom: 15px;">
+        <div class="upd-frame-title"><span>⚙️ <?= __('update_block_extra') ?></span></div>
+        <div class="upd-extra-row">
+            <!-- Токен GitHub (необязательно): лимит запросов к API 5000/ч вместо 60/ч -->
+            <div class="upd-col">
+                <div class="upd-col-title">🔑 <?= __('update_token_label') ?></div>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <input type="password" id="githubToken" class="form-control" style="flex: 1; min-width: 150px;" autocomplete="new-password" spellcheck="false" placeholder="<?= htmlspecialchars(__('update_token_placeholder')) ?>">
+                    <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 12px; font-size: 11px;">💾</button>
+                    <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 12px; font-size: 11px;" title="<?= htmlspecialchars(__('update_token_clear')) ?>">🗑️</button>
+                </div>
+                <div id="tokenStatus" style="font-size: 12px; margin-top: 6px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></div>
+                <div class="upd-hint"><?= __('update_token_hint') ?></div>
+            </div>
+            <!-- Автоматическая проверка: не чаще раза в 6 часов, сохраняется сразу -->
+            <div class="upd-col">
+                <div class="upd-col-title">🔄 <?= __('update_auto_check_label') ?></div>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 8px;">
+                    <input type="checkbox" id="autoCheckEnabled" <?= $updSettings['auto_check'] ? 'checked' : '' ?>> <?= __('update_auto_check_on') ?>
+                </label>
+                <select id="autoCheckInterval" class="form-control" style="width: 100%;">
+                    <?php foreach ([6, 12, 24, 72] as $hours): ?>
+                    <option value="<?= $hours ?>" <?= $updSettings['interval'] === $hours ? 'selected' : '' ?>><?= sprintf(__('update_auto_check_every'), $hours) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div id="autoSavedMsg" style="display: none; font-size: 12px; margin-top: 6px;"></div>
+                <div class="upd-hint"><?= __('update_auto_check_hint') ?></div>
+            </div>
+            <!-- Автообновление, расписание и уведомления: в разработке -->
+            <div class="upd-col" style="opacity: 0.55;">
+                <div class="upd-col-title">🛠️ <?= __('update_auto_install_title') ?> <span class="update-dev-badge">🚧 <?= __('update_in_dev') ?></span></div>
+                <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_mode_auto') ?></label>
+                <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_schedule_enable') ?></label>
+                <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_notify_enable') ?></label>
+            </div>
         </div>
-        <div id="chCardEarly" class="update-channel-card">
-            <div class="uc-title">🧪 <?= __('update_type_early') ?> <span class="uc-badge" id="chBadgeEarly"></span></div>
-            <div class="uc-line" id="chEarlyVersion">—</div>
-            <div class="uc-line uc-status" id="chEarlyStatus"><?= __('update_ch_not_checked') ?></div>
-            <div class="uc-line uc-small" id="chEarlyExtra"></div>
-        </div>
-    </div>
-    
-    <!-- ============================================ -->
-    <!-- СТАТУС-БАР / STATUS BAR                      -->
-    <!-- ============================================ -->
-    <div class="update-status-bar" style="background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px; display: flex; gap: 30px; flex-wrap: wrap; font-size: 11px;">
-        <div><span style="color: #8aa0bb;">📌 <?= __('update_current_version') ?>:</span> <strong><span id="currentVersion"><?= CONFIG_VERSION ?></span></strong></div>
-        <div><span style="color: #8aa0bb;">🕒 <?= __('update_last_check') ?>:</span> <span id="lastCheckText"><?= __('update_never') ?></span></div>
-        <div><span style="color: #8aa0bb;">📊 <?= __('update_status') ?>:</span> <span id="updateStatusText"><?= __('update_not_checked') ?></span></div>
     </div>
     
     <!-- ============================================ -->
@@ -181,13 +163,6 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     <!-- ============================================ -->
     <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: 250px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
         <div>> <?= __('update_ready') ?></div>
-    </div>
-    
-    <!-- ============================================ -->
-    <!-- КНОПКА ПРОВЕРКИ GITHUB / GITHUB CHECK       -->
-    <!-- ============================================ -->
-    <div style="margin-top: 15px; text-align: right;">
-        <button class="btn btn-secondary btn-small" id="checkGitHubBtn" style="opacity: 0.6; font-size: 10px; padding: 2px 8px;">🌐 <?= __('update_check_github') ?></button>
     </div>
     
     <!-- ============================================ -->
@@ -218,8 +193,22 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-console::-webkit-scrollbar-thumb { background: #00ff00; border-radius: 3px; }
 .update-console::-webkit-scrollbar-thumb:hover { background: #00cc00; }
 
-.update-channel-card { background: <?= $themeCSS['input'] ?>; border-radius: 8px; padding: 12px 15px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; }
-.update-channel-card.selected { border-color: <?= $themeCSS['primary'] ?>; }
+.update-channel-card { background: <?= $themeCSS['card'] ?>; border-radius: 8px; padding: 12px 15px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.update-channel-card:hover { border-color: <?= $themeCSS['primary'] ?>; }
+.update-channel-card:focus-visible { outline: 2px solid <?= $themeCSS['primary'] ?>; outline-offset: 2px; }
+.update-channel-card.selected { box-shadow: 0 0 0 1px <?= $themeCSS['primary'] ?> inset; }
+.upd-frame { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; }
+.upd-frame-title { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 10px; gap: 10px; }
+.upd-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.upd-info-item { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; font-size: 12px; min-width: 0; word-break: break-word; }
+.upd-info-label { font-size: 10px; color: #8aa0bb; text-transform: uppercase; letter-spacing: 0.3px; }
+.upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
+.upd-extra-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 1000px) { .upd-extra-row { grid-template-columns: 1fr; } .update-channels { grid-template-columns: 1fr !important; } }
+.upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px; min-width: 0; }
+.upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.upd-hint { font-size: 11px; color: #8aa0bb; margin-top: 6px; line-height: 1.4; }
+.upd-dev-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8aa0bb; margin-top: 6px; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
 .update-channel-card .uc-line { margin-top: 3px; }
 .update-channel-card .uc-small { font-size: 11px; color: #8aa0bb; word-break: break-word; }
@@ -343,6 +332,8 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         const cr = $('chCardRelease'), ce = $('chCardEarly');
         if (cr) cr.classList.toggle('selected', sel === 'release');
         if (ce) ce.classList.toggle('selected', sel === 'early');
+        if (cr) cr.setAttribute('aria-pressed', sel === 'release' ? 'true' : 'false');
+        if (ce) ce.setAttribute('aria-pressed', sel === 'early' ? 'true' : 'false');
         const br = $('chBadgeRelease'), be = $('chBadgeEarly');
         if (br) br.textContent = sel === 'release' ? '· ' + I18N.selected : '';
         if (be) be.textContent = sel === 'early' ? '· ' + I18N.selected : '';
@@ -466,10 +457,10 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         });
     }
 
-    // --- Автосохранение выбранного канала ---
-    let channelMsgTimer = null;
-    function saveChannel() {
-        const el = $('channelSavedMsg');
+    // --- Автосохранение (канал, автопроверка, интервал) с подписью рядом ---
+    const savedTimers = {};
+    function saveAuto(msgId, okText) {
+        const el = $(msgId);
         if (!el) return;
         post({
             ajax: 'save_update_settings',
@@ -478,15 +469,24 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
             check_interval: $('autoCheckInterval').value
         }).then(function (data) {
             el.style.color = data.success ? '#2ecc71' : '#e74c3c';
-            el.textContent = data.success ? '✔ ' + I18N.channelSaved : '❌ ' + (data.message || I18N.saveError);
+            el.textContent = data.success ? '✔ ' + okText : '❌ ' + (data.message || I18N.saveError);
         }).catch(function () {
             el.style.color = '#e74c3c';
             el.textContent = '❌ ' + I18N.saveError;
         }).then(function () {
-            el.style.display = 'inline';
-            clearTimeout(channelMsgTimer);
-            channelMsgTimer = setTimeout(function () { el.style.display = 'none'; }, 4000);
+            el.style.display = el.tagName === 'SPAN' ? 'inline' : 'block';
+            clearTimeout(savedTimers[msgId]);
+            savedTimers[msgId] = setTimeout(function () { el.style.display = 'none'; }, 4000);
         });
+    }
+
+    function chooseChannel(name) {
+        const inp = $('updateType');
+        if (!inp || inp.value === name) return;
+        inp.value = name;
+        renderState(lastData);
+        markSelected();
+        saveAuto('channelSavedMsg', I18N.channelSaved);
     }
 
     // --- Токен GitHub ---
@@ -511,26 +511,6 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         }).catch(function () { showTokenStatus({ success: false, message: I18N.saveError }); });
     }
 
-    // --- Настройки ---
-    function saveUpdateSettings() {
-        const msg = $('settingsMessage');
-        post({
-            ajax: 'save_update_settings',
-            type: selectedChannel(),
-            auto_check: $('autoCheckEnabled').checked ? 'true' : 'false',
-            check_interval: $('autoCheckInterval').value
-        }).then(function (data) {
-            msg.className = 'block-message ' + (data.success ? 'success' : 'error');
-            msg.textContent = data.message || '';
-            msg.style.display = 'block';
-            setTimeout(function () { msg.style.display = 'none'; }, 3000);
-        }).catch(function () {
-            msg.className = 'block-message error';
-            msg.textContent = I18N.saveError;
-            msg.style.display = 'block';
-        });
-    }
-
     // Подтянуть сохранённый результат автопроверки (при свежем — без запросов к GitHub)
     function loadState() {
         post({ ajax: 'update_auto_check' }).then(function (data) {
@@ -547,13 +527,22 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         const gitHubBtn = $('checkGitHubBtn');
         const runBtn = $('runUpdateBtn');
         const startBtn = $('startUpdateBtn');
-        const typeSel = $('updateType');
 
         if (checkBtn) checkBtn.onclick = checkForUpdates;
         if (gitHubBtn) gitHubBtn.onclick = checkGitHubAccess;
         if (runBtn) runBtn.onclick = runUpdate;
         if (startBtn) startBtn.onclick = startUpdate;
-        if (typeSel) typeSel.onchange = function () { renderState(lastData); markSelected(); saveChannel(); };
+        [['chCardRelease', 'release'], ['chCardEarly', 'early']].forEach(function (c) {
+            const card = $(c[0]);
+            if (!card) return;
+            card.onclick = function () { chooseChannel(c[1]); };
+            card.onkeydown = function (ev) {
+                if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); chooseChannel(c[1]); }
+            };
+        });
+        const autoOn = $('autoCheckEnabled'), autoInt = $('autoCheckInterval');
+        if (autoOn) autoOn.onchange = function () { saveAuto('autoSavedMsg', I18N.settingsSaved); };
+        if (autoInt) autoInt.onchange = function () { saveAuto('autoSavedMsg', I18N.settingsSaved); };
         const tokBtn = $('saveTokenBtn');
         const tokClr = $('clearTokenBtn');
         if (tokBtn) tokBtn.onclick = function () { saveGithubToken(false); };
@@ -569,7 +558,6 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     window.runUpdate = runUpdate;
     window.startUpdate = startUpdate;
     window.closeUpdateConfirmModal = closeUpdateConfirmModal;
-    window.saveUpdateSettings = saveUpdateSettings;
 
     // Наблюдатель за активацией вкладки
     function checkAndInit() {

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.8.0
+// ВЕРСИЯ: 3.8.1
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -1418,8 +1418,8 @@ if (in_array($_POST['ajax'], ['check_github_access', 'check_updates', 'update_au
             $type = 'release';
         }
         $interval = (int)($_POST['check_interval'] ?? 12);
-        if (!in_array($interval, [1, 3, 6, 12, 24, 72], true)) {
-            $interval = 12;
+        if (!in_array($interval, [6, 12, 24, 72], true)) {
+            $interval = ($interval > 0 && $interval < 6) ? 6 : 12; // не чаще раза в 6 часов
         }
         $config['update']['type'] = $type;
         $config['update']['auto_check'] = (($_POST['auto_check'] ?? '') === 'true');

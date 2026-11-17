@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 2.1.0
+// ВЕРСИЯ: 2.2.0
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -138,6 +138,8 @@ $auditI18n = [
         </div>
     </div>
 
+    <!-- Срок хранения и уведомления: в одну строку -->
+    <div class="audit-row">
     <!-- Срок хранения -->
     <div class="audit-panel">
         <div class="audit-panel-title">🗓️ <?= __('audit_retention_title') ?></div>
@@ -166,6 +168,7 @@ $auditI18n = [
             <label class="audit-check"><input type="checkbox" disabled> <?= __('audit_notify_denied') ?></label>
             <label class="audit-check"><input type="checkbox" disabled> <?= __('audit_notify_user_delete') ?></label>
         </div>
+    </div>
     </div>
 
     <div class="audit-hint"><?= __('audit_hint') ?></div>
@@ -211,6 +214,9 @@ $auditI18n = [
 .audit-badge.error { color: #f39c12; border: 1px solid #f39c1255; }
 .audit-badge.denied { color: #e74c3c; border: 1px solid #e74c3c55; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px 0; font-size: 12px; }
+.audit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: stretch; }
+.audit-row .audit-panel { margin-bottom: 0; }
+@media (max-width: 900px) { .audit-row { grid-template-columns: 1fr; } }
 .audit-panel { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
 .audit-hint { font-size: 11px; color: #8aa0bb; }

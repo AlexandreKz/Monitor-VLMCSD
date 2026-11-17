@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.2
+// ВЕРСИЯ: 5.6.3
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -823,6 +823,10 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
 	'update_files_count' => '📦 Files to update',
 	'update_settings_title' => 'Update Settings',
 	'update_type_label' => 'Update type',
+    'update_block_extra' => 'Additional settings',
+    'update_auto_check_on' => 'Enable automatic check',
+    'update_auto_check_hint' => 'No more than once every 6 hours. Changes are saved immediately.',
+    'update_auto_install_title' => 'Automatic update',
 	'update_type_release' => 'Release (stable)',
 	'update_type_early' => 'Early access (by SHA)',
 	'update_mode_label' => 'Update mode',
