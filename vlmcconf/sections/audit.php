@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.1
+// ВЕРСИЯ: 3.0.2
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -82,7 +82,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             <input type="hidden" id="auditTo">
         </div>
         <div class="audit-f audit-f-reset">
-            <label>&nbsp;</label>
             <button class="audit-flat" id="auditResetBtn" type="button">✖ <?= __('audit_reset') ?></button>
         </div>
     </div>
@@ -168,11 +167,10 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
     </div>
     </div>
 
-    <div class="audit-hint"><?= __('audit_hint') ?></div>
 </div>
 
 <style>
-.audit-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
+.audit-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: end; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
 .audit-f label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
 .audit-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; }
@@ -199,7 +197,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-pager-right { justify-self: end; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
 .audit-f-reset { align-self: end; }
-.audit-flat { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 7px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.audit-flat { box-sizing: border-box; height: 34px; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 12px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
 .audit-f-reset .audit-flat { width: auto; }
 .audit-range { position: relative; }
