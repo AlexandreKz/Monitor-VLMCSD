@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.4.1
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 5.5.0
+// ДАТА: 2026-11-18
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
@@ -22,6 +22,20 @@ $docWebRu = <<<'HTML_WEB_RU'
         <div class="section-title"><span>📌</span> О проекте</div>
         <p><strong>KMS Monitor</strong> — это веб-интерфейс для мониторинга и управления KMS-сервером на базе <strong>vlmcsd</strong>.</p>
         <p>Инструкция разбита на логические этапы. Выполняйте их последовательно.</p>
+        <p>Поддерживается <strong>Ubuntu 26.04 и новее</strong> (веб-сервер Apache, PHP 8.5).</p>
+    </div>
+
+    <!-- Быстрая установка -->
+    <div class="section-card">
+        <div class="section-title"><span>⚡</span> Быстрая установка одной командой</div>
+        <p>Установщик сам поставит Apache и PHP, скачает панель с GitHub, создаст папку данных, выставит права и настроит Apache. KMS-сервер vlmcsd он не устанавливает: его нужно подготовить по этапам 1–3 ниже.</p>
+        <div class="code-block"><pre>curl -fsSL https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh | sudo bash</pre></div>
+        <p>Если хотите сначала посмотреть скрипт:</p>
+        <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
+less install.sh
+sudo bash install.sh</pre></div>
+        <p>Полезные ключи: <code>--domain example.com</code> (виртуальный хост и сертификат Let's Encrypt), <code>--dir</code> (папка установки, по умолчанию /var/www/html), <code>--release v5.9.3</code> (конкретная версия), <code>--branch main</code> (ранний доступ), <code>--kms-log /var/log/vlmcsd.log</code> (права на лог и ссылка), <code>--dry-run</code> (только показать действия). Справка: <code>bash install.sh --help</code>.</p>
+        <div class="note">💡 Повторный запуск безопасен: файлы панели обновятся, а настройки, пользователи и данные останутся. После установки перейдите к этапу «Первый вход в панель управления». Если вы ставите вручную, пропустите этот блок и следуйте этапам ниже.</div>
     </div>
     
     <!-- Этап 1: Загрузка и подготовка файлов KMS сервера -->
@@ -132,13 +146,7 @@ sudo systemctl status vlmcsd</pre></div>
     <div class="section-card">
         <div class="section-title"><span>4️⃣</span> Установка веб-сервера и PHP</div>
         
-        <p><strong>Для Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
-        <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.1 php8.1-curl php8.1-common php8.1-mbstring libapache2-mod-php8.1</pre></div>
         
-        <p><strong>Для Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
-        <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.3 php8.3-curl php8.3-common php8.3-mbstring libapache2-mod-php8.3</pre></div>
         
         <p><strong>Для Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
         <div class="code-block"><pre>sudo apt update
@@ -218,7 +226,7 @@ sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         <p>Для работы сайта по HTTPS можно использовать бесплатный сертификат от Let's Encrypt.</p>
         
         <h4>Установка Certbot:</h4>
-        <div class="code-block"><pre># Для Ubuntu 22.04, 24.04, 26.04
+        <div class="code-block"><pre># Для Ubuntu 26.04
 sudo apt update
 sudo apt install certbot python3-certbot-apache</pre></div>
         
@@ -445,6 +453,20 @@ $docWebEn = <<<'HTML_WEB_EN'
         <div class="section-title"><span>📌</span> About the project</div>
         <p><strong>KMS Monitor</strong> is a web interface for monitoring and managing a KMS server based on <strong>vlmcsd</strong>.</p>
         <p>The instructions are divided into logical steps. Follow them sequentially.</p>
+        <p>Supported: <strong>Ubuntu 26.04 and newer</strong> (Apache web server, PHP 8.5).</p>
+    </div>
+
+    <!-- Quick install -->
+    <div class="section-card">
+        <div class="section-title"><span>⚡</span> One-command quick install</div>
+        <p>The installer sets up Apache and PHP, downloads the panel from GitHub, creates the data folder, sets permissions and configures Apache. It does not install the vlmcsd KMS server: prepare it using steps 1–3 below.</p>
+        <div class="code-block"><pre>curl -fsSL https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh | sudo bash</pre></div>
+        <p>To review the script first:</p>
+        <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
+less install.sh
+sudo bash install.sh</pre></div>
+        <p>Useful options: <code>--domain example.com</code> (virtual host and Let's Encrypt certificate), <code>--dir</code> (install folder, default /var/www/html), <code>--release v5.9.3</code> (specific version), <code>--branch main</code> (early access), <code>--kms-log /var/log/vlmcsd.log</code> (log permissions and link), <code>--dry-run</code> (only show actions). Help: <code>bash install.sh --help</code>.</p>
+        <div class="note">💡 Running it again is safe: panel files are updated while settings, users and data are kept. After installation go to the “First login to control panel” step. If you install manually, skip this block and follow the steps below.</div>
     </div>
     
     <!-- Step 1: Download and prepare KMS server files -->
@@ -555,13 +577,7 @@ sudo systemctl status vlmcsd</pre></div>
     <div class="section-card">
         <div class="section-title"><span>4️⃣</span> Install web server and PHP</div>
         
-        <p><strong>For Ubuntu 22.04 LTS (PHP 8.1):</strong></p>
-        <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.1 php8.1-curl php8.1-common php8.1-mbstring libapache2-mod-php8.1</pre></div>
         
-        <p><strong>For Ubuntu 24.04 LTS (PHP 8.3):</strong></p>
-        <div class="code-block"><pre>sudo apt update
-sudo apt install apache2 php8.3 php8.3-curl php8.3-common php8.3-mbstring libapache2-mod-php8.3</pre></div>
         
         <p><strong>For Ubuntu 26.04 LTS (PHP 8.5):</strong></p>
         <div class="code-block"><pre>sudo apt update
@@ -641,7 +657,7 @@ sudo ln -s /var/log/vlmcsd.log /var/www/html/vlmcsd.log</pre></div>
         <p>To run the site over HTTPS, you can use a free Let's Encrypt certificate.</p>
         
         <h4>Install Certbot:</h4>
-        <div class="code-block"><pre># For Ubuntu 22.04, 24.04, 26.04
+        <div class="code-block"><pre># For Ubuntu 26.04
 sudo apt update
 sudo apt install certbot python3-certbot-apache</pre></div>
         
