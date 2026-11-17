@@ -1,0 +1,5 @@
+# Данные панели не должны попадать в репозиторий (создаются панелью)
+vlmcconf/vlmcconf_config.json
+vlmcconf/users.json
+vlmcconf/cache/
+vlmcconf/backups/

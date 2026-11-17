@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.3.0
+// ВЕРСИЯ: 5.3.1
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -422,7 +422,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
             <div style="margin-left: 20px;">└── 📁 pic/ — иконки</div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — данные панели (вне веб-папки)</div>
-            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки</div>
+            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки (создаётся панелью автоматически при первом запуске)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — пользователи</div>
             <div style="margin-left: 20px;">└── 📁 backups/ — копии «до переноса»</div>
         </div>
@@ -841,7 +841,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 40px;">│   └── 📁 vlmcinc/ — helper libraries</div>
             <div style="margin-left: 20px;">└── 📁 pic/ — icons</div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — panel data (outside the web root)</div>
-            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings</div>
+            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings (created by the panel automatically on first run)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — users</div>
             <div style="margin-left: 20px;">└── 📁 backups/ — pre-migration copies</div>
         </div>
