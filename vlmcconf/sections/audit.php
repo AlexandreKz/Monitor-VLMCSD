@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.0
+// ВЕРСИЯ: 3.0.1
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -83,7 +83,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         </div>
         <div class="audit-f audit-f-reset">
             <label>&nbsp;</label>
-            <button class="btn" id="auditResetBtn" type="button" style="padding: 6px 14px; font-size: 12px; width: 100%;">✖ <?= __('audit_reset') ?></button>
+            <button class="audit-flat" id="auditResetBtn" type="button">✖ <?= __('audit_reset') ?></button>
         </div>
     </div>
 
@@ -118,7 +118,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     <div class="audit-pager-row">
         <div class="audit-pager-left">
-            <button class="btn" id="auditExportBtn" style="padding: 5px 14px; font-size: 12px;">📥 <?= __('audit_export') ?></button>
+            <button class="audit-flat" id="auditExportBtn" type="button">📥 <?= __('audit_export') ?></button>
         </div>
         <div class="audit-pager">
             <button class="btn" id="auditPrev" style="padding: 5px 12px;">←</button>
@@ -184,7 +184,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-table th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
 .audit-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: top; }
 .audit-table td.audit-time, .audit-table td.audit-ip { white-space: nowrap; font-family: monospace; }
-.audit-table td.audit-details { word-break: break-word; color: #8aa0bb; }
+.audit-table td.audit-details { word-break: break-word; overflow-wrap: anywhere; color: #8aa0bb; min-width: 260px; }
 .audit-user-link { cursor: pointer; color: <?= $themeCSS['primary'] ?>; }
 .audit-user-link:hover { text-decoration: underline; }
 .audit-change { font-family: monospace; font-size: 11px; color: <?= $themeCSS['text'] ?>; opacity: 0.85; margin-top: 2px; }
@@ -199,6 +199,9 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-pager-right { justify-self: end; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
 .audit-f-reset { align-self: end; }
+.audit-flat { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 7px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.audit-f-reset .audit-flat { width: auto; }
 .audit-range { position: relative; }
 .audit-range .form-control { cursor: pointer; width: 100%; box-sizing: border-box; }
 .audit-cal { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 268px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); color: <?= $themeCSS['text'] ?>; }

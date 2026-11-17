@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/audit.php
-// ВЕРСИЯ: 2.0.0
+// ВЕРСИЯ: 2.0.1
 // ДАТА: 2026-11-17
 // @description: Журнал действий пользователей панели: запись (с изменениями «было → стало»), срок хранения, очистка, фильтры, поиск, сводка по пользователю, активность по часам и дням
 // ============================================
@@ -294,6 +294,8 @@ function auditCleanParams(array $src) {
         }
         if (is_array($v)) {
             $val = '[' . count($v) . ']';
+        } elseif (is_string($v) && isset($v[0]) && $v[0] === '[' && is_array($arr = json_decode($v, true))) {
+            $val = '[' . count($arr) . ']';   // список (например, файлы обновления) — только количество
         } elseif (is_scalar($v)) {
             $val = preg_replace('/[\r\n\t]+/', ' ', trim((string)$v));
             $val = auditSub($val, 120);
@@ -334,7 +336,7 @@ function auditLog($action, $details = '', $result = 'ok', $user = null, array $c
             'u' => auditSub((string)$user, 64),
             'ip' => (string)($_SERVER['REMOTE_ADDR'] ?? ''),
             'a' => (string)$action,
-            'd' => auditSub((string)$details, 400),
+            'd' => auditSub((string)$details, 800),
             'r' => in_array($result, ['ok', 'error', 'denied'], true) ? $result : 'ok'
         ];
         if ($changes) {
