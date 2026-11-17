@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.0.0
+// ВЕРСИЯ: 3.1.0
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -55,11 +55,10 @@ $totalGroups = count($groupStats);
         <?php if ($activeSection === 'stats' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
-    </div>
-    
-    <div class="stats-pages">
-        <button type="button" class="stats-page-btn active" data-page="overview" onclick="switchStatsPage('overview')">📊 <?= __('stats_tab_overview') ?></button>
-        <button type="button" class="stats-page-btn" data-page="reports" onclick="switchStatsPage('reports')">📑 <?= __('stats_tab_reports') ?></button>
+        <div class="stats-pages">
+            <button type="button" class="stats-page-btn active" data-page="overview" onclick="switchStatsPage('overview')">📊 <?= __('stats_tab_overview') ?></button>
+            <button type="button" class="stats-page-btn" data-page="reports" onclick="switchStatsPage('reports')">📑 <?= __('stats_tab_reports') ?></button>
+        </div>
     </div>
 
     <div id="statsPageOverview" class="stats-page active">
@@ -208,18 +207,29 @@ $totalGroups = count($groupStats);
     <!-- Вкладка «Отчёты» -->
     <div id="statsPageReports" class="stats-page">
         <div class="stat-block">
-            <div class="stat-block-title">🔎 <?= __('report_title') ?></div>
-            <div class="report-controls">
-                <div class="report-modes">
-                    <button type="button" class="report-mode-btn active" data-mode="device" id="reportModeDevice"><?= __('report_mode_device') ?></button>
-                    <button type="button" class="report-mode-btn" data-mode="ip" id="reportModeIp"><?= __('report_mode_ip') ?></button>
+            <div class="stat-block-title">📑 <?= __('stats_tab_reports') ?></div>
+            <div class="rep-controls">
+                <div class="rep-field">
+                    <label><?= __('report_label_type') ?></label>
+                    <div class="rep-dd" id="repType"></div>
                 </div>
-                <input type="text" id="reportInput" class="form-control report-input" list="reportListDevices" autocomplete="off" spellcheck="false" placeholder="<?= htmlspecialchars(__('report_input_device')) ?>">
-                <button type="button" class="btn btn-primary" id="reportRun" style="padding: 7px 18px; font-size: 13px;">🔍 <?= __('report_show') ?></button>
+                <div class="rep-field rep-field-query" id="repQueryWrap">
+                    <label id="repQueryLabel"></label>
+                    <div class="rep-combo">
+                        <input type="text" id="reportInput" class="form-control" autocomplete="off" spellcheck="false">
+                        <div class="rep-pop" id="repComboList" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="rep-field" id="repDaysWrap" style="display: none;">
+                    <label id="repDaysLabel"></label>
+                    <div class="rep-dd" id="repDays"></div>
+                </div>
+                <div class="rep-field rep-field-btn">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-primary" id="reportRun">🔍 <?= __('report_show') ?></button>
+                </div>
             </div>
-            <datalist id="reportListDevices"></datalist>
-            <datalist id="reportListIps"></datalist>
-            <div class="report-hint"><?= __('report_hint') ?></div>
+            <div class="report-hint" id="repDesc"></div>
             <div id="reportSummary" class="report-summary" style="display: none;"></div>
             <div id="reportResult" class="report-result"></div>
         </div>
@@ -350,7 +360,7 @@ $totalGroups = count($groupStats);
 
 .chart-container {
     position: relative;
-    height: 280px;
+    height: 274px;
     width: 100%;
     margin-top: 8px;
 }
@@ -393,14 +403,24 @@ $totalGroups = count($groupStats);
 .stats-page.active { display: block; }
 
 /* Отчёты */
-.report-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-.report-modes { display: inline-flex; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; overflow: hidden; }
-.report-mode-btn { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: none; padding: 7px 14px; font-size: 12px; cursor: pointer; opacity: 0.75; font-family: inherit; }
-.report-mode-btn + .report-mode-btn { border-left: 1px solid <?= $themeCSS['border'] ?>; }
-.report-mode-btn:hover { opacity: 1; }
-.report-mode-btn.active { background: <?= $themeCSS['primary'] ?>; color: #fff; opacity: 1; }
-.report-input { flex: 1; min-width: 200px; max-width: 360px; width: auto; }
-.report-hint { font-size: 11px; color: #8aa0bb; margin-top: 8px; }
+.rep-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.rep-field label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
+.rep-field-query { flex: 1; min-width: 220px; max-width: 340px; }
+.rep-field .form-control { height: 34px; box-sizing: border-box; }
+.rep-field-btn .btn { padding: 0 18px; height: 34px; font-size: 13px; }
+.rep-dd, .rep-combo { position: relative; }
+.rep-dd-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 260px; width: 100%; box-sizing: border-box; height: 34px; padding: 0 12px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 13px; font-family: inherit; cursor: pointer; text-align: left; }
+.rep-dd.sm .rep-dd-btn { min-width: 110px; }
+.rep-dd-btn:hover, .rep-dd.open .rep-dd-btn { border-color: <?= $themeCSS['primary'] ?>; }
+.rep-dd-btn .arrow { font-size: 10px; opacity: 0.7; transition: transform 0.15s; }
+.rep-dd.open .arrow { transform: rotate(180deg); }
+.rep-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; min-width: 100%; max-height: 260px; overflow-y: auto; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); box-sizing: border-box; }
+.rep-opt { padding: 7px 10px; font-size: 13px; color: <?= $themeCSS['text'] ?>; border-radius: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rep-opt:hover, .rep-opt.hl { background: <?= $themeCSS['hover'] ?>; }
+.rep-opt.sel { color: <?= $themeCSS['primary'] ?>; font-weight: 600; }
+.rep-opt.empty { color: #8aa0bb; cursor: default; }
+.rep-opt.empty:hover { background: transparent; }
+.report-hint { font-size: 11px; color: #8aa0bb; margin-top: 10px; }
 .report-summary { font-size: 12px; color: <?= $themeCSS['text'] ?>; margin: 12px 0 8px; font-weight: 600; }
 .report-result { margin-top: 10px; }
 .report-empty { font-size: 12px; color: #8aa0bb; padding: 12px 0; }
@@ -409,10 +429,14 @@ $totalGroups = count($groupStats);
 .report-table th { position: sticky; top: 0; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
 .report-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
 .report-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.report-table th.num { text-align: right; }
 .report-table td.mono { font-family: monospace; white-space: nowrap; }
+.report-table td.muted { color: #8aa0bb; }
 .report-table tr:hover td { background: <?= $themeCSS['hover'] ?>; }
 .report-link { color: <?= $themeCSS['primary'] ?>; cursor: pointer; }
 .report-link:hover { text-decoration: underline; }
+.stats-pages { margin: 0 0 0 auto; margin-bottom: 0; }
+.stats-page-btn { padding: 4px 16px; font-size: 12px; }
 </style>
 
 <script>
@@ -680,14 +704,12 @@ function updateStatChart(data) {
 <script>
 (function () {
     const T = {
-<?php foreach (['report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_sum_device', 'report_sum_devices', 'report_sum_ip'] as $k): ?>
+<?php foreach (['report_label_type', 'report_label_days_inactive', 'report_label_days_new', 'report_days_n', 'report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_col_ips', 'report_col_devices', 'report_col_days_ago', 'report_col_last_ip', 'report_col_ip_list', 'report_col_product', 'report_sum_device', 'report_sum_devices', 'report_sum_ip', 'report_sum_rows', 'report_sum_rows_limit', 'report_mode_device', 'report_mode_ip', 'report_type_multi_ip', 'report_type_shared_ip', 'report_type_top_devices', 'report_type_inactive', 'report_type_new', 'report_type_products', 'report_desc_device_ips', 'report_desc_ip_devices', 'report_desc_multi_ip', 'report_desc_shared_ip', 'report_desc_top_devices', 'report_desc_inactive', 'report_desc_new', 'report_desc_products'] as $k): ?>
         <?= $k ?>: <?= json_encode(__($k), JSON_UNESCAPED_UNICODE) ?>,
 <?php endforeach; ?>
     };
-    let mode = 'device';
-    let listsLoaded = false;
-    const $ = function (id) { return document.getElementById(id); };
 
+    const $ = function (id) { return document.getElementById(id); };
     function el(tag, cls, text) {
         const e = document.createElement(tag);
         if (cls) e.className = cls;
@@ -705,41 +727,163 @@ function updateStatChart(data) {
         return fetch('', { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); });
     }
 
-    window.switchStatsPage = function (page) {
-        document.querySelectorAll('.stats-page-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.page === page); });
-        $('statsPageOverview').classList.toggle('active', page === 'overview');
-        $('statsPageReports').classList.toggle('active', page === 'reports');
-        if (page === 'reports') loadLists();
+    // ---- Описание отчётов ----
+    // param: 'device' | 'ip' (текстовый запрос с подсказками), 'days' (срок), '' (без параметров)
+    // cols: k — поле строки, t — тип (device, ip, country, num, time, text, mono)
+    const C = {
+        device:   { k: 'device',   l: T.report_col_device,   t: 'device' },
+        ip:       { k: 'ip',       l: T.report_col_ip,       t: 'ip' },
+        country:  { k: 'country',  l: T.report_col_country,  t: 'country' },
+        count:    { k: 'count',    l: T.report_col_count,    t: 'num' },
+        first:    { k: 'first',    l: T.report_col_first,    t: 'time' },
+        last:     { k: 'last',     l: T.report_col_last,     t: 'time' },
+        ips:      { k: 'ips',      l: T.report_col_ips,      t: 'num' },
+        devices:  { k: 'devices',  l: T.report_col_devices,  t: 'num' },
+        daysAgo:  { k: 'days_ago', l: T.report_col_days_ago, t: 'num' },
+        lastIp:   { k: 'last_ip',  l: T.report_col_last_ip,  t: 'ip' },
+        ipList:   { k: 'ip_list',  l: T.report_col_ip_list,  t: 'muted' },
+        product:  { k: 'product',  l: T.report_col_product,  t: 'text' }
     };
+    const REPORTS = [
+        { id: 'device_ips',  name: T.report_mode_device,       desc: T.report_desc_device_ips,  param: 'device' },
+        { id: 'ip_devices',  name: T.report_mode_ip,           desc: T.report_desc_ip_devices,  param: 'ip' },
+        { id: 'multi_ip',    name: T.report_type_multi_ip,     desc: T.report_desc_multi_ip,    param: '',
+          cols: [C.device, C.ips, C.count, C.last, C.ipList] },
+        { id: 'shared_ip',   name: T.report_type_shared_ip,    desc: T.report_desc_shared_ip,   param: '',
+          cols: [C.ip, C.country, C.devices, C.count, C.last] },
+        { id: 'top_devices', name: T.report_type_top_devices,  desc: T.report_desc_top_devices, param: '',
+          cols: [C.device, C.count, C.ips, C.first, C.last] },
+        { id: 'inactive',    name: T.report_type_inactive,     desc: T.report_desc_inactive,    param: 'days', daysLabel: T.report_label_days_inactive, days: [30, 60, 90, 180, 365], defDays: 90,
+          cols: [C.device, C.last, C.daysAgo, C.count, C.lastIp] },
+        { id: 'new_devices', name: T.report_type_new,          desc: T.report_desc_new,         param: 'days', daysLabel: T.report_label_days_new, days: [7, 14, 30, 90], defDays: 30,
+          cols: [C.device, C.first, C.last, C.count, C.ips] },
+        { id: 'products',    name: T.report_type_products,     desc: T.report_desc_products,    param: '',
+          cols: [C.product, C.devices, C.count] }
+    ];
+    const byId = {};
+    REPORTS.forEach(function (r) { byId[r.id] = r; });
+    let cur = REPORTS[0];
+    let days = 30;
+    const suggest = { device: [], ip: [] };
+    let listsLoaded = false;
 
-    function loadLists() {
-        if (listsLoaded) return;
-        listsLoaded = true;
-        post({ report: 'lists' }).then(function (d) {
-            if (!d.success) { listsLoaded = false; return; }
-            fill($('reportListDevices'), d.devices);
-            fill($('reportListIps'), d.ips);
-        }).catch(function () { listsLoaded = false; });
+    // ---- Выпадающий список в стиле панели ----
+    const closers = [];
+    function closeAll(except) { closers.forEach(function (c) { if (c !== except) c(); }); }
+    document.addEventListener('click', function () { closeAll(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+
+    function makeDropdown(box, options, value, onChange) {
+        let val = value;
+        box.textContent = '';
+        const btn = el('button', 'rep-dd-btn');
+        btn.type = 'button';
+        const label = el('span');
+        btn.appendChild(label);
+        btn.appendChild(el('span', 'arrow', '▼'));
+        const pop = el('div', 'rep-pop');
+        pop.style.display = 'none';
+        box.appendChild(btn);
+        box.appendChild(pop);
+
+        function close() { pop.style.display = 'none'; box.classList.remove('open'); }
+        function paint() {
+            pop.textContent = '';
+            options.forEach(function (o) {
+                const d = el('div', 'rep-opt' + (o.value === val ? ' sel' : ''), o.label);
+                d.onclick = function (e) { e.stopPropagation(); val = o.value; set(val); close(); onChange(val); };
+                pop.appendChild(d);
+            });
+        }
+        function set(v) {
+            val = v;
+            const o = options.filter(function (x) { return x.value === v; })[0];
+            label.textContent = o ? o.label : '';
+        }
+        btn.onclick = function (e) {
+            e.stopPropagation();
+            const open = pop.style.display !== 'none';
+            closeAll();
+            if (!open) { paint(); pop.style.display = 'block'; box.classList.add('open'); }
+        };
+        pop.addEventListener('click', function (e) { e.stopPropagation(); });
+        closers.push(close);
+        set(value);
+        return { set: set };
     }
-    function fill(list, items) {
-        list.textContent = '';
-        (items || []).forEach(function (v) { const o = document.createElement('option'); o.value = v; list.appendChild(o); });
+
+    // ---- Поле с подсказками (устройства / IP) ----
+    const input = $('reportInput');
+    const comboList = $('repComboList');
+    let hl = -1;
+    function comboClose() { comboList.style.display = 'none'; hl = -1; }
+    closers.push(comboClose);
+    function comboOpen() {
+        const src = suggest[cur.param] || [];
+        const q = input.value.trim().toLowerCase();
+        const items = src.filter(function (v) { return !q || v.toLowerCase().indexOf(q) !== -1; }).slice(0, 50);
+        comboList.textContent = '';
+        hl = -1;
+        if (!items.length) { comboList.style.display = 'none'; return; }
+        items.forEach(function (v) {
+            const d = el('div', 'rep-opt', v);
+            d.onclick = function (e) { e.stopPropagation(); input.value = v; comboClose(); run(); };
+            comboList.appendChild(d);
+        });
+        comboList.style.display = 'block';
+    }
+    input.addEventListener('focus', function () { closeAll(comboClose); comboOpen(); });
+    input.addEventListener('click', function (e) { e.stopPropagation(); closeAll(comboClose); if (comboList.style.display === 'none') comboOpen(); });
+    input.addEventListener('input', comboOpen);
+    comboList.addEventListener('click', function (e) { e.stopPropagation(); });
+    input.addEventListener('keydown', function (e) {
+        const opts = comboList.querySelectorAll('.rep-opt');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (comboList.style.display === 'none') comboOpen();
+            if (!opts.length) return;
+            hl = (hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
+            opts.forEach(function (o, i) { o.classList.toggle('hl', i === hl); });
+            opts[hl].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (hl >= 0 && opts[hl]) input.value = opts[hl].textContent;
+            comboClose();
+            run();
+        }
+    });
+
+    // ---- Выбор отчёта ----
+    const typeDd = makeDropdown($('repType'), REPORTS.map(function (r) { return { value: r.id, label: r.name }; }), cur.id, function (id) { selectReport(id); });
+    let daysDd = null;
+
+    function selectReport(id, keepInput) {
+        cur = byId[id];
+        typeDd.set(id);
+        $('repDesc').textContent = cur.desc;
+        const textual = cur.param === 'device' || cur.param === 'ip';
+        $('repQueryWrap').style.display = textual ? '' : 'none';
+        $('repDaysWrap').style.display = cur.param === 'days' ? '' : 'none';
+        if (textual) {
+            $('repQueryLabel').textContent = cur.param === 'device' ? T.report_input_device : T.report_input_ip;
+            input.placeholder = cur.param === 'device' ? T.report_input_device : T.report_input_ip;
+            if (!keepInput) input.value = '';
+        }
+        if (cur.param === 'days') {
+            days = cur.defDays;
+            $('repDaysLabel').textContent = cur.daysLabel;
+            daysDd = makeDropdown($('repDays'), cur.days.map(function (d) { return { value: d, label: fmt(T.report_days_n, [d]) }; }), days, function (v) { days = v; run(); });
+            $('repDays').classList.add('sm');
+        }
+        comboClose();
+        clearResult();
+        if (!textual) run();
     }
 
     function clearResult() {
         $('reportSummary').style.display = 'none';
         $('reportResult').textContent = '';
     }
-
-    function setMode(m) {
-        mode = m;
-        $('reportModeDevice').classList.toggle('active', m === 'device');
-        $('reportModeIp').classList.toggle('active', m === 'ip');
-        const inp = $('reportInput');
-        inp.setAttribute('list', m === 'device' ? 'reportListDevices' : 'reportListIps');
-        inp.placeholder = m === 'device' ? T.report_input_device : T.report_input_ip;
-    }
-
     function showMessage(text) {
         $('reportSummary').style.display = 'none';
         const r = $('reportResult');
@@ -747,83 +891,123 @@ function updateStatChart(data) {
         r.appendChild(el('div', 'report-empty', text));
     }
 
+    // ---- Отрисовка ----
+    function cell(col, row) {
+        const v = row[col.k];
+        let td;
+        if (col.t === 'device') {
+            td = el('td');
+            const a = el('span', 'report-link', v);
+            a.onclick = function () { openDrill('device_ips', v); };
+            td.appendChild(a);
+        } else if (col.t === 'ip') {
+            td = el('td', 'mono');
+            if (v) {
+                const a = el('span', 'report-link', v);
+                a.onclick = function () { openDrill('ip_devices', v); };
+                td.appendChild(a);
+            } else td.textContent = '—';
+        } else if (col.t === 'country') {
+            td = el('td', '', v ? ((row.flag ? row.flag + ' ' : '') + v) : '—');
+        } else if (col.t === 'num') {
+            td = el('td', 'num', v === null || v === undefined ? '—' : String(v));
+        } else if (col.t === 'time') {
+            td = el('td', 'mono', v || '—');
+        } else if (col.t === 'muted') {
+            td = el('td', 'muted', v || '—');
+        } else {
+            td = el('td', '', v === undefined || v === '' ? '—' : String(v));
+        }
+        return td;
+    }
+
+    function table(cols, rows) {
+        const wrap = el('div', 'report-table-wrap');
+        const tb = el('table', 'report-table');
+        const trh = el('tr');
+        cols.forEach(function (c) { trh.appendChild(el('th', c.t === 'num' ? 'num' : '', c.l)); });
+        const thead = el('thead'); thead.appendChild(trh); tb.appendChild(thead);
+        const tbody = el('tbody');
+        rows.forEach(function (row) {
+            const tr = el('tr');
+            cols.forEach(function (c) { tr.appendChild(cell(c, row)); });
+            tbody.appendChild(tr);
+        });
+        tb.appendChild(tbody);
+        wrap.appendChild(tb);
+        return wrap;
+    }
+
     function render(d, q) {
         const rows = d.rows || [];
         if (!rows.length) { showMessage(T.report_not_found); return; }
-        let requests = 0;
-        rows.forEach(function (x) { requests += x.count; });
-        const multi = mode === 'device' && d.matched && d.matched.length > 1;
         const sum = $('reportSummary');
-        if (mode === 'device') {
+        let cols = cur.cols;
+        let requests = 0;
+        rows.forEach(function (x) { requests += x.count || 0; });
+        if (cur.id === 'device_ips') {
+            const multi = d.matched && d.matched.length > 1;
             const ips = {};
             rows.forEach(function (x) { ips[x.ip] = 1; });
             sum.textContent = multi
                 ? fmt(T.report_sum_devices, [d.matched.length, Object.keys(ips).length, requests])
                 : fmt(T.report_sum_device, [rows[0].device, Object.keys(ips).length, requests]);
-        } else {
+            cols = (multi ? [C.device] : []).concat([C.ip, C.country, C.count, C.first, C.last]);
+        } else if (cur.id === 'ip_devices') {
             sum.textContent = fmt(T.report_sum_ip, [(d.flag ? d.flag + ' ' : '') + q + (d.country ? ' (' + d.country + ')' : ''), rows.length, requests]);
+            cols = [C.device, C.count, C.first, C.last];
+        } else {
+            sum.textContent = d.total ? fmt(T.report_sum_rows_limit, [d.total, rows.length]) : fmt(T.report_sum_rows, [rows.length]);
         }
         sum.style.display = 'block';
-
-        const cols = [];
-        if (mode === 'ip' || multi) cols.push(T.report_col_device);
-        if (mode === 'device') { cols.push(T.report_col_ip); cols.push(T.report_col_country); }
-        cols.push(T.report_col_count, T.report_col_first, T.report_col_last);
-
-        const wrap = el('div', 'report-table-wrap');
-        const table = el('table', 'report-table');
-        const trh = el('tr');
-        cols.forEach(function (c) { trh.appendChild(el('th', '', c)); });
-        const thead = el('thead'); thead.appendChild(trh); table.appendChild(thead);
-        const tbody = el('tbody');
-        rows.forEach(function (x) {
-            const tr = el('tr');
-            if (mode === 'ip' || multi) {
-                const td = el('td');
-                const a = el('span', 'report-link', x.device);
-                a.onclick = function () { setMode('device'); $('reportInput').value = x.device; run(); };
-                td.appendChild(a); tr.appendChild(td);
-            }
-            if (mode === 'device') {
-                const td = el('td', 'mono');
-                const a = el('span', 'report-link', x.ip);
-                a.onclick = function () { setMode('ip'); $('reportInput').value = x.ip; run(); };
-                td.appendChild(a); tr.appendChild(td);
-                tr.appendChild(el('td', '', x.country ? ((x.flag ? x.flag + ' ' : '') + x.country) : '—'));
-            }
-            tr.appendChild(el('td', 'num', String(x.count)));
-            tr.appendChild(el('td', 'mono', x.first || '—'));
-            tr.appendChild(el('td', 'mono', x.last || '—'));
-            tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        wrap.appendChild(table);
         const r = $('reportResult');
         r.textContent = '';
-        r.appendChild(wrap);
+        r.appendChild(table(cols, rows));
     }
 
     function run() {
-        const q = $('reportInput').value.trim();
-        if (!q) { showMessage(T.report_empty_query); return; }
+        const rep = cur;
+        const params = { report: rep.id };
+        if (rep.param === 'device' || rep.param === 'ip') {
+            const q = input.value.trim();
+            if (!q) { showMessage(T.report_empty_query); return; }
+            params.q = q;
+        }
+        if (rep.param === 'days') params.days = days;
         showMessage(T.report_loading);
-        const m = mode;
-        post({ report: m === 'device' ? 'device_ips' : 'ip_devices', q: q }).then(function (d) {
-            if (m !== mode) return;   // режим уже переключили
-            if (!d.success) { showMessage(m === 'ip' ? T.report_bad_ip : T.report_error); return; }
-            render(d, q);
+        post(params).then(function (d) {
+            if (rep !== cur) return;   // отчёт уже переключили
+            if (!d.success) { showMessage(rep.param === 'ip' ? T.report_bad_ip : T.report_error); return; }
+            render(d, params.q);
         }).catch(function () { showMessage(T.report_error); });
     }
 
-    function switchMode(m) {
-        if (mode === m) return;
-        setMode(m);
-        $('reportInput').value = '';
-        clearResult();
+    function openDrill(id, value) {
+        input.value = value;
+        selectReport(id, true);
+        input.value = value;
+        run();
     }
-    $('reportModeDevice').onclick = function () { switchMode('device'); };
-    $('reportModeIp').onclick = function () { switchMode('ip'); };
+
+    function loadLists() {
+        if (listsLoaded) return;
+        listsLoaded = true;
+        post({ report: 'lists' }).then(function (d) {
+            if (!d.success) { listsLoaded = false; return; }
+            suggest.device = d.devices || [];
+            suggest.ip = d.ips || [];
+        }).catch(function () { listsLoaded = false; });
+    }
+
+    window.switchStatsPage = function (page) {
+        document.querySelectorAll('.stats-page-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.page === page); });
+        $('statsPageOverview').classList.toggle('active', page === 'overview');
+        $('statsPageReports').classList.toggle('active', page === 'reports');
+        closeAll();
+        if (page === 'reports') loadLists();
+    };
+
     $('reportRun').onclick = run;
-    $('reportInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    selectReport(cur.id);
 })();
 </script>

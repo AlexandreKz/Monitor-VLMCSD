@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.7
+// ВЕРСИЯ: 5.6.8
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -173,6 +173,33 @@ return [
     'report_sum_device' => 'Device %s: IP addresses — %d, requests — %d',
     'report_sum_devices' => 'Devices found: %d, IP addresses — %d, requests — %d',
     'report_sum_ip' => 'IP %s: devices — %d, requests — %d',
+    'report_label_type' => 'Report',
+    'report_label_days_inactive' => 'Not seen for more than',
+    'report_label_days_new' => 'Appeared within',
+    'report_days_n' => '%d d.',
+    'report_type_multi_ip' => 'Devices with several IPs',
+    'report_type_shared_ip' => 'IPs with several devices',
+    'report_type_top_devices' => 'Top devices by requests',
+    'report_type_inactive' => 'Long-inactive devices',
+    'report_type_new' => 'New devices',
+    'report_type_products' => 'Products',
+    'report_desc_device_ips' => 'All addresses the selected device connected from.',
+    'report_desc_ip_devices' => 'All devices that connected from the selected IP address.',
+    'report_desc_multi_ip' => 'Devices that changed IP: network change, VPN, a laptop in different offices.',
+    'report_desc_shared_ip' => 'Addresses with several devices behind them: NAT, an office or a suspicious source.',
+    'report_desc_top_devices' => 'The 50 most active devices by number of requests.',
+    'report_desc_inactive' => 'Devices missing from the log for longer than the chosen period: possibly decommissioned.',
+    'report_desc_new' => 'Devices that first appeared in the log within the chosen period.',
+    'report_desc_products' => 'How many unique devices and requests each product has.',
+    'report_col_ips' => 'IP addresses',
+    'report_col_devices' => 'Devices',
+    'report_col_days_ago' => 'Days ago',
+    'report_col_last_ip' => 'Last IP',
+    'report_col_ip_list' => 'IP addresses',
+    'report_col_product' => 'Product',
+    'report_sum_rows' => 'Found: %d',
+    'report_sum_rows_limit' => 'Found: %d, showing the first %d',
+    'report_pick' => 'Select',
     
     // Information
     'info_title' => 'Project Information',

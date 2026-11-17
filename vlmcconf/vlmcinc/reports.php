@@ -1,9 +1,10 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/reports.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-17
-// @description: Отчёты по логу: все IP устройства и все устройства на IP.
+// @description: Отчёты по логу: IP устройства, устройства на IP, устройства с несколькими IP, IP с несколькими
+//               устройствами, топ устройств, давно не появлявшиеся, новые устройства, продукты.
 //               Один потоковый проход по логу, результат в кэше агрегатов (log_cache.php).
 // ============================================
 
@@ -143,4 +144,145 @@ function reportMatchKeys(array $names, $query) {
         }
     }
     return $exact ?: array_slice($part, 0, 50);
+}
+
+// ---------------- Дополнительные отчёты ----------------
+
+define('REPORT_MAX_ROWS', 500);
+
+/** Сводка по каждому устройству: число IP, запросов, первый/последний раз, последний IP и список IP. */
+function reportDeviceSummary($logFile) {
+    $out = [];
+    foreach (reportPairs($logFile) as $dev => $byIp) {
+        $count = 0; $first = ''; $last = ''; $lastIp = '';
+        $ipList = [];
+        foreach ($byIp as $ip => $p) {
+            $count += $p[0];
+            if ($p[1] !== '' && ($first === '' || $p[1] < $first)) $first = $p[1];
+            if ($p[2] !== '' && $p[2] >= $last) { $last = $p[2]; $lastIp = (string)$ip; }
+            $ipList[(string)$ip] = $p[2];
+        }
+        arsort($ipList);
+        $out[(string)$dev] = ['ips' => count($byIp), 'count' => $count, 'first' => $first, 'last' => $last,
+                              'last_ip' => $lastIp, 'ip_list' => array_keys($ipList)];
+    }
+    return $out;
+}
+
+function reportSortLast(array &$rows) {
+    usort($rows, function ($a, $b) { return strcmp($b['last'], $a['last']) ?: ($b['count'] <=> $a['count']); });
+}
+
+function reportDaysAgo($time) {
+    $ts = $time !== '' ? strtotime($time) : false;
+    return $ts === false ? null : (int)floor((time() - $ts) / 86400);
+}
+
+/** Устройства, которые обращались с нескольких IP (смена сети, VPN, ноутбук в разных офисах). */
+function reportMultiIp($logFile) {
+    $rows = [];
+    foreach (reportDeviceSummary($logFile) as $dev => $d) {
+        if ($d['ips'] > 1) {
+            $rows[] = ['device' => $dev, 'ips' => $d['ips'], 'count' => $d['count'], 'last' => $d['last'],
+                       'ip_list' => implode(', ', array_slice($d['ip_list'], 0, 5)) . ($d['ips'] > 5 ? ', …' : '')];
+        }
+    }
+    usort($rows, function ($a, $b) { return ($b['ips'] <=> $a['ips']) ?: strcmp($b['last'], $a['last']); });
+    return $rows;
+}
+
+/** IP, с которых обращалось несколько разных устройств (NAT, офис, а также подозрительные адреса). */
+function reportSharedIps($logFile) {
+    $byIp = [];
+    foreach (reportPairs($logFile) as $dev => $ips) {
+        foreach ($ips as $ip => $p) {
+            $ip = (string)$ip;
+            if (!isset($byIp[$ip])) $byIp[$ip] = ['devices' => 0, 'count' => 0, 'last' => ''];
+            $byIp[$ip]['devices']++;
+            $byIp[$ip]['count'] += $p[0];
+            if ($p[2] > $byIp[$ip]['last']) $byIp[$ip]['last'] = $p[2];
+        }
+    }
+    $rows = [];
+    foreach ($byIp as $ip => $d) {
+        if ($d['devices'] > 1) {
+            $c = reportCountry($ip);
+            $rows[] = ['ip' => $ip, 'country' => $c['country'], 'flag' => $c['flag'],
+                       'devices' => $d['devices'], 'count' => $d['count'], 'last' => $d['last']];
+        }
+    }
+    usort($rows, function ($a, $b) { return ($b['devices'] <=> $a['devices']) ?: ($b['count'] <=> $a['count']); });
+    return $rows;
+}
+
+/** Самые активные устройства по числу запросов. */
+function reportTopDevices($logFile) {
+    $rows = [];
+    foreach (reportDeviceSummary($logFile) as $dev => $d) {
+        $rows[] = ['device' => $dev, 'count' => $d['count'], 'ips' => $d['ips'], 'first' => $d['first'], 'last' => $d['last']];
+    }
+    usort($rows, function ($a, $b) { return $b['count'] <=> $a['count']; });
+    return array_slice($rows, 0, 50);
+}
+
+/** Устройства, которых не было в логе дольше $days дней. */
+function reportInactive($logFile, $days) {
+    $rows = [];
+    $limit = time() - $days * 86400;
+    foreach (reportDeviceSummary($logFile) as $dev => $d) {
+        $ts = $d['last'] !== '' ? strtotime($d['last']) : false;
+        if ($ts !== false && $ts < $limit) {
+            $rows[] = ['device' => $dev, 'last' => $d['last'], 'days_ago' => reportDaysAgo($d['last']),
+                       'count' => $d['count'], 'last_ip' => $d['last_ip']];
+        }
+    }
+    usort($rows, function ($a, $b) { return strcmp($a['last'], $b['last']); });   // самые давние первыми
+    return $rows;
+}
+
+/** Устройства, впервые появившиеся в логе за последние $days дней. */
+function reportNewDevices($logFile, $days) {
+    $rows = [];
+    $limit = time() - $days * 86400;
+    foreach (reportDeviceSummary($logFile) as $dev => $d) {
+        $ts = $d['first'] !== '' ? strtotime($d['first']) : false;
+        if ($ts !== false && $ts >= $limit) {
+            $rows[] = ['device' => $dev, 'first' => $d['first'], 'last' => $d['last'], 'count' => $d['count'], 'ips' => $d['ips']];
+        }
+    }
+    usort($rows, function ($a, $b) { return strcmp($b['first'], $a['first']); });
+    return $rows;
+}
+
+/** Продукты: сколько уникальных устройств и запросов по каждому. */
+function reportProducts($logFile) {
+    if (!is_string($logFile) || !is_file($logFile)) {
+        return [];
+    }
+    $agg = logAggCached('report_products', $logFile, function () use ($logFile) {
+        $products = [];
+        $fh = @fopen($logFile, 'rb');
+        if ($fh === false) {
+            return [];
+        }
+        while (($line = fgets($fh)) !== false) {
+            if (strpos($line, ' request from ') === false) {
+                continue;
+            }
+            if (preg_match('/KMS v[46]\.0 request from (\S+) for (.+)$/', $line, $m)) {
+                $prod = trim($m[2]);
+                if (!isset($products[$prod])) $products[$prod] = [0, []];
+                $products[$prod][0]++;
+                $products[$prod][1][$m[1]] = 1;
+            }
+        }
+        fclose($fh);
+        return $products;
+    });
+    $rows = [];
+    foreach ($agg as $prod => $d) {
+        $rows[] = ['product' => (string)$prod, 'devices' => count($d[1]), 'count' => $d[0]];
+    }
+    usort($rows, function ($a, $b) { return ($b['devices'] <=> $a['devices']) ?: ($b['count'] <=> $a['count']); });
+    return $rows;
 }

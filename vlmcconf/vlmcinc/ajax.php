@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.9.0
+// ВЕРСИЯ: 3.9.1
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -312,17 +312,36 @@ if (isset($_POST['ajax'])) {
         $log = $GLOBALS['fullLogPath'];
         $report = (string)($_POST['report'] ?? '');
         $q = auditSub(trim((string)($_POST['q'] ?? '')), 200);
+        $days = max(1, min(3650, (int)($_POST['days'] ?? 30)));
+        $res = ['success' => true];
         if ($report === 'lists') {
-            echo json_encode(['success' => true] + reportLists($log), JSON_UNESCAPED_UNICODE);
+            $res += reportLists($log);
         } elseif ($report === 'device_ips' && $q !== '') {
             $r = reportDeviceIps($log, $q);
-            echo json_encode(['success' => true, 'rows' => $r['rows'], 'matched' => $r['matched']], JSON_UNESCAPED_UNICODE);
+            $res += ['rows' => $r['rows'], 'matched' => $r['matched']];
         } elseif ($report === 'ip_devices' && filter_var($q, FILTER_VALIDATE_IP)) {
             $r = reportIpDevices($log, $q);
-            echo json_encode(['success' => true, 'rows' => $r['rows'], 'country' => $r['country'], 'flag' => $r['flag']], JSON_UNESCAPED_UNICODE);
+            $res += ['rows' => $r['rows'], 'country' => $r['country'], 'flag' => $r['flag']];
+        } elseif ($report === 'multi_ip') {
+            $res['rows'] = reportMultiIp($log);
+        } elseif ($report === 'shared_ip') {
+            $res['rows'] = reportSharedIps($log);
+        } elseif ($report === 'top_devices') {
+            $res['rows'] = reportTopDevices($log);
+        } elseif ($report === 'inactive') {
+            $res['rows'] = reportInactive($log, $days);
+        } elseif ($report === 'new_devices') {
+            $res['rows'] = reportNewDevices($log, $days);
+        } elseif ($report === 'products') {
+            $res['rows'] = reportProducts($log);
         } else {
-            echo json_encode(['success' => false]);
+            $res = ['success' => false];
         }
+        if (isset($res['rows']) && count($res['rows']) > REPORT_MAX_ROWS) {
+            $res['total'] = count($res['rows']);
+            $res['rows'] = array_slice($res['rows'], 0, REPORT_MAX_ROWS);
+        }
+        echo json_encode($res, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
