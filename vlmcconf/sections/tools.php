@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.3.1
+// ВЕРСИЯ: 3.3.2
 // ДАТА: 2026-11-17
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
@@ -236,10 +236,12 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 <style>
 /* ===== Вкладки ===== */
-.tools-tabs { display: flex; gap: 10px; margin: 0 0 0 12px; flex-wrap: nowrap; flex-shrink: 0; order: 1; }
-/* Вкладки стоят сразу после заголовка и не двигаются; сообщения (об обновлении и т.п.) всегда справа */
+.tools-tabs { display: flex; gap: 10px; margin: 0; flex: 1 1 0; justify-content: flex-end; flex-wrap: nowrap; order: 2; }
+/* Строка заголовка: слева название, по центру сообщение (об обновлении и т.п.), справа вкладки.
+   Название и блок вкладок растягиваются поровну, поэтому вкладки не двигаются при появлении сообщения. */
 #section-tools .section-title { justify-content: flex-start; }
-#section-tools .section-title .section-message { order: 2; margin-left: auto; }
+#section-tools .section-title > span:first-child { flex: 1 1 0; white-space: nowrap; }
+#section-tools .section-title .section-message { order: 1; margin: 0; flex: 0 1 auto; text-align: center; }
 .tools-tab-btn { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
 .tools-tab-btn:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .tools-tab-btn.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }

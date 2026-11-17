@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.3.1
+// ВЕРСИЯ: 3.3.2
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -217,6 +217,7 @@ $totalGroups = count($groupStats);
                     <label id="repQueryLabel"></label>
                     <div class="rep-combo">
                         <input type="text" id="reportInput" class="form-control" autocomplete="off" spellcheck="false">
+                        <span class="arrow rep-combo-arrow" id="repComboArrow">▼</span>
                     </div>
                 </div>
                 <div class="rep-field" id="repDaysWrap" style="display: none;">
@@ -410,6 +411,11 @@ $totalGroups = count($groupStats);
 .rep-field label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
 .rep-field-query { flex: 1; min-width: 220px; max-width: 340px; }
 .rep-field .form-control { height: 34px; box-sizing: border-box; }
+.rep-combo .form-control { padding-right: 32px; }
+.rep-combo .form-control:hover { border-color: <?= $themeCSS['primary'] ?>; }
+.rep-combo-arrow { position: absolute; right: 0; top: 0; width: 32px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0.7; cursor: pointer; color: <?= $themeCSS['text'] ?>; transition: transform 0.15s; }
+.rep-combo.open .rep-combo-arrow { transform: rotate(180deg); }
+.rep-combo.open .form-control { border-color: <?= $themeCSS['primary'] ?>; }
 .rep-field-btn .btn { padding: 0 18px; height: 34px; font-size: 13px; }
 .rep-dd, .rep-combo { position: relative; }
 .rep-block { display: flex; flex-direction: column; box-sizing: border-box; }
@@ -854,7 +860,7 @@ function updateStatChart(data) {
     comboList.style.display = 'none';
     document.body.appendChild(comboList);
     let hl = -1;
-    function comboClose() { comboList.style.display = 'none'; hl = -1; }
+    function comboClose() { comboList.style.display = 'none'; hl = -1; input.parentNode.classList.remove('open'); }
     closers.push(comboClose);
     // filtered = true — пользователь печатает: показываем совпадения; иначе (клик, фокус, стрелка) — весь список,
     // а не только ранее выбранное значение, которое осталось в поле
@@ -871,10 +877,18 @@ function updateStatChart(data) {
             comboList.appendChild(d);
         });
         placePop(input, comboList);
+        input.parentNode.classList.add('open');
     }
     input.addEventListener('focus', function () { closeAll(comboClose); input.select(); comboOpen(false); });
     input.addEventListener('click', function (e) { e.stopPropagation(); closeAll(comboClose); if (comboList.style.display === 'none') { input.select(); comboOpen(false); } });
     input.addEventListener('input', function () { comboOpen(true); });
+    $('repComboArrow').addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (comboList.style.display !== 'none') { comboClose(); return; }
+        closeAll(comboClose);
+        input.focus();          // фокус сам откроет полный список
+        if (comboList.style.display === 'none') comboOpen(false);
+    });
     comboList.addEventListener('click', function (e) { e.stopPropagation(); });
     input.addEventListener('keydown', function (e) {
         const opts = comboList.querySelectorAll('.rep-opt');
