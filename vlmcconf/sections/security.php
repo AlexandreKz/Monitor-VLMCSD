@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.1.1
+// ВЕРСИЯ: 5.2.0
 // ДАТА: 2026-11-14
 // @description: Секция "Безопасность" — управление пользователями + белые IP
 // ============================================
@@ -35,6 +35,7 @@ const PERM_INFO_VIEW = <?= PERM_INFO_VIEW ?>;
 const PERM_TOOLS_VIEW = <?= PERM_TOOLS_VIEW ?>;
 const PERM_TOOLS_EDIT = <?= PERM_TOOLS_EDIT ?>;
 const PERM_IP_WHITELIST = <?= PERM_IP_WHITELIST ?>;
+const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 </script>
 
 <div id="section-security" class="settings-section <?= $activeSection === 'security' ? 'active' : '' ?>">
@@ -202,6 +203,15 @@ const PERM_IP_WHITELIST = <?= PERM_IP_WHITELIST ?>;
                         <option value="1"><?= __('permissions_enabled') ?></option>
                     </select>
                     <small class="form-hint"><?= __('permissions_whitelist_hint') ?></small>
+                </div>
+                
+                <div class="form-group">
+                    <label><?= __('permissions_notify') ?></label>
+                    <select id="permNotify" class="form-control">
+                        <option value="0"><?= __('permissions_none') ?></option>
+                        <option value="1"><?= __('permissions_enabled') ?></option>
+                    </select>
+                    <small class="form-hint"><?= __('permissions_notify_hint') ?></small>
                 </div>
                 
                 <div id="changePasswordBlock" style="display: none;">
@@ -573,6 +583,8 @@ function getPermissionsFromSelects() {
     const whitelistLevel = parseInt(document.getElementById('permWhitelist').value);
     if (whitelistLevel == 1) perms |= PERM_IP_WHITELIST;
     
+    if (parseInt(document.getElementById('permNotify').value) == 1) perms |= PERM_NOTIFY_EDIT;
+    
     return perms;
 }
 
@@ -602,6 +614,8 @@ function setPermissionsSelects(permissions) {
     
     if (permissions & PERM_IP_WHITELIST) document.getElementById('permWhitelist').value = 1;
     else document.getElementById('permWhitelist').value = 0;
+    
+    document.getElementById('permNotify').value = (permissions & PERM_NOTIFY_EDIT) ? 1 : 0;
 }
 
 function showAddUserModal() {
@@ -777,8 +791,9 @@ function getRoleDisplay(permissions) {
     const info = getPermissionLevelText(permissions, PERM_INFO_VIEW, PERM_INFO_VIEW);
     const tools = getPermissionLevelText(permissions, PERM_TOOLS_VIEW, PERM_TOOLS_EDIT);
     const whitelist = (permissions & PERM_IP_WHITELIST) ? '✅' : '❌';
+    const notify = (permissions & PERM_NOTIFY_EDIT) ? '✅' : '❌';
     
-    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info} • 🛠️ ${tools} • ⚪ ${whitelist}`;
+    return `👥 ${groups} • 📱 ${devices} • 📝 ${logs} • 👑 ${users} • ℹ️ ${info} • 🛠️ ${tools} • ⚪ ${whitelist} • 🔔 ${notify}`;
 }
 
 function renderUsers(users) {

@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 2.0.0
+// ВЕРСИЯ: 3.0.0
 // ДАТА: 2026-11-17
-// @description: Уведомления (пункт 27): Email по SMTP (сокеты, без внешних пакетов) и Telegram; события журнала и обновлений, антиспам, тихие часы, история отправок; секреты хранятся зашифрованными
+// @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
 
 if (basename($_SERVER['PHP_SELF'] ?? '') === 'notify.php') {
@@ -13,43 +13,16 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'notify.php') {
 
 require_once __DIR__ . '/paths.php';
 require_once __DIR__ . '/http_client.php';
+require_once __DIR__ . '/notify_events.php';
 
-const NOTIFY_HISTORY_KEEP = 50;
+const NOTIFY_HISTORY_KEEP = 200;
+const NOTIFY_MAX_CHANNELS = 30;
+const NOTIFY_MAX_RULES = 100;
 
-/** События: важность, источник и право, нужное для получения (иначе пользователь событие не увидит). */
-function notifyCatalog() {
-    return [
-        'failed_logins'    => ['sev' => 'high', 'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => true],
-        'access_denied'    => ['sev' => 'mid',  'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => false],
-        'user_deleted'     => ['sev' => 'high', 'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => true],
-        'update_available' => ['sev' => 'low',  'src' => 'update', 'perm' => 1024, 'mail' => true,  'tg' => false],
-    ];
-}
-
-/** События, доступные пользователю с такими правами (PERM_LOGS_VIEW = 16, PERM_TOOLS_EDIT = 1024). */
-function notifyEventsFor($permissions) {
-    $out = [];
-    foreach (notifyCatalog() as $id => $e) {
-        if ((((int)$permissions) & $e['perm']) === $e['perm']) {
-            $out[$id] = $e;
-        }
-    }
-    return $out;
-}
-
-function notifyFile()    { return vlmcDataFile('notify.json'); }
-function notifyState()   { return vlmcDataFile('notify_state.json'); }
+function notifyFile()        { return vlmcDataFile('notify.json'); }
+function notifyState()       { return vlmcDataFile('notify_state.json'); }
 function notifyHistoryFile() { return vlmcDataFile('notify_history.jsonl'); }
-function notifyKeyFile() { return vlmcDataFile('notify.key'); }
-
-/** Общие настройки (администратор): способ отправки и правила. Получатели и подписки хранятся у пользователей. */
-function notifyDefaults() {
-    return [
-        'email' => ['enabled' => false, 'host' => '', 'port' => 587, 'secure' => 'tls', 'user' => '', 'pass' => '', 'from' => ''],
-        'telegram' => ['enabled' => false, 'token' => ''],
-        'rules' => ['fail_count' => 5, 'fail_minutes' => 10, 'antispam_minutes' => 30, 'quiet_enabled' => false, 'quiet_from' => '23:00', 'quiet_to' => '07:00']
-    ];
-}
+function notifyKeyFile()     { return vlmcDataFile('notify.key'); }
 
 // ---------- шифрование секретов ----------
 
@@ -96,24 +69,44 @@ function notifyDecrypt($stored) {
     return '';
 }
 
-// ---------- настройки ----------
+// ---------- хранилище: каналы и правила ----------
 
-/** Настройки; секреты остаются в зашифрованном виде (поля pass и token). */
+/** Правила-шаблоны по умолчанию: выключены и без каналов — администратор подключает канал и включает. */
+function notifyDefaultRules() {
+    $mk = function ($id, $name, array $events, $throttle) {
+        $params = [];
+        foreach ($events as $e) {
+            foreach ((notifyCatalog()[$e]['params'] ?? []) as $k => $v) { $params[$k] = $v[0]; }
+        }
+        return ['id' => $id, 'name' => $name, 'events' => $events, 'channels' => [], 'groups' => [], 'devices' => [],
+            'throttle' => $throttle, 'quiet_enabled' => false, 'quiet_from' => '23:00', 'quiet_to' => '07:00', 'active' => false, 'params' => $params];
+    };
+    return [
+        $mk('d_failed_logins', 'Безопасность — серия неудачных входов', ['failed_logins'], 30),
+        $mk('d_access_denied', 'Безопасность — отказ в доступе', ['access_denied'], 30),
+        $mk('d_users', 'Безопасность — изменения пользователей', ['user_added', 'user_deleted', 'user_updated', 'password_changed'], 0),
+        $mk('d_audit_cleared', 'Журнал действий очищен', ['audit_cleared'], 0),
+        $mk('d_update', 'Обновления — новая версия панели', ['update_available'], 60),
+    ];
+}
+
+/** Данные уведомлений. Секреты каналов остаются зашифрованными. */
 function notifyLoad() {
-    $d = notifyDefaults();
     $f = notifyFile();
     $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null;
-    if (!is_array($j)) {
-        return $d;
+    $d = ['channels' => [], 'rules' => null, 'seq' => 0];
+    if (is_array($j)) {
+        $d['channels'] = array_values(array_filter((array)($j['channels'] ?? []), 'is_array'));
+        $d['rules'] = isset($j['rules']) && is_array($j['rules']) ? array_values(array_filter($j['rules'], 'is_array')) : null;
+        $d['seq'] = (int)($j['seq'] ?? 0);
     }
-    foreach (['email', 'telegram', 'rules'] as $sec) {
-        if (isset($j[$sec]) && is_array($j[$sec])) {
-            $d[$sec] = array_merge($d[$sec], array_intersect_key($j[$sec], $d[$sec]));
-        }
+    if ($d['rules'] === null) {
+        $d['rules'] = notifyDefaultRules();
     }
     return $d;
 }
 
+/** Сохранение атомарно (как конфиг панели). При сбое причина в $GLOBALS['notify_save_error']. */
 function notifySave(array $s) {
     require_once __DIR__ . '/safe_json.php';
     $f = notifyFile();
@@ -132,12 +125,44 @@ function notifySave(array $s) {
     return true;
 }
 
-/** Настройки для интерфейса: без секретов, с признаками «задан». */
-function notifyPublic(array $s) {
-    $s['email']['has_pass'] = $s['email']['pass'] !== '';
-    $s['telegram']['has_token'] = $s['telegram']['token'] !== '';
-    unset($s['email']['pass'], $s['telegram']['token']);
-    return $s;
+/**
+ * Чтение–изменение–запись под блокировкой файла: параллельные правки не теряют друг друга.
+ * Колбэк получает данные по ссылке; вернёт строку (код ошибки локали) или false — тогда ничего не сохраняется.
+ * @return true|string|false
+ */
+function notifyMutate(callable $fn) {
+    require_once __DIR__ . '/safe_json.php';
+    config_lock(notifyFile());
+    $s = notifyLoad();
+    $res = $fn($s);
+    if ($res === false || is_string($res)) {
+        return $res;
+    }
+    return notifySave($s);
+}
+
+function notifyNextId(array &$s, $prefix) {
+    $s['seq'] = (int)($s['seq'] ?? 0) + 1;
+    return $prefix . $s['seq'] . dechex(random_int(16, 255));
+}
+
+/** Канал для интерфейса: без секретов. */
+function notifyChannelPublic(array $c) {
+    $out = ['id' => $c['id'], 'name' => $c['name'], 'type' => $c['type'], 'enabled' => !empty($c['enabled'])];
+    if ($c['type'] === 'email') {
+        $e = $c['email'] ?? [];
+        $out['email'] = ['host' => $e['host'] ?? '', 'port' => (int)($e['port'] ?? 587), 'secure' => $e['secure'] ?? 'tls', 'user' => $e['user'] ?? '',
+            'from' => $e['from'] ?? '', 'to' => $e['to'] ?? '', 'has_pass' => ($e['pass'] ?? '') !== ''];
+    } else {
+        $t = $c['telegram'] ?? [];
+        $out['telegram'] = ['chat' => $t['chat'] ?? '', 'has_token' => ($t['token'] ?? '') !== ''];
+    }
+    return $out;
+}
+
+function notifyFindChannel(array $s, $id) {
+    foreach ($s['channels'] as $c) { if (($c['id'] ?? '') === $id) { return $c; } }
+    return null;
 }
 
 function notifyValidTime($t) {
@@ -148,126 +173,104 @@ function notifyAddress($s) {
     return preg_match('/<([^<>\s]+)>/', (string)$s, $m) ? $m[1] : trim((string)$s);
 }
 
-/** Проверка и сборка настроек из присланных полей. Возвращает [настройки|null, код ошибки]. */
-function notifyBuild(array $in, array $old) {
-    $s = $old;
-    $e = &$s['email'];
-    $e['enabled'] = !empty($in['mail_on']);
-    $e['host'] = trim((string)($in['mail_host'] ?? ''));
-    $e['port'] = (int)($in['mail_port'] ?? 0);
-    $e['secure'] = in_array(($in['mail_secure'] ?? ''), ['none', 'tls', 'ssl'], true) ? $in['mail_secure'] : 'tls';
-    $e['user'] = trim((string)($in['mail_user'] ?? ''));
-    if (($in['mail_pass'] ?? '') !== '') {
-        $e['pass'] = notifyEncrypt((string)$in['mail_pass']);
-    }
-    $e['from'] = trim((string)($in['mail_from'] ?? ''));
-    if ($e['enabled']) {
+/** Список адресов из строки (запятая, точка с запятой, пробел, перевод строки). */
+function notifySplitAddresses($s) {
+    return array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', (string)$s))));
+}
+
+/**
+ * Сборка и проверка канала из присланных данных (JSON в поле data).
+ * Пустой секрет = оставить прежний. Возвращает [канал|null, код ошибки локали].
+ */
+function notifyChannelBuild(array $in, $old) {
+    $c = is_array($old) ? $old : [];
+    $name = trim((string)($in['name'] ?? ''));
+    if ($name === '' || mb_strlen($name) > 60) { return [null, 'notify_err_name']; }
+    $type = (string)($in['type'] ?? ($c['type'] ?? ''));
+    if (!in_array($type, ['email', 'telegram'], true)) { return [null, 'notify_err_type']; }
+    if (!empty($c['type']) && $c['type'] !== $type) { return [null, 'notify_err_type']; }
+    $data = json_decode((string)($in['data'] ?? ''), true);
+    $data = is_array($data) ? $data : [];
+    $c['name'] = $name;
+    $c['type'] = $type;
+    $c['enabled'] = !empty($data['enabled']);
+    if ($type === 'email') {
+        $e = $c['email'] ?? ['pass' => ''];
+        $e['host'] = trim((string)($data['host'] ?? ''));
+        $e['port'] = (int)($data['port'] ?? 0);
+        $e['secure'] = in_array(($data['secure'] ?? ''), ['none', 'tls', 'ssl'], true) ? $data['secure'] : 'tls';
+        $e['user'] = trim((string)($data['user'] ?? ''));
+        if (($data['pass'] ?? '') !== '') { $e['pass'] = notifyEncrypt((string)$data['pass']); }
+        $e['from'] = trim((string)($data['from'] ?? ''));
+        $to = notifySplitAddresses($data['to'] ?? '');
         if ($e['host'] === '' || !preg_match('/^[A-Za-z0-9.\-]+$/', $e['host'])) { return [null, 'notify_err_host']; }
         if ($e['port'] < 1 || $e['port'] > 65535) { return [null, 'notify_err_port']; }
         if (!filter_var(notifyAddress($e['from']), FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_from']; }
+        if (!$to || count($to) > 20) { return [null, 'notify_err_to']; }
+        foreach ($to as $a) { if (!filter_var($a, FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_to']; } }
+        $e['to'] = implode(', ', $to);
+        $c['email'] = $e;
+        unset($c['telegram']);
+    } else {
+        $t = $c['telegram'] ?? ['token' => ''];
+        if (($data['token'] ?? '') !== '') {
+            if (!preg_match('/^\d+:[A-Za-z0-9_\-]+$/', trim((string)$data['token']))) { return [null, 'notify_err_token']; }
+            $t['token'] = notifyEncrypt(trim((string)$data['token']));
+        }
+        $t['chat'] = trim((string)($data['chat'] ?? ''));
+        if (($t['token'] ?? '') === '') { return [null, 'notify_err_token']; }
+        if (!preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $t['chat'])) { return [null, 'notify_err_chat']; }
+        $c['telegram'] = $t;
+        unset($c['email']);
     }
-    unset($e);
-
-    $t = &$s['telegram'];
-    $t['enabled'] = !empty($in['tg_on']);
-    if (($in['tg_token'] ?? '') !== '') {
-        if (!preg_match('/^\d+:[A-Za-z0-9_\-]+$/', trim((string)$in['tg_token']))) { return [null, 'notify_err_token']; }
-        $t['token'] = notifyEncrypt(trim((string)$in['tg_token']));
-    }
-    if ($t['enabled']) {
-        if ($t['token'] === '') { return [null, 'notify_err_token']; }
-    }
-    unset($t);
-
-    $r = json_decode((string)($in['rules'] ?? ''), true);
-    if (is_array($r)) {
-        $n = (int)($r['fail_count'] ?? 0); $m = (int)($r['fail_minutes'] ?? 0); $a = (int)($r['antispam_minutes'] ?? -1);
-        if ($n < 2 || $n > 100 || $m < 1 || $m > 1440 || $a < 0 || $a > 1440) { return [null, 'notify_err_rules']; }
-        $qf = (string)($r['quiet_from'] ?? ''); $qt = (string)($r['quiet_to'] ?? '');
-        if (!notifyValidTime($qf) || !notifyValidTime($qt)) { return [null, 'notify_err_time']; }
-        $s['rules'] = ['fail_count' => $n, 'fail_minutes' => $m, 'antispam_minutes' => $a,
-            'quiet_enabled' => !empty($r['quiet_enabled']), 'quiet_from' => $qf, 'quiet_to' => $qt];
-    }
-    return [$s, ''];
+    return [$c, ''];
 }
 
-// ---------- настройки пользователя (хранятся в его записи в users.json) ----------
-
-function notifyUserDefaults($permissions) {
-    $ev = [];
-    foreach (notifyEventsFor($permissions) as $id => $e) {
-        $ev[$id] = ['mail' => false, 'tg' => false];
+/** Сборка и проверка правила. Возвращает [правило|null, код ошибки локали]. */
+function notifyRuleBuild(array $in, array $s, $old) {
+    $r = is_array($old) ? $old : [];
+    $name = trim((string)($in['name'] ?? ''));
+    if ($name === '' || mb_strlen($name) > 80) { return [null, 'notify_err_name']; }
+    $d = json_decode((string)($in['data'] ?? ''), true);
+    if (!is_array($d)) { return [null, 'notify_err_rule']; }
+    $cat = notifyCatalog();
+    $events = [];
+    foreach ((array)($d['events'] ?? []) as $e) {
+        if (is_string($e) && isset($cat[$e]) && empty($cat[$e]['soon'])) { $events[$e] = true; }
     }
-    return ['mail_on' => false, 'email' => '', 'tg_on' => false, 'tg_chat' => '', 'events' => $ev];
-}
-
-/** Настройки уведомлений пользователя с учётом его текущих прав (лишние события отбрасываются). */
-function notifyUserLoad(array $user) {
-    $d = notifyUserDefaults((int)($user['permissions'] ?? 0));
-    $n = isset($user['notify']) && is_array($user['notify']) ? $user['notify'] : [];
-    $d['mail_on'] = !empty($n['mail_on']);
-    $d['tg_on'] = !empty($n['tg_on']);
-    $d['email'] = is_string($n['email'] ?? null) ? $n['email'] : '';
-    $d['tg_chat'] = is_string($n['tg_chat'] ?? null) ? $n['tg_chat'] : '';
-    foreach ($d['events'] as $id => $v) {
-        if (isset($n['events'][$id]) && is_array($n['events'][$id])) {
-            $d['events'][$id] = ['mail' => !empty($n['events'][$id]['mail']), 'tg' => !empty($n['events'][$id]['tg'])];
+    if (!$events) { return [null, 'notify_err_events']; }
+    $channels = [];
+    foreach ((array)($d['channels'] ?? []) as $cid) {
+        if (is_string($cid) && notifyFindChannel($s, $cid)) { $channels[$cid] = true; }
+    }
+    $listClean = function ($v) {
+        $o = [];
+        foreach ((array)$v as $x) { if (is_string($x) && $x !== '' && mb_strlen($x) <= 120) { $o[$x] = true; } }
+        return array_slice(array_keys($o), 0, 300);
+    };
+    $throttle = (int)($d['throttle'] ?? 0);
+    if ($throttle < 0 || $throttle > 1440) { return [null, 'notify_err_throttle']; }
+    $qf = (string)($d['quiet_from'] ?? '23:00'); $qt = (string)($d['quiet_to'] ?? '07:00');
+    if (!notifyValidTime($qf) || !notifyValidTime($qt)) { return [null, 'notify_err_time']; }
+    $params = [];
+    foreach (array_keys($events) as $e) {
+        foreach (($cat[$e]['params'] ?? []) as $k => $lim) {
+            $v = (int)($d['params'][$k] ?? $lim[0]);
+            if ($v < $lim[1] || $v > $lim[2]) { return [null, 'notify_err_params']; }
+            $params[$k] = $v;
         }
     }
-    return $d;
-}
-
-/** Проверка и сборка настроек пользователя из присланных полей. Возвращает [настройки|null, код ошибки]. */
-function notifyUserBuild(array $in, array $user) {
-    $n = notifyUserDefaults((int)($user['permissions'] ?? 0));
-    $n['mail_on'] = !empty($in['u_mail_on']);
-    $n['email'] = trim((string)($in['u_email'] ?? ''));
-    $n['tg_on'] = !empty($in['u_tg_on']);
-    $n['tg_chat'] = trim((string)($in['u_chat'] ?? ''));
-    if ($n['email'] !== '' && (strlen($n['email']) > 190 || !filter_var($n['email'], FILTER_VALIDATE_EMAIL))) { return [null, 'notify_err_email']; }
-    if ($n['tg_chat'] !== '' && !preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $n['tg_chat'])) { return [null, 'notify_err_chat']; }
-    if ($n['mail_on'] && $n['email'] === '') { return [null, 'notify_err_email']; }
-    if ($n['tg_on'] && $n['tg_chat'] === '') { return [null, 'notify_err_chat']; }
-    $ev = json_decode((string)($in['u_events'] ?? ''), true);
-    if (is_array($ev)) {
-        foreach ($n['events'] as $id => $v) {
-            if (isset($ev[$id]) && is_array($ev[$id])) {
-                $n['events'][$id] = ['mail' => !empty($ev[$id]['mail']), 'tg' => !empty($ev[$id]['tg'])];
-            }
-        }
-    }
-    return [$n, ''];
-}
-
-/** Сохраняет настройки уведомлений в записи пользователя. */
-function notifyUserSave($userId, array $n) {
-    require_once __DIR__ . '/users.php';
-    return updateUser($userId, ['notify' => $n]);
-}
-
-/** Получатели события: пользователи с подпиской и правом на это событие. */
-function notifyRecipients($event) {
-    require_once __DIR__ . '/users.php';
-    $mail = []; $tg = [];
-    foreach (getAllUsers() as $u) {
-        if (!isset(notifyEventsFor((int)($u['permissions'] ?? 0))[$event])) { continue; }
-        $n = notifyUserLoad($u);
-        if ($n['mail_on'] && $n['email'] !== '' && !empty($n['events'][$event]['mail'])) { $mail[$n['email']] = true; }
-        if ($n['tg_on'] && $n['tg_chat'] !== '' && !empty($n['events'][$event]['tg'])) { $tg[$n['tg_chat']] = true; }
-    }
-    return [array_keys($mail), array_keys($tg)];
-}
-
-/** Ограничение тестовых отправок пользователя (защита SMTP от злоупотребления): не чаще 5 в час. */
-function notifyTestAllowed($userId) {
-    return notifyStateUpdate(function (&$st) use ($userId) {
-        $now = time();
-        $list = array_values(array_filter((array)($st['tests'][$userId] ?? []), function ($t) use ($now) { return $now - $t < 3600; }));
-        if (count($list) >= 5) { $st['tests'][$userId] = $list; return false; }
-        $list[] = $now;
-        $st['tests'][$userId] = $list;
-        return true;
-    });
+    $r['name'] = $name;
+    $r['events'] = array_keys($events);
+    $r['channels'] = array_keys($channels);
+    $r['groups'] = $listClean($d['groups'] ?? []);
+    $r['devices'] = $listClean($d['devices'] ?? []);
+    $r['throttle'] = $throttle;
+    $r['quiet_enabled'] = !empty($d['quiet_enabled']);
+    $r['quiet_from'] = $qf; $r['quiet_to'] = $qt;
+    $r['active'] = !empty($d['active']);
+    $r['params'] = $params;
+    return [$r, ''];
 }
 
 // ---------- отправка ----------
@@ -367,9 +370,10 @@ function notifySendTelegram(array $c, $text) {
 
 // ---------- история и состояние ----------
 
-function notifyHistoryAdd($event, $title, $channels, $ok, $error = '') {
+function notifyHistoryAdd($rule, $event, $title, array $channels, $ok, $error = '', $skip = '') {
     $f = notifyHistoryFile();
-    $line = json_encode(['t' => time(), 'e' => $event, 'title' => notifyClean($title, 160), 'ch' => $channels, 'ok' => $ok, 'err' => $error], JSON_UNESCAPED_UNICODE);
+    $line = json_encode(['t' => time(), 'rule' => notifyClean($rule, 80), 'e' => $event, 'title' => notifyClean($title, 160),
+        'ch' => array_map(function ($x) { return notifyClean($x, 60); }, $channels), 'ok' => $ok, 'err' => $error, 'skip' => $skip], JSON_UNESCAPED_UNICODE);
     @file_put_contents($f, $line . "\n", FILE_APPEND | LOCK_EX);
     @chmod($f, 0600);
     $lines = @file($f, FILE_IGNORE_NEW_LINES);
@@ -378,7 +382,7 @@ function notifyHistoryAdd($event, $title, $channels, $ok, $error = '') {
     }
 }
 
-function notifyHistory($limit = 10) {
+function notifyHistory($limit = 100) {
     $lines = is_file(notifyHistoryFile()) ? @file(notifyHistoryFile(), FILE_IGNORE_NEW_LINES) : [];
     $out = [];
     foreach (array_reverse(is_array($lines) ? $lines : []) as $l) {
@@ -393,7 +397,7 @@ function notifyHistory($limit = 10) {
 function notifyStateUpdate(callable $fn) {
     $f = notifyState();
     $fh = @fopen($f, 'c+');
-    if (!$fh) { return $fn([]); }
+    if (!$fh) { $tmp = []; return $fn($tmp); }
     flock($fh, LOCK_EX);
     $cur = json_decode((string)stream_get_contents($fh), true);
     $cur = is_array($cur) ? $cur : [];
@@ -409,55 +413,85 @@ function notifyInQuiet(array $r) {
     if (empty($r['quiet_enabled'])) { return false; }
     $now = date('H:i');
     $a = $r['quiet_from']; $b = $r['quiet_to'];
-    return $a <= $b ? ($now >= $a && $now < $b) : ($now >= $a || $now < $b);
+    if ($a === $b) { return false; }
+    return $a < $b ? ($now >= $a && $now < $b) : ($now >= $a || $now < $b);
 }
 
 // ---------- события ----------
 
-/** Отправляет событие по включённым каналам (после ответа пользователю, чтобы не задерживать панель). */
-function notifyEvent($event, $title, $text = '') {
-    try {
-        $cat = notifyCatalog();
-        if (!isset($cat[$event])) { return; }
-        $s = notifyLoad();
-        [$mailTo, $tgTo] = notifyRecipients($event);
-        $useMail = $s['email']['enabled'] && $mailTo;
-        $useTg = $s['telegram']['enabled'] && $tgTo;
-        if (!$useMail && !$useTg) { return; }
-        if ($cat[$event]['sev'] !== 'high' && notifyInQuiet($s['rules'])) { return; }
+/** Правило подходит под контекст события (фильтр по группе/устройству действует для событий с такой областью). */
+function notifyRuleMatches(array $rule, $event, array $ctx) {
+    if (empty($rule['active']) || !in_array($event, (array)$rule['events'], true)) { return false; }
+    $scope = notifyCatalog()[$event]['scope'] ?? 'none';
+    if ($scope === 'none') { return true; }
+    $groups = (array)($rule['groups'] ?? []); $devices = (array)($rule['devices'] ?? []);
+    if ($groups && !in_array((string)($ctx['group'] ?? ''), $groups, true)) { return false; }
+    if ($scope === 'device' && $devices && !in_array((string)($ctx['device'] ?? ''), $devices, true)) { return false; }
+    return true;
+}
 
-        $window = (int)$s['rules']['antispam_minutes'] * 60;
-        $extra = notifyStateUpdate(function (&$st) use ($event, $window) {
-            $now = time();
-            $last = (int)($st['last'][$event] ?? 0);
-            if ($window > 0 && $now - $last < $window) {
-                $st['suppressed'][$event] = (int)($st['suppressed'][$event] ?? 0) + 1;
-                return -1;
+/** Отправка одним каналом. @return array [bool ok, string error] */
+function notifySendVia(array $c, $subject, $body) {
+    if ($c['type'] === 'telegram') {
+        return notifySendTelegram($c['telegram'], $subject . "\n\n" . $body);
+    }
+    return notifySendEmail($c['email'], $subject, $body);
+}
+
+/**
+ * Событие → подходящие правила (после ответа пользователю, чтобы не задерживать панель).
+ * $only — ограничить набор правил (идентификаторы), например при пороге неудачных входов.
+ */
+function notifyEmit($event, $title, $text = '', array $ctx = [], ?array $only = null) {
+    try {
+        if (!isset(notifyCatalog()[$event]) || !empty(notifyCatalog()[$event]['soon'])) { return; }
+        $s = notifyLoad();
+        $jobs = [];
+        foreach ($s['rules'] as $rule) {
+            if ($only !== null && !in_array($rule['id'], $only, true)) { continue; }
+            if (!notifyRuleMatches($rule, $event, $ctx)) { continue; }
+
+            $chans = [];
+            foreach ((array)$rule['channels'] as $cid) {
+                $c = notifyFindChannel($s, $cid);
+                if ($c && !empty($c['enabled'])) { $chans[] = $c; }
             }
-            $n = (int)($st['suppressed'][$event] ?? 0);
-            $st['last'][$event] = $now;
-            $st['suppressed'][$event] = 0;
-            return $n;
-        });
-        if ($extra < 0) { return; }
+            if (!$chans) { continue; }
+            if (notifyInQuiet($rule)) {
+                notifyHistoryAdd($rule['name'], $event, $title, array_column($chans, 'name'), true, '', 'quiet');
+                continue;
+            }
+            $window = (int)$rule['throttle'] * 60;
+            $key = $rule['id'] . ':' . $event;
+            $extra = notifyStateUpdate(function (&$st) use ($key, $window) {
+                $now = time();
+                $last = (int)($st['last'][$key] ?? 0);
+                if ($window > 0 && $now - $last < $window) {
+                    $st['suppressed'][$key] = (int)($st['suppressed'][$key] ?? 0) + 1;
+                    return -1;
+                }
+                $n = (int)($st['suppressed'][$key] ?? 0);
+                $st['last'][$key] = $now;
+                $st['suppressed'][$key] = 0;
+                return $n;
+            });
+            if ($extra < 0) { continue; }
+            $jobs[] = ['rule' => $rule['name'], 'channels' => $chans, 'extra' => $extra];
+        }
+        if (!$jobs) { return; }
 
         $host = (string)($_SERVER['HTTP_HOST'] ?? gethostname());
-        $body = $title . "\n\n" . $text . ($extra > 0 ? "\n\n(+" . $extra . ")" : '') . "\n\nKMS Monitor, " . $host . ', ' . date('Y-m-d H:i:s');
-        $subject = '[KMS Monitor] ' . $title;
-        $send = function () use ($event, $title, $body, $subject, $s, $useMail, $useTg, $mailTo, $tgTo) {
-            $chs = []; $errs = [];
-            if ($useMail) {
-                [$ok, $er] = notifySendEmail($s['email'] + ['to' => implode(', ', $mailTo)], $subject, $body);
-                $chs[] = 'mail'; if (!$ok) { $errs[] = 'mail: ' . $er; }
-            }
-            if ($useTg) {
-                foreach ($tgTo as $chat) {
-                    [$ok, $er] = notifySendTelegram($s['telegram'] + ['chat' => $chat], $subject . "\n\n" . $body);
-                    if (!$ok) { $errs[] = 'tg: ' . $er; }
+        $send = function () use ($jobs, $event, $title, $text, $host) {
+            foreach ($jobs as $j) {
+                $body = $title . "\n\n" . $text . ($j['extra'] > 0 ? "\n\n(+" . $j['extra'] . ")" : '') . "\n\nKMS Monitor, " . $host . ', ' . date('Y-m-d H:i:s');
+                $subject = '[KMS Monitor] ' . $title;
+                $errs = [];
+                foreach ($j['channels'] as $c) {
+                    [$ok, $er] = notifySendVia($c, $subject, $body);
+                    if (!$ok) { $errs[] = $c['name'] . ': ' . $er; }
                 }
-                $chs[] = 'tg';
+                notifyHistoryAdd($j['rule'], $event, $title, array_column($j['channels'], 'name'), !$errs, implode('; ', $errs));
             }
-            notifyHistoryAdd($event, $title, $chs, !$errs, implode('; ', $errs));
         };
         if (PHP_SAPI === 'cli') {
             $send();
@@ -472,41 +506,95 @@ function notifyEvent($event, $title, $text = '') {
     }
 }
 
-/** Вызывается из журнала для каждой записи. */
+/** Параметры записи журнала «ключ=значение; …» (так их пишет auditCleanParams). */
+function notifyParseDetails($d) {
+    $o = [];
+    foreach (explode('; ', (string)$d) as $p) {
+        $i = strpos($p, '=');
+        if ($i !== false) { $o[substr($p, 0, $i)] = substr($p, $i + 1); }
+    }
+    return $o;
+}
+
+/** Вызывается из журнала действий для каждой записи: переводит её в события уведомлений. */
 function notifyOnAudit(array $e) {
     $a = (string)($e['a'] ?? '');
+    $ok = ($e['r'] ?? '') === 'ok';
     $who = (string)($e['u'] ?? '') . ' (' . (string)($e['ip'] ?? '') . ')';
-    if ($a === 'access_denied') {
-        notifyEvent('access_denied', 'Отказ в доступе: ' . $who, (string)($e['d'] ?? ''));
-    } elseif ($a === 'delete_user' && ($e['r'] ?? '') === 'ok') {
-        notifyEvent('user_deleted', 'Удалён пользователь панели', 'Выполнил: ' . $who . "\n" . (string)($e['d'] ?? ''));
-    } elseif ($a === 'login_locked') {
-        notifyEvent('failed_logins', 'Вход заблокирован после неудачных попыток: ' . $who, '');
-    } elseif ($a === 'login_failed') {
-        $s = notifyLoad();
-        if (!$s['email']['enabled'] && !$s['telegram']['enabled']) { return; }
-        $n = (int)$s['rules']['fail_count']; $win = (int)$s['rules']['fail_minutes'] * 60;
-        $ip = (string)($e['ip'] ?? '');
-        $hit = notifyStateUpdate(function (&$st) use ($ip, $n, $win) {
-            $now = time();
-            $list = array_values(array_filter((array)($st['fails'][$ip] ?? []), function ($t) use ($now, $win) { return $now - $t <= $win; }));
-            $list[] = $now;
-            if (count($list) >= $n) { unset($st['fails'][$ip]); return count($list); }
-            $st['fails'][$ip] = $list;
-            if (count($st['fails']) > 200) { $st['fails'] = array_slice($st['fails'], -100, null, true); }
-            return 0;
-        });
-        if ($hit > 0) {
-            notifyEvent('failed_logins', 'Серия неудачных входов: ' . $hit . ' за ' . (int)$s['rules']['fail_minutes'] . ' мин', 'IP: ' . $ip . "\nПоследний логин: " . (string)($e['u'] ?? ''));
+    $det = (string)($e['d'] ?? '');
+    $p = notifyParseDetails($det);
+    switch ($a) {
+        case 'access_denied':
+            return notifyEmit('access_denied', 'Отказ в доступе: ' . $who, $det);
+        case 'add_user':
+            if ($ok) { notifyEmit('user_added', 'Добавлен пользователь панели', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'delete_user':
+            if ($ok) { notifyEmit('user_deleted', 'Удалён пользователь панели', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'update_user':
+            if ($ok) { notifyEmit('user_updated', 'Изменены данные или права пользователя', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'change_user_password':
+            if ($ok) { notifyEmit('password_changed', 'Изменён пароль пользователя', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'add_device':
+            if ($ok) { notifyEmit('device_added', 'Добавлено устройство: ' . ($p['deviceName'] ?? ''), 'Группа: ' . ($p['deviceGroup'] ?? '') . "\nВыполнил: " . $who, ['device' => $p['deviceName'] ?? '', 'group' => $p['deviceGroup'] ?? '']); }
+            return;
+        case 'mass_move_devices':
+            if ($ok) { notifyEmit('devices_moved', 'Устройства перемещены в группу: ' . ($p['target_group'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['target_group'] ?? '']); }
+            return;
+        case 'rename_group':
+            if ($ok) { notifyEmit('group_renamed', 'Группа переименована: ' . ($p['old_name'] ?? '') . ' → ' . ($p['new_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['old_name'] ?? '']); }
+            return;
+        case 'delete_group':
+            if ($ok) { notifyEmit('group_deleted', 'Удалена группа: ' . ($p['group_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['group_name'] ?? '']); }
+            return;
+        case 'clear_log':
+            if ($ok) { notifyEmit('log_cleared', 'Очищен лог KMS-сервера', 'Выполнил: ' . $who); }
+            return;
+        case 'clear_audit':
+            if ($ok) { notifyEmit('audit_cleared', 'Очищен журнал действий', 'Выполнил: ' . $who); }
+            return;
+        case 'perform_update':
+            notifyEmit($ok ? 'update_installed' : 'update_failed', $ok ? 'Панель обновлена' : 'Ошибка обновления панели', 'Выполнил: ' . $who . "\n" . $det);
+            return;
+        case 'login_locked':
+            return notifyEmit('failed_logins', 'Вход заблокирован после неудачных попыток: ' . $who);
+        case 'login_failed':
+            return notifyFailedLogin($e);
+    }
+}
+
+/** Серия неудачных входов: у каждого правила свой порог и окно. */
+function notifyFailedLogin(array $e) {
+    $s = notifyLoad();
+    $rules = array_values(array_filter($s['rules'], function ($r) { return notifyRuleMatches($r, 'failed_logins', []) && !empty($r['channels']); }));
+    if (!$rules) { return; }
+    $ip = (string)($e['ip'] ?? '');
+    $hit = notifyStateUpdate(function (&$st) use ($ip, $rules) {
+        $now = time();
+        $list = array_values(array_filter((array)($st['fails'][$ip] ?? []), function ($t) use ($now) { return $now - $t <= 86400; }));
+        $list[] = $now;
+        $st['fails'][$ip] = $list;
+        if (count($st['fails']) > 200) { $st['fails'] = array_slice($st['fails'], -100, null, true); }
+        $ids = []; $max = 0;
+        foreach ($rules as $r) {
+            $n = (int)($r['params']['fail_count'] ?? 5); $win = (int)($r['params']['fail_minutes'] ?? 10) * 60;
+            $reset = (int)($st['fail_reset'][$r['id']][$ip] ?? 0);
+            $cnt = count(array_filter($list, function ($t) use ($now, $win, $reset) { return $now - $t <= $win && $t > $reset; }));
+            if ($cnt >= $n) { $ids[] = $r['id']; $st['fail_reset'][$r['id']][$ip] = $now; $max = max($max, $cnt); }
         }
+        return [$ids, $max];
+    });
+    if ($hit[0]) {
+        notifyEmit('failed_logins', 'Серия неудачных входов: ' . $hit[1], 'IP: ' . $ip . "\nПоследний логин: " . (string)($e['u'] ?? ''), [], $hit[0]);
     }
 }
 
 /** Об обновлении: один раз на версию (релиз) или коммит (ветка main). */
 function notifyOnUpdateCheck(array $state) {
     try {
-        $s = notifyLoad();
-        if (!$s['email']['enabled'] && !$s['telegram']['enabled']) { return; }
         foreach (['release', 'main'] as $ch) {
             $r = $state[$ch] ?? null;
             if (!is_array($r) || empty($r['success']) || empty($r['available'])) { continue; }
@@ -518,7 +606,7 @@ function notifyOnUpdateCheck(array $state) {
             });
             if ($fresh) {
                 $what = $ch === 'release' ? 'релиз ' . ($r['version'] ?? '') : 'ранний доступ (main)';
-                notifyEvent('update_available', 'Доступно обновление панели: ' . $what,
+                notifyEmit('update_available', 'Доступно обновление панели: ' . $what,
                     'Файлов к установке: ' . ((int)($r['new_count'] ?? 0) + (int)($r['changed_count'] ?? 0)));
             }
         }

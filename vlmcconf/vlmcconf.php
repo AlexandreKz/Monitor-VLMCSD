@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.11.0
+// ВЕРСИЯ: 5.12.0
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -346,6 +346,11 @@ require_once __DIR__ . '/vlmcinc/ajax.php';
 $activeSection = $_GET['section'] ?? 'general';
 // Разделы «Интеграции» и «API» пока недоступны (в разработке): открытие по ссылке или из запомненной вкладки ведёт в «Общие»
 if (in_array($activeSection, ['integrations', 'api'], true)) {
+    $activeSection = 'general';
+}
+// «Уведомления» открываются только с правом «Уведомления: изменение» (у остальных пункт меню серый)
+$notifyAllowed = canEditNotifications($currentUserPermissions);
+if ($activeSection === 'notifications' && !$notifyAllowed) {
     $activeSection = 'general';
 }
 $message = $_GET['message'] ?? '';
@@ -1649,6 +1654,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         const urlSection = new URLSearchParams(window.location.search).get('section');
         let sectionToActivate = urlSection || getActiveSection();
         if (sectionToActivate === 'integrations' || sectionToActivate === 'api') sectionToActivate = 'general';   // разделы в разработке
+        if (sectionToActivate === 'notifications' && !<?= $notifyAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // нет права на уведомления
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
         const target = document.getElementById('section-' + sectionToActivate);
         if (target) target.classList.add('active');
@@ -1769,11 +1775,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     </div>
     <?php endif; ?>
 
-    <!-- Уведомления - доступны всем: свои адреса и подписки (общие настройки видит только администратор) -->
+    <!-- Уведомления: каналы и правила — с правом «Уведомления: изменение»; без права пункт серый (как «Интеграции») -->
+    <?php if ($notifyAllowed): ?>
     <div class="menu-item <?= $activeSection === 'notifications' ? 'active' : '' ?>" onclick="showSection('notifications', this)">
         <span class="menu-item-icon">🔔</span>
         <span><?= __('menu_notify') ?></span>
     </div>
+    <?php else: ?>
+    <div class="menu-item menu-item-disabled" title="<?= htmlspecialchars(__('notify_no_access')) ?>">
+        <span class="menu-item-icon">🔔</span>
+        <span><?= __('menu_notify') ?></span>
+    </div>
+    <?php endif; ?>
     
     <!-- Статистика - доступна всем -->
     <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
@@ -1837,7 +1850,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 <?php if (hasPermission($currentUserPermissions, PERM_DEVICES_VIEW)) include __DIR__ . '/sections/devices.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW) || hasPermission($currentUserPermissions, PERM_USERS_VIEW)) include __DIR__ . '/sections/security.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW)) include __DIR__ . '/sections/audit.php'; ?>
-                <?php include __DIR__ . '/sections/notifications.php'; ?>
+                <?php if ($notifyAllowed) include __DIR__ . '/sections/notifications.php'; ?>
                 <?php include __DIR__ . '/sections/stats.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)) include __DIR__ . '/sections/info.php'; ?>
                 <?php include __DIR__ . '/sections/tools.php'; ?>

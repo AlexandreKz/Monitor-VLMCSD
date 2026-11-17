@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/audit.php
-// ВЕРСИЯ: 2.1.1
+// ВЕРСИЯ: 2.2.0
 // ДАТА: 2026-11-17
 // @description: Журнал действий пользователей панели: запись (с изменениями «было → стало»), срок хранения, очистка, фильтры, поиск, сводка по пользователю, активность по часам и дням
 // ============================================
@@ -27,7 +27,7 @@ function auditAjaxActions() {
         'rename_group', 'delete_group', 'save_group_changes', 'add_device', 'mass_move_devices',
         'add_whitelist_ip', 'remove_whitelist_ip',
         'save_audit_settings', 'clear_audit',
-        'save_notify', 'save_my_notify', 'test_my_notify'
+        'notify_channel_save', 'notify_channel_delete', 'notify_channel_test', 'notify_rule_save', 'notify_rule_delete', 'notify_rule_toggle'
     ];
 }
 
@@ -391,9 +391,13 @@ function auditBeginAjax($action) {
         return;
     }
     $before = auditSnapshot();
-    ob_start(function ($buffer) use ($action, $details, $user, $before) {
+    // Запись делается при завершении запроса (до сброса буфера): так уведомления об этом действии
+    // можно отправить после ответа пользователю (в функции буфера регистрировать завершающие действия уже поздно).
+    ob_start();
+    register_shutdown_function(function () use ($action, $details, $user, $before) {
+        $buffer = ob_get_level() > 0 ? (string)ob_get_contents() : '';
         $result = 'ok';
-        $data = json_decode((string)$buffer, true);
+        $data = json_decode($buffer, true);
         if (is_array($data) && array_key_exists('success', $data)) {
             $result = !empty($data['success']) ? 'ok' : 'error';
         } elseif (http_response_code() >= 400) {
@@ -401,7 +405,9 @@ function auditBeginAjax($action) {
         }
         $changes = $result === 'ok' ? auditDiff($before, auditSnapshot()) : [];
         auditLog($action, $details, $result, $user, $changes);
-        return $buffer;
+        while (ob_get_level() > 0) {
+            @ob_end_flush();   // ответ уходит пользователю, затем выполняется отправка уведомлений
+        }
     });
 }
 

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 4.2.0
+// ВЕРСИЯ: 4.3.0
 // ДАТА: 2026-11-17
 // @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
@@ -44,6 +44,9 @@ define('PERM_INTEGRATIONS_EDIT', 8192);
 // Права для API
 define('PERM_API_VIEW', 16384);
 define('PERM_API_EDIT', 32768);
+
+// Уведомления: управление каналами и правилами (одно право «изменение»; раздел виден только с ним)
+define('PERM_NOTIFY_EDIT', 65536);
 
 // Полные права администратора
 define('PERM_ADMIN_FULL', 
@@ -117,6 +120,12 @@ migrate_users_if_needed();
 /**
  * Получить путь к файлу с пользователями
  */
+/** Доступ к разделу «Уведомления»: отдельное право или полный администратор (старые администраторы сохраняют доступ). */
+function canEditNotifications($permissions) {
+    $permissions = (int)$permissions;
+    return ($permissions & PERM_NOTIFY_EDIT) === PERM_NOTIFY_EDIT || ($permissions & PERM_ADMIN_FULL) === PERM_ADMIN_FULL;
+}
+
 function getUsersFile() {
     return vlmcDataFile('users.json');
 }
@@ -286,7 +295,6 @@ function updateUser($id, $data) {
             if (isset($data['fullname'])) $user['fullname'] = $data['fullname'];
             if (isset($data['email'])) $user['email'] = $data['email'];
             if (isset($data['source'])) $user['source'] = $data['source'];
-            if (isset($data['notify']) && is_array($data['notify'])) $user['notify'] = $data['notify'];   // уведомления пользователя
             break;
         }
     }

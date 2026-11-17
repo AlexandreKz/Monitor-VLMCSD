@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.12.2
+// ВЕРСИЯ: 3.13.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -36,6 +36,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !defined('VLMC_CSRF_CHECKED
  */
 function ajaxActionPermissions() {
     $toolsEdit = PERM_TOOLS_EDIT;
+    $notifyEdit = [PERM_NOTIFY_EDIT, PERM_ADMIN_FULL];   // уведомления: право или полный администратор
     $toolsAny = [PERM_TOOLS_VIEW, PERM_TOOLS_EDIT];
     return [
         'check_permission'      => 'public',
@@ -76,11 +77,14 @@ function ajaxActionPermissions() {
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
-        // Уведомления: каждый пользователь настраивает свои адреса и подписки, администратор — отправку и правила
-        'get_notify'            => 0,                 // любой вошедший: свои настройки; общие данные — только администратору
-        'save_my_notify'        => 0,                 // свои адреса и подписки
-        'test_my_notify'        => 0,                 // тест на свой адрес (с ограничением частоты)
-        'save_notify'           => PERM_ADMIN_FULL,   // общие настройки отправки и правила
+        // Уведомления: каналы, правила, тест и история — право «Уведомления: изменение» или полный администратор
+        'notify_get'            => $notifyEdit,
+        'notify_channel_save'   => $notifyEdit,
+        'notify_channel_delete' => $notifyEdit,
+        'notify_channel_test'   => $notifyEdit,
+        'notify_rule_save'      => $notifyEdit,
+        'notify_rule_delete'    => $notifyEdit,
+        'notify_rule_toggle'    => $notifyEdit,
 
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
@@ -1294,80 +1298,147 @@ if (isset($_POST['ajax'])) {
 	}
 	
 // ============================================
-// AJAX: Уведомления (пункт 27): настройки каналов, события, правила, тест, история
+// AJAX: Уведомления (пункт 27): каналы, правила, тест канала, история (право PERM_NOTIFY_EDIT проверяет таблица прав)
 // ============================================
-if (in_array($_POST['ajax'], ['get_notify', 'save_my_notify', 'test_my_notify', 'save_notify'], true)) {
-    $ntfPerms = (int)($_SESSION['vlmc_permissions'] ?? 0);
-    if ($ntfPerms === 0 && ($_SESSION['vlmc_username'] ?? '') === 'root') { $ntfPerms = PERM_ADMIN_FULL; }
-    $ntfIsAdmin = ($ntfPerms & PERM_ADMIN_FULL) === PERM_ADMIN_FULL;
-    $ntfUser = getUserById((int)($_SESSION['vlmc_user_id'] ?? 0));
-    if (!$ntfUser) {
-        echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_channel_delete', 'notify_channel_test', 'notify_rule_save', 'notify_rule_delete', 'notify_rule_toggle'], true)) {
+    $ntfAct = $_POST['ajax'];
+    $ntfOut = function ($ok, $msgKey, array $extra = [], $tail = '') {
+        echo json_encode(['success' => $ok, 'message' => __($msgKey) . $tail] + $extra, JSON_UNESCAPED_UNICODE);
         exit;
-    }
-    $ntfGlobal = notifyLoad();
-    $ntfMy = function () use (&$ntfUser, $ntfGlobal) {
-        $e = [];
-        foreach (notifyEventsFor((int)($ntfUser['permissions'] ?? 0)) as $id => $c) {
-            $e[] = ['id' => $id, 'sev' => $c['sev'], 'src' => $c['src']];
+    };
+    // Данные для интерфейса: каналы без секретов, правила, каталог событий, группы и устройства, история
+    $ntfView = function () use ($config) {
+        $s = notifyLoad();
+        $cat = [];
+        foreach (notifyCatalog() as $id => $c) {
+            $p = [];
+            foreach (($c['params'] ?? []) as $k => $v) { $p[$k] = ['def' => $v[0], 'min' => $v[1], 'max' => $v[2]]; }
+            $cat[] = ['id' => $id, 'group' => $c['group'], 'sev' => $c['sev'], 'scope' => $c['scope'], 'soon' => !empty($c['soon']), 'params' => $p];
         }
-        return ['my' => notifyUserLoad($ntfUser), 'catalog' => $e,
-            'channels' => ['mail' => (bool)$ntfGlobal['email']['enabled'], 'tg' => (bool)$ntfGlobal['telegram']['enabled']]];
+        $groups = []; $devices = [];
+        foreach ((array)($config['groupColors'] ?? []) as $g => $_) { if (strpos((string)$g, '__') !== 0) { $groups[] = (string)$g; } }
+        foreach ((array)($config['devices'] ?? []) as $g => $list) {
+            if (strpos((string)$g, '__') !== 0 && !in_array((string)$g, $groups, true)) { $groups[] = (string)$g; }
+            foreach ((array)$list as $d) { if (isset($d['name'])) { $devices[] = ['name' => (string)$d['name'], 'group' => (string)$g]; } }
+        }
+        return [
+            'channels' => array_map('notifyChannelPublic', $s['channels']),
+            'rules' => $s['rules'],
+            'catalog' => $cat,
+            'groups' => $groups,
+            'devices' => $devices,
+            'history' => notifyHistory(100),
+        ];
     };
 
-    if ($_POST['ajax'] === 'get_notify') {
-        $out = ['success' => true, 'admin' => $ntfIsAdmin] + $ntfMy();
-        if ($ntfIsAdmin) {
-            $out['settings'] = notifyPublic($ntfGlobal);
-            $out['history'] = notifyHistory(10);
-        }
-        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+    if ($ntfAct === 'notify_get') {
+        echo json_encode(['success' => true] + $ntfView(), JSON_UNESCAPED_UNICODE);
         exit;
     }
-    if ($_POST['ajax'] === 'save_my_notify') {
-        [$n, $err] = notifyUserBuild($_POST, $ntfUser);
-        if ($n === null) {
-            echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        $ok = notifyUserSave($ntfUser['id'], $n);
-        $ntfUser['notify'] = $n;
-        echo json_encode(['success' => $ok, 'message' => __($ok ? 'notify_saved' : 'msg_save_error')] + $ntfMy(), JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    if ($_POST['ajax'] === 'test_my_notify') {
-        $ch = ($_POST['channel'] ?? '') === 'tg' ? 'tg' : 'mail';
-        [$n, $err] = notifyUserBuild($_POST, $ntfUser);
-        $target = $n === null ? '' : ($ch === 'tg' ? $n['tg_chat'] : $n['email']);
-        if ($n === null || $target === '') {
-            echo json_encode(['success' => false, 'message' => __($err !== '' ? $err : ($ch === 'tg' ? 'notify_err_chat' : 'notify_err_email'))], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        $cfg = $ntfGlobal[$ch === 'tg' ? 'telegram' : 'email'];
-        if (($ch === 'tg' && $cfg['token'] === '') || ($ch === 'mail' && $cfg['host'] === '')) {
-            echo json_encode(['success' => false, 'message' => __('notify_err_not_configured')], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        if (!notifyTestAllowed((int)$ntfUser['id'])) {
-            echo json_encode(['success' => false, 'message' => __('notify_err_test_limit')], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
+
+    $ntfId = (string)($_POST['id'] ?? '');
+    $ntfFail = function ($e) { return ['success' => false, 'message' => __($e) . ($GLOBALS['notify_save_error'] ?? '' ? ' ' . $GLOBALS['notify_save_error'] : '')]; };
+
+    if ($ntfAct === 'notify_channel_test') {
+        $s = notifyLoad();
+        $old = $ntfId !== '' ? notifyFindChannel($s, $ntfId) : null;
+        [$c, $err] = notifyChannelBuild($_POST, $old);
+        if ($c === null) { $ntfOut(false, $err); }
+        // не чаще раза в 3 секунды на пользователя
+        $uid = 'test:' . (int)($_SESSION['vlmc_user_id'] ?? 0);
+        $allowed = notifyStateUpdate(function (&$st) use ($uid) {
+            $now = time();
+            if ($now - (int)($st['last'][$uid] ?? 0) < 3) { return false; }
+            $st['last'][$uid] = $now;
+            return true;
+        });
+        if (!$allowed) { $ntfOut(false, 'notify_err_test_limit'); }
         $text = 'KMS Monitor: ' . __('notify_test_text') . ' ' . date('Y-m-d H:i:s');
-        [$ok, $detail] = $ch === 'tg'
-            ? notifySendTelegram($cfg + ['chat' => $target], $text)
-            : notifySendEmail($cfg + ['to' => $target], '[KMS Monitor] ' . __('notify_test_subject'), $text);
-        notifyHistoryAdd('test', __('notify_test_subject') . ' (' . ($ntfUser['username'] ?? '') . ')', [$ch], $ok, $detail);
-        echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_test_ok') : (__('notify_test_fail') . ' ' . $detail)], JSON_UNESCAPED_UNICODE);
+        [$ok, $detail] = notifySendVia($c, '[KMS Monitor] ' . __('notify_test_subject'), $text);
+        notifyHistoryAdd(__('notify_test_subject'), 'test', __('notify_test_subject') . ': ' . $c['name'], [$c['name']], $ok, $detail);
+        $ntfOut($ok, $ok ? 'notify_test_ok' : 'notify_test_fail', [], $ok ? '' : ' ' . $detail);
+    }
+
+    if ($ntfAct === 'notify_channel_save') {
+        $out = ['id' => ''];
+        $res = notifyMutate(function (&$s) use ($ntfId, &$out) {
+            $old = null; $idx = -1;
+            foreach ($s['channels'] as $i => $c) { if (($c['id'] ?? '') === $ntfId) { $old = $c; $idx = $i; } }
+            if ($ntfId !== '' && $old === null) { return 'notify_err_notfound'; }
+            [$c, $err] = notifyChannelBuild($_POST, $old);
+            if ($c === null) { return $err; }
+            if ($old === null) {
+                if (count($s['channels']) >= NOTIFY_MAX_CHANNELS) { return 'notify_err_limit'; }
+                $c['id'] = notifyNextId($s, 'c');
+                $s['channels'][] = $c;
+            } else {
+                $s['channels'][$idx] = $c;
+            }
+            $out['id'] = $c['id'];
+            return true;
+        });
+        if ($res === true) { $ntfOut(true, 'notify_saved', $ntfView()); }
+        echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
         exit;
     }
-    // save_notify — общие настройки (проверка права выполнена таблицей прав)
-    [$new, $err] = notifyBuild($_POST, $ntfGlobal);
-    if ($new === null) {
-        echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
+
+    if ($ntfAct === 'notify_channel_delete') {
+        $res = notifyMutate(function (&$s) use ($ntfId) {
+            if (!notifyFindChannel($s, $ntfId)) { return 'notify_err_notfound'; }
+            $s['channels'] = array_values(array_filter($s['channels'], function ($c) use ($ntfId) { return ($c['id'] ?? '') !== $ntfId; }));
+            foreach ($s['rules'] as &$r) {
+                $r['channels'] = array_values(array_diff((array)($r['channels'] ?? []), [$ntfId]));
+            }
+            unset($r);
+            return true;
+        });
+        if ($res === true) { $ntfOut(true, 'notify_deleted', $ntfView()); }
+        echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $ok = notifySave($new);
-    echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_saved') : (__('msg_save_error') . ' ' . ($GLOBALS['notify_save_error'] ?? '')), 'settings' => notifyPublic($new)], JSON_UNESCAPED_UNICODE);
+
+    if ($ntfAct === 'notify_rule_save') {
+        $res = notifyMutate(function (&$s) use ($ntfId) {
+            $old = null; $idx = -1;
+            foreach ($s['rules'] as $i => $r) { if (($r['id'] ?? '') === $ntfId) { $old = $r; $idx = $i; } }
+            if ($ntfId !== '' && $old === null) { return 'notify_err_notfound'; }
+            [$r, $err] = notifyRuleBuild($_POST, $s, $old);
+            if ($r === null) { return $err; }
+            if ($old === null) {
+                if (count($s['rules']) >= NOTIFY_MAX_RULES) { return 'notify_err_limit'; }
+                $r['id'] = notifyNextId($s, 'r');
+                $s['rules'][] = $r;
+            } else {
+                $s['rules'][$idx] = $r;
+            }
+            return true;
+        });
+        if ($res === true) { $ntfOut(true, 'notify_saved', $ntfView()); }
+        echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($ntfAct === 'notify_rule_toggle') {
+        $on = !empty($_POST['active']);
+        $res = notifyMutate(function (&$s) use ($ntfId, $on) {
+            $found = false;
+            foreach ($s['rules'] as &$r) { if (($r['id'] ?? '') === $ntfId) { $r['active'] = $on; $found = true; } }
+            unset($r);
+            return $found ? true : 'notify_err_notfound';
+        });
+        if ($res === true) { $ntfOut(true, 'notify_saved', $ntfView()); }
+        echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // notify_rule_delete
+    $res = notifyMutate(function (&$s) use ($ntfId) {
+        $n = count($s['rules']);
+        $s['rules'] = array_values(array_filter($s['rules'], function ($r) use ($ntfId) { return ($r['id'] ?? '') !== $ntfId; }));
+        return count($s['rules']) < $n ? true : 'notify_err_notfound';
+    });
+    if ($res === true) { $ntfOut(true, 'notify_deleted', $ntfView()); }
+    echo json_encode($ntfFail(is_string($res) ? $res : 'msg_save_error'), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
