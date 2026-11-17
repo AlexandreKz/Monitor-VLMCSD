@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.9.2
+// ВЕРСИЯ: 1.9.3
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -82,8 +82,8 @@ if (!$canViewInfo) {
                 <span><?= __('info_data_dir') ?>:</span>
                 <?php if ($isUnix): ?><code><?= htmlspecialchars($dataInfo['dir']) ?></code><?php else: ?><span><?= __('info_data_dir_hidden') ?></span><?php endif; ?>
                 <?php if (!empty($dataInfo['legacy'])): ?><span class="info-data-warn">⚠️ <?= __('info_data_legacy') ?></span><?php endif; ?>
+                <span class="info-hint info-hint-top"><?= __('info_data_hint') ?></span>
             </div>
-            <div class="info-hint info-hint-top"><?= __('info_data_hint') ?></div>
             <div class="info-data-scroll">
             <table class="info-data-table">
                 <thead><tr>
@@ -126,7 +126,7 @@ if (!$canViewInfo) {
 .info-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .info-tab.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .info-data-card { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; box-sizing: border-box; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 12px; }
-.info-data-head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: 12px; margin-bottom: 4px; }
+.info-data-head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: 12px; margin-bottom: 10px; }
 .info-data-head code, .info-data-path code { font-family: 'JetBrains Mono', monospace; font-size: 11px; word-break: break-all; }
 .info-data-warn { color: <?= $themeCSS['warnText'] ?>; }
 .info-data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -136,7 +136,7 @@ if (!$canViewInfo) {
 .info-data-absent td { opacity: 0.6; }
 .info-data-badge { font-size: 10px; font-weight: 400; padding: 1px 8px; border-radius: 10px; background: <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; margin-left: 6px; }
 .info-data-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
-.info-hint-top { margin: 0 0 10px; }
+.info-hint-top { margin: 0 0 0 auto; text-align: right; }
 .info-hint { margin-top: 10px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
 .info-server-card { padding: 8px 12px; margin-bottom: 10px; flex: 0 0 auto; height: auto; }
 .info-server-card .settings-card-title { margin-bottom: 6px; font-size: 12px; }
