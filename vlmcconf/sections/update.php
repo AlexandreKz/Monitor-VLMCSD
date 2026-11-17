@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.2.0
+// ВЕРСИЯ: 5.3.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -62,7 +62,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- БЛОК 1: РЕПОЗИТОРИЙ, ВЕРСИЯ, СТАТУС, КНОПКИ  -->
     <!-- ============================================ -->
-    <div class="upd-frame" style="margin-bottom: 15px; padding: 10px 15px;">
+    <div class="upd-frame" style="margin-bottom: 8px;">
         <div class="upd-info-grid">
             <div class="upd-info-item"><span class="upd-info-label">📦 <?= __('update_repository') ?></span><code>AlexandreKz/Monitor-VLMCSD</code></div>
             <div class="upd-info-item"><span class="upd-info-label">🌿 <?= __('update_branch') ?></span><code>main</code></div>
@@ -82,7 +82,7 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- БЛОК 2: ТИП ОБНОВЛЕНИЯ (нажатием на карточку) -->
     <!-- ============================================ -->
-    <div class="upd-frame" style="margin-bottom: 15px;">
+    <div class="upd-frame" style="margin-bottom: 8px;">
         <div class="upd-frame-title">
             <span>🎯 <?= __('update_type_label') ?></span>
             <span id="channelSavedMsg" style="display: none; font-size: 12px; white-space: nowrap;"></span>
@@ -107,24 +107,22 @@ $updI18n = [
     <!-- ============================================ -->
     <!-- БЛОК 3: ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ (в одну строку) -->
     <!-- ============================================ -->
-    <div class="upd-frame" id="updateSettingsBlock" style="margin-bottom: 15px;">
-        <div class="upd-frame-title"><span>⚙️ <?= __('update_block_extra') ?></span></div>
+    <div class="upd-frame" id="updateSettingsBlock" style="margin-bottom: 8px;">
         <div class="upd-extra-row">
             <!-- Токен GitHub (необязательно): лимит запросов к API 5000/ч вместо 60/ч -->
             <div class="upd-col">
-                <div class="upd-col-title">🔑 <?= __('update_token_label') ?></div>
+                <div class="upd-col-title" title="<?= htmlspecialchars(__('update_token_hint')) ?>">🔑 <?= __('update_token_label') ?> <span class="upd-i">ⓘ</span></div>
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                     <input type="password" id="githubToken" class="form-control" style="flex: 1; min-width: 150px;" autocomplete="new-password" spellcheck="false" placeholder="<?= htmlspecialchars(__('update_token_placeholder')) ?>">
                     <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 12px; font-size: 11px;">💾</button>
                     <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 12px; font-size: 11px;" title="<?= htmlspecialchars(__('update_token_clear')) ?>">🗑️</button>
                 </div>
-                <div id="tokenStatus" style="font-size: 12px; margin-top: 6px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></div>
-                <div class="upd-hint"><?= __('update_token_hint') ?></div>
+                <div id="tokenStatus" style="font-size: 11px; margin-top: 4px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></div>
             </div>
             <!-- Автоматическая проверка: не чаще раза в 6 часов, сохраняется сразу -->
             <div class="upd-col">
-                <div class="upd-col-title">🔄 <?= __('update_auto_check_label') ?></div>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 8px;">
+                <div class="upd-col-title" title="<?= htmlspecialchars(__('update_auto_check_hint')) ?>">🔄 <?= __('update_auto_check_label') ?> <span class="upd-i">ⓘ</span></div>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 6px;">
                     <input type="checkbox" id="autoCheckEnabled" <?= $updSettings['auto_check'] ? 'checked' : '' ?>> <?= __('update_auto_check_on') ?>
                 </label>
                 <select id="autoCheckInterval" class="form-control" style="width: 100%;">
@@ -132,8 +130,7 @@ $updI18n = [
                     <option value="<?= $hours ?>" <?= $updSettings['interval'] === $hours ? 'selected' : '' ?>><?= sprintf(__('update_auto_check_every'), $hours) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <div id="autoSavedMsg" style="display: none; font-size: 12px; margin-top: 6px;"></div>
-                <div class="upd-hint"><?= __('update_auto_check_hint') ?></div>
+                <div id="autoSavedMsg" style="display: none; font-size: 12px; margin-top: 4px;"></div>
             </div>
             <!-- Автообновление, расписание и уведомления: в разработке -->
             <div class="upd-col" style="opacity: 0.55;">
@@ -164,7 +161,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     <!-- ============================================ -->
     <!-- КОНСОЛЬ ВЫВОДА / OUTPUT CONSOLE             -->
     <!-- ============================================ -->
-    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: 250px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
+    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: clamp(200px, calc(100vh - 470px), 640px); min-height: 160px; resize: vertical; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
         <div>> <?= __('update_ready') ?></div>
     </div>
     
@@ -196,26 +193,31 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-console::-webkit-scrollbar-thumb { background: #00ff00; border-radius: 3px; }
 .update-console::-webkit-scrollbar-thumb:hover { background: #00cc00; }
 
-.update-channel-card { background: <?= $themeCSS['card'] ?>; border-radius: 8px; padding: 12px 15px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.update-channel-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; background: <?= $themeCSS['card'] ?>; border-radius: 8px; padding: 8px 12px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
 .update-channel-card:hover { border-color: <?= $themeCSS['primary'] ?>; }
 .update-channel-card:focus-visible { outline: 2px solid <?= $themeCSS['primary'] ?>; outline-offset: 2px; }
 .update-channel-card.selected { box-shadow: 0 0 0 1px <?= $themeCSS['primary'] ?> inset; }
-.upd-frame { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; }
-.upd-frame-title { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 10px; gap: 10px; }
+/* компактная раскладка: больше места под консоль */
+.upd-frame { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; }
+.upd-frame-title { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px; gap: 10px; }
 .upd-info-grid { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; font-size: 11px; }
 .upd-info-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; word-break: break-word; }
 .upd-info-label { color: #8aa0bb; white-space: nowrap; }
 .upd-info-label::after { content: ':'; }
 .upd-info-item code { font-size: 11px; }
-.upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
+.upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
 .upd-extra-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 1000px) { .upd-extra-row { grid-template-columns: 1fr; } .update-channels { grid-template-columns: 1fr !important; } }
-.upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px; min-width: 0; }
-.upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.upd-i { color: #8aa0bb; font-weight: 400; cursor: help; }
+.upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
 .upd-hint { font-size: 11px; color: #8aa0bb; margin-top: 6px; line-height: 1.4; }
-.upd-dev-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8aa0bb; margin-top: 6px; }
+.upd-dev-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8aa0bb; margin: 2px 12px 0 0; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
-.update-channel-card .uc-line { margin-top: 3px; }
+.update-channel-card .uc-line { margin-top: 0; }
+.update-channel-card .uc-title { margin-bottom: 0 !important; }
+.update-channel-card .uc-small { flex-basis: 100%; }
+.update-channel-card .uc-small:empty { display: none; }
 .update-channel-card .uc-small { font-size: 11px; color: #8aa0bb; word-break: break-word; }
 .update-channel-card .uc-status.ok { color: <?= $themeCSS['success'] ?>; }
 .update-channel-card .uc-status.avail { color: #e0a800; font-weight: 600; }
