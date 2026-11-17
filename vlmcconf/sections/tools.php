@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 6.4.2
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 3.2.0
+// ДАТА: 2026-11-17
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
 // ============================================
@@ -28,11 +28,27 @@ if (!$canViewTools) {
 $cacheStats = getGeoCacheStats();
 $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'project';
 $firstLogDate = getFirstLogDate($fullLogPath);
+
+// Сообщение «Доступно обновление» в шапке раздела: по сохранённому результату проверки, пока обновление не установлено
+$updToastText = '';
+if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
+    require_once dirname(__DIR__) . '/vlmcinc/updater.php';
+    $updToastUpdater = new Updater();
+    $updToastInfo = $updToastUpdater->toastInfo($updToastUpdater->loadState(), $updToastUpdater->getSettings()['type']);
+    if ($updToastInfo['available']) {
+        $updToastText = $updToastInfo['channel'] === 'release'
+            ? sprintf(__('update_toast_release'), $updToastInfo['version'], $updToastInfo['files'])
+            : sprintf(__('update_toast_early'), $updToastInfo['files']);
+    }
+}
 ?>
 
 <div id="section-tools" class="settings-section <?= $activeSection === 'tools' ? 'active' : '' ?>">
     <div class="section-title">
         <span>🛠️ <?= __('tools_title') ?></span>
+        <?php if ($updToastText !== ''): ?>
+        <div id="updateToast" class="section-message warning update-persist"><?= htmlspecialchars($updToastText) ?></div>
+        <?php endif; ?>
         <?php if ($activeSection === 'tools' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>

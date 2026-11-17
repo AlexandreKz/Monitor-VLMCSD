@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.1.2
+// ВЕРСИЯ: 3.2.0
 // ДАТА: 2026-11-17
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
@@ -120,6 +120,19 @@ class Updater {
 
     public function isStale(array $state, $hours) {
         return (time() - (int)($state['checked_at'] ?? 0)) >= ((int)$hours * 3600);
+    }
+
+    /** Данные сообщения в шапке раздела: есть ли обновление в канале (при сбое проверки — по последнему успешному результату). */
+    public function toastInfo(array $state, $channel) {
+        $r = $state[$channel] ?? null;
+        if (!is_array($r) || empty($r['success'])) {
+            $r = $state['last_ok'][$channel] ?? [];
+        }
+        if (!is_array($r) || empty($r['available'])) {
+            return ['available' => false, 'channel' => $channel, 'version' => '', 'files' => 0];
+        }
+        return ['available' => true, 'channel' => $channel, 'version' => (string)($r['version'] ?? ''),
+                'files' => (int)($r['new_count'] ?? 0) + (int)($r['changed_count'] ?? 0)];
     }
 
     /** Что показать в уведомлении: версия релиза и число файлов раннего доступа. */

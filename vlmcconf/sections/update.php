@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.1.0
+// ВЕРСИЯ: 5.2.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -47,6 +47,7 @@ $updI18n = [
     'settingsSaved'  => __('update_settings_saved'),
     'toastRelease'   => __('update_toast_release'),
     'toastEarly'     => __('update_toast_early'),
+    'toastNone'      => __('update_toast_none'),
     'checkingGitHub' => __('update_checking_github'),
     'saveError'      => __('msg_save_error'),
     'ready'          => __('update_ready'),
@@ -220,6 +221,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-channel-card .uc-status.avail { color: #e0a800; font-weight: 600; }
 .update-channel-card .uc-status.err { color: <?= $themeCSS['danger'] ?>; }
 .uc-badge { font-size: 10px; font-weight: 400; color: <?= $themeCSS['primary'] ?>; margin-left: 6px; }
+.section-message.update-persist { animation: none; opacity: 1; max-width: 560px; }
 .update-dev-badge { font-size: 11px; color: #e0a800; }
 
 .update-settings .form-group { margin-bottom: 8px; }
@@ -367,30 +369,52 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         setSslHelp(!!data.ssl_help);
     }
 
-    // Всплывающее сообщение в шапке раздела «Инструменты» (на 5 секунд)
-    function sectionToast(text, type) {
-        const title = document.querySelector('#section-tools .section-title');
+    // --- Сообщения в шапке раздела «Инструменты» ---
+    function toastTitle() { return document.querySelector('#section-tools .section-title'); }
+
+    // Постоянное сообщение «Доступно обновление: файлов N»: висит, пока обновление не установлено, число обновляется
+    function setPersistentToast(text) {
+        let el = $('updateToast');
+        if (!text) { if (el) el.remove(); return; }
+        const title = toastTitle();
         if (!title) return;
-        title.querySelectorAll('.section-message').forEach(function (m) { m.remove(); });
-        const msg = document.createElement('div');
-        msg.className = 'section-message ' + type;
-        msg.textContent = text;
-        title.appendChild(msg);
-        setTimeout(function () { msg.remove(); }, 5200);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'updateToast';
+            el.className = 'section-message warning update-persist';
+            title.appendChild(el);
+        }
+        el.textContent = text;
     }
 
-    // Есть обновление: сообщение с числом файлов (для выбранного канала, иначе для другого, где оно есть)
-    function toastIfAvailable(data) {
-        const ch = data.channels || {};
-        const order = [selectedChannel(), selectedChannel() === 'release' ? 'early' : 'release'];
-        for (let i = 0; i < order.length; i++) {
-            const c = ch[order[i]];
-            if (!c || !c.success || !c.available) continue;
+    // Временное сообщение «Обновлений нет» (5 секунд)
+    let tempToastTimer = null;
+    function tempToast(text) {
+        const title = toastTitle();
+        if (!title) return;
+        title.querySelectorAll('.update-temp').forEach(function (m) { m.remove(); });
+        const msg = document.createElement('div');
+        msg.className = 'section-message success update-temp';
+        msg.textContent = text;
+        title.appendChild(msg);
+        clearTimeout(tempToastTimer);
+        tempToastTimer = setTimeout(function () { msg.remove(); }, 5200);
+    }
+
+    // По результату проверки выбранного канала (сбой проверки сообщение не трогает).
+    // manual — проверка по кнопке: при отсутствии обновлений показывается временное сообщение.
+    function renderToast(data, manual) {
+        const c = data && data.channels ? data.channels[selectedChannel()] : null;
+        if (!c || !c.success) return;
+        if (c.available) {
             const files = (c.new_count || 0) + (c.changed_count || 0);
-            sectionToast(order[i] === 'release' ? fmt(I18N.toastRelease, c.version, files) : fmt(I18N.toastEarly, files), 'warning');
-            return;
+            setPersistentToast(selectedChannel() === 'release' ? fmt(I18N.toastRelease, c.version, files) : fmt(I18N.toastEarly, files));
+        } else {
+            setPersistentToast('');
+            if (manual) tempToast(I18N.toastNone);
         }
     }
+    window.vlmcUpdateToast = renderToast;
 
     // --- Проверка обоих каналов ---
     function checkForUpdates() {
@@ -403,8 +427,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
                 return;
             }
             renderState(data);
-            if (window.vlmcRenderUpdateBanner && data.banner) window.vlmcRenderUpdateBanner(data.banner);
-            toastIfAvailable(data);
+            renderToast(data, true);
             ['release', 'early'].forEach(function (name) {
                 const c = data.channels[name];
                 if (!c) return;
@@ -468,6 +491,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         post({ ajax: 'perform_update', channel: selectedChannel(), files: JSON.stringify(updateFiles) }).then(function (data) {
             (data.log || []).forEach(function (line) { log(line); });
             if (data.success) {
+                setPersistentToast('');
                 log(data.message || I18N.complete, '#00ff00');
                 const box = $('updateConsole');
                 const btn = document.createElement('button');
@@ -516,6 +540,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         if (!inp || inp.value === name) return;
         inp.value = name;
         renderState(lastData);
+        renderToast(lastData, false);
         markSelected();
         saveAuto('channelSavedMsg', I18N.channelSaved);
     }
@@ -547,7 +572,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         post({ ajax: 'update_auto_check' }).then(function (data) {
             if (data && data.success && data.enabled) {
                 renderState(data);
-                if (window.vlmcRenderUpdateBanner && data.banner) window.vlmcRenderUpdateBanner(data.banner);
+                renderToast(data, false);
             } else {
                 markSelected();
             }
