@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.4
+// ВЕРСИЯ: 5.8.5
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1069,5 +1069,30 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_err_no_channels' => '⚠️ A rule cannot be enabled without a channel. Select at least one delivery channel.',
     
     'notify_saved_off' => '⚠️ Rule saved but not enabled: select at least one delivery channel.',
+    'info_tab_structure' => 'Project structure',
+    'info_tab_data' => 'Files outside web folder',
+    'info_data_dir' => 'Data directory',
+    'info_data_dir_hidden' => 'hidden (path is shown on Ubuntu only)',
+    'info_data_legacy' => 'Legacy data location inside the web folder is in use',
+    'info_data_col_name' => 'File name',
+    'info_data_col_purpose' => 'Purpose',
+    'info_data_col_path' => 'Full path (Ubuntu)',
+    'info_data_absent' => 'not created',
+    'info_data_hint' => 'Files are created automatically on first use of the related feature. The directory can be changed with the VLMC_DATA_DIR variable or vlmcconf/data_dir.local.php.',
+    'info_data_config' => 'Panel settings (theme, language, section options)',
+    'info_data_users' => 'Accounts, permissions and groups',
+    'info_data_audit' => 'Action audit log',
+    'info_data_audit_prune' => 'Timestamp of the last audit log cleanup',
+    'info_data_notify' => 'Notification channels and rules (secrets encrypted)',
+    'info_data_notify_key' => 'Encryption key for notification and GitHub token secrets',
+    'info_data_notify_state' => 'Notification internal state (throttling, counters)',
+    'info_data_notify_history' => 'History of sent notifications',
+    'info_data_update_state' => 'Update check state',
+    'info_data_github_token' => 'GitHub access token (encrypted)',
+    'info_data_update_lock' => 'Lock preventing concurrent updates',
+    'info_data_config_changes' => 'Settings change trace',
+    'info_data_users_changes' => 'Accounts change trace',
+    'info_data_lock' => 'Parallel-write lock of the same-named file',
+    'info_data_backups' => 'Settings and users backups (config and users subfolders)',
 ];
 ?>
