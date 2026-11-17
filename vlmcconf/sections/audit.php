@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 2.2.0
+// ВЕРСИЯ: 2.3.0
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -119,25 +119,6 @@ $auditI18n = [
         <button class="btn" id="auditNext" style="padding: 5px 12px;">→</button>
     </div>
 
-    <!-- Статистика (внизу страницы, сворачивается): сводка по пользователю и активность по часам и дням -->
-    <div class="audit-stats-box" id="auditStatsBox">
-        <div class="audit-stats-head" id="auditStatsHead" role="button" tabindex="0" aria-expanded="true">
-            <span>📈 <?= __('audit_stats_title') ?></span>
-            <span id="auditStatsChevron" class="audit-chevron">▾</span>
-        </div>
-        <div id="auditStatsBody" class="audit-stats-body">
-            <div id="auditSummary" class="audit-summary" style="display: none;"></div>
-            <div class="audit-chart-head">
-                <span><?= __('audit_chart_title') ?></span>
-                <span>
-                    <button class="audit-tab active" id="auditTabHours" type="button"><?= __('audit_chart_hours') ?></button>
-                    <button class="audit-tab" id="auditTabDays" type="button"><?= __('audit_chart_days') ?></button>
-                </span>
-            </div>
-            <div id="auditChart" class="audit-chart"></div>
-        </div>
-    </div>
-
     <!-- Срок хранения и уведомления: в одну строку -->
     <div class="audit-row">
     <!-- Срок хранения -->
@@ -178,29 +159,13 @@ $auditI18n = [
 .audit-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-f label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
-.audit-summary { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-left: 3px solid <?= $themeCSS['primary'] ?>; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7; }
-.audit-summary b { color: <?= $themeCSS['primary'] ?>; }
 .audit-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; }
 .audit-bar-left, .audit-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .audit-check { font-size: 12px; color: #8aa0bb; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 #auditFound { font-size: 12px; color: #8aa0bb; }
-.audit-stats-box { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
-.audit-stats-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none; }
-.audit-stats-head:hover { color: <?= $themeCSS['primary'] ?>; }
-.audit-chevron { font-size: 14px; color: #8aa0bb; }
-.audit-stats-body { margin-top: 10px; padding-top: 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
-.audit-stats-box.collapsed .audit-stats-body { display: none; }
-.audit-chart-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #8aa0bb; margin-bottom: 8px; }
-.audit-tab { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; opacity: 0.7; }
-.audit-tab.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
-.audit-chart { display: flex; align-items: flex-end; gap: 3px; height: 90px; }
-.audit-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
-.audit-colbar { width: 100%; background: <?= $themeCSS['primary'] ?>; border-radius: 2px 2px 0 0; min-height: 1px; opacity: 0.85; }
-.audit-colbar.zero { opacity: 0.15; }
-.audit-collabel { font-size: 9px; color: #8aa0bb; height: 12px; line-height: 12px; white-space: nowrap; }
-.audit-table-wrap { overflow-x: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
+.audit-table-wrap { overflow: auto; max-height: clamp(220px, 46vh, 560px); border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.audit-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.audit-table th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
 .audit-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: top; }
 .audit-table td.audit-time, .audit-table td.audit-ip { white-space: nowrap; font-family: monospace; }
 .audit-table td.audit-details { word-break: break-word; color: #8aa0bb; }
@@ -227,7 +192,7 @@ $auditI18n = [
 (function () {
     const I18N = <?= json_encode($auditI18n, JSON_UNESCAPED_UNICODE) ?>;
     const $ = function (id) { return document.getElementById(id); };
-    let page = 1, pages = 1, timer = null, autoTimer = null, loadedOnce = false, lastData = null, chartMode = 'hours';
+    let page = 1, pages = 1, timer = null, autoTimer = null, loadedOnce = false;
 
     function post(params) {
         const fd = new FormData();
@@ -261,54 +226,9 @@ $auditI18n = [
         sel.value = cur;
     }
 
-    function renderChart() {
-        const box = $('auditChart');
-        box.textContent = '';
-        if (!lastData) return;
-        let labels = [], values = [];
-        if (chartMode === 'hours') {
-            values = lastData.hours;
-            labels = values.map(function (v, i) { return (i < 10 ? '0' : '') + i + ':00'; });
-        } else {
-            labels = Object.keys(lastData.days);
-            values = labels.map(function (k) { return lastData.days[k]; });
-        }
-        const max = Math.max.apply(null, values.concat([1]));
-        values.forEach(function (v, i) {
-            const col = el('div', 'audit-col');
-            const bar = el('div', 'audit-colbar' + (v === 0 ? ' zero' : ''));
-            bar.style.height = Math.max(v === 0 ? 1 : 3, Math.round(v / max * 68)) + 'px';
-            col.title = labels[i] + ' — ' + I18N.count + ': ' + v;
-            col.appendChild(bar);
-            const showLabel = chartMode === 'hours' ? (i % 3 === 0) : (i === 0 || i === values.length - 1);
-            col.appendChild(el('div', 'audit-collabel', showLabel ? (chartMode === 'hours' ? labels[i].slice(0, 2) : labels[i].slice(5)) : ''));
-            box.appendChild(col);
-        });
-    }
-
-    function renderSummary(s) {
-        const box = $('auditSummary');
-        box.textContent = '';
-        if (!s) { box.style.display = 'none'; return; }
-        box.style.display = 'block';
-        const line = function (label, value) {
-            const d = el('div');
-            d.appendChild(el('b', '', label + ': '));
-            d.appendChild(document.createTextNode(value));
-            box.appendChild(d);
-        };
-        line(I18N.sumTotal, s.total + ' (✅ ' + s.ok + ' · ⚠️ ' + s.error + ' · ⛔ ' + s.denied + ')');
-        line(I18N.sumPeriod, (s.first || '—') + ' → ' + (s.last || '—'));
-        if (s.ips.length) line(I18N.sumIps, s.ips.join(', '));
-        if (s.top.length) line(I18N.sumTop, s.top.map(function (t) { return t.label + ' ×' + t.count; }).join(' · '));
-    }
-
     function render(data) {
-        lastData = data;
         fillSelect($('auditUser'), I18N.allUsers, data.users.map(function (u) { return { value: u, label: u }; }));
         fillSelect($('auditAction'), I18N.allActions, data.actions.map(function (a) { return { value: a.code, label: a.label }; }));
-        renderSummary(data.summary);
-        renderChart();
         const body = $('auditBody');
         body.textContent = '';
         if (!data.items.length) {
@@ -428,8 +348,6 @@ $auditI18n = [
     $('auditRetSel').addEventListener('change', function () {
         $('auditRetCustom').style.display = this.value === 'custom' ? '' : 'none';
     });
-    $('auditTabHours').onclick = function () { chartMode = 'hours'; this.classList.add('active'); $('auditTabDays').classList.remove('active'); renderChart(); };
-    $('auditTabDays').onclick = function () { chartMode = 'days'; this.classList.add('active'); $('auditTabHours').classList.remove('active'); renderChart(); };
     $('auditPrev').onclick = function () { if (page > 1) { page--; load(); } };
     $('auditNext').onclick = function () { if (page < pages) { page++; load(); } };
     $('auditAuto').addEventListener('change', function () {
@@ -440,19 +358,6 @@ $auditI18n = [
             }, 15000);
         }
     });
-
-    // Сворачивание блока статистики (состояние запоминается в браузере)
-    function setStatsCollapsed(c) {
-        $('auditStatsBox').classList.toggle('collapsed', c);
-        $('auditStatsHead').setAttribute('aria-expanded', c ? 'false' : 'true');
-        $('auditStatsChevron').textContent = c ? '▸' : '▾';
-        try { localStorage.setItem('vlmcAuditStatsCollapsed', c ? '1' : '0'); } catch (e) {}
-    }
-    $('auditStatsHead').onclick = function () { setStatsCollapsed(!$('auditStatsBox').classList.contains('collapsed')); };
-    $('auditStatsHead').onkeydown = function (ev) {
-        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.onclick(); }
-    };
-    try { if (localStorage.getItem('vlmcAuditStatsCollapsed') === '1') setStatsCollapsed(true); } catch (e) {}
 
     window.loadAudit = function () { if (!loadedOnce) { reload(); } else { load(); } };
     if ($('section-audit').classList.contains('active')) window.loadAudit();
