@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 4.1.0
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 4.2.0
+// ДАТА: 2026-11-17
 // @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
 
@@ -286,6 +286,7 @@ function updateUser($id, $data) {
             if (isset($data['fullname'])) $user['fullname'] = $data['fullname'];
             if (isset($data['email'])) $user['email'] = $data['email'];
             if (isset($data['source'])) $user['source'] = $data['source'];
+            if (isset($data['notify']) && is_array($data['notify'])) $user['notify'] = $data['notify'];   // уведомления пользователя
             break;
         }
     }

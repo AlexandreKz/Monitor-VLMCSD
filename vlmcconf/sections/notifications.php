@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 2.0.0
 // ДАТА: 2026-11-17
-// @description: Раздел «Уведомления» (пункт 27): каналы Email/Telegram, события журнала и обновлений, правила (пороги, антиспам, тихие часы), тест и история отправок
+// @description: Раздел «Уведомления» (пункт 27): у каждого пользователя свои адреса (email, Telegram) и подписки на события; у администратора ещё общие настройки отправки (SMTP, токен бота) и правила (пороги, антиспам, тихие часы, история)
 // ============================================
 
 if (!defined('VLMCS_CONF')) {
@@ -11,29 +11,62 @@ if (!defined('VLMCS_CONF')) {
 }
 require_once __DIR__ . '/../vlmcinc/notify.php';
 
-$ntfCatalog = [];
+$ntfAdmin = hasPermission($currentUserPermissions, PERM_ADMIN_FULL);
+$ntfNames = [];
 foreach (notifyCatalog() as $id => $e) {
-    $ntfCatalog[] = ['id' => $id, 'sev' => $e['sev'], 'src' => $e['src'], 'name' => __('notify_ev_' . $id)];
+    $ntfNames[$id] = __('notify_ev_' . $id);
 }
 $ntfI18n = [
     'sevHigh' => __('notify_sev_high'), 'sevMid' => __('notify_sev_mid'), 'sevLow' => __('notify_sev_low'),
     'srcAudit' => __('notify_src_audit'), 'srcUpdate' => __('notify_src_update'),
     'ok' => __('notify_ok'), 'fail' => __('notify_fail'), 'empty' => __('notify_history_empty'),
     'secretSet' => __('notify_secret_set'), 'saveError' => __('msg_save_error'),
-    'on' => __('notify_enabled'), 'off' => __('notify_disabled')
+    'on' => __('notify_enabled'), 'off' => __('notify_disabled'),
+    'event' => __('notify_event'), 'severity' => __('notify_severity'), 'noEvents' => __('notify_my_empty'),
+    'channelOff' => __('notify_channel_off')
 ];
 ?>
 <div id="section-notifications" class="settings-section <?= $activeSection === 'notifications' ? 'active' : '' ?>">
     <div class="section-title">
         <span>🔔 <?= __('notify_title') ?></span>
         <div class="ntf-tabs">
-            <button type="button" class="ntf-tab active" data-p="ntfCh">📡 <?= __('notify_tab_channels') ?></button>
-            <button type="button" class="ntf-tab" data-p="ntfEv">📋 <?= __('notify_tab_events') ?></button>
+            <button type="button" class="ntf-tab active" data-p="ntfMy">👤 <?= __('notify_tab_my') ?></button>
+            <?php if ($ntfAdmin): ?>
+            <button type="button" class="ntf-tab" data-p="ntfCh">📡 <?= __('notify_tab_channels') ?></button>
             <button type="button" class="ntf-tab" data-p="ntfRl">⚙️ <?= __('notify_tab_rules') ?></button>
+            <?php endif; ?>
         </div>
     </div>
 
-    <div id="ntfCh" class="ntf-page active">
+    <div id="ntfMy" class="ntf-page active">
+        <div class="ntf-two">
+            <div class="ntf-blk">
+                <h3>✉️ Email <span id="myMailBadge" class="ntf-badge"></span></h3>
+                <label class="ntf-chk"><input type="checkbox" id="uMailOn"> <?= __('update_notify_enable') ?></label>
+                <div class="ntf-fields" style="margin-top: 10px;"><div style="flex: 1 1 260px;"><label><?= __('notify_my_email') ?></label><input type="text" id="uEmail" class="form-control" placeholder="name@example.com" autocomplete="off"></div></div>
+                <div class="ntf-hint" id="myMailOff" style="margin-top: 8px; display: none;">⚠️ <?= __('notify_channel_off') ?></div>
+                <div class="ntf-row"><button type="button" class="ntf-flat" data-test="mail">✉️ <?= __('notify_test_mail') ?></button><span class="ntf-msg"></span></div>
+            </div>
+            <div class="ntf-blk">
+                <h3>✈️ Telegram <span id="myTgBadge" class="ntf-badge"></span></h3>
+                <label class="ntf-chk"><input type="checkbox" id="uTgOn"> <?= __('update_notify_enable') ?></label>
+                <div class="ntf-fields" style="margin-top: 10px;"><div style="flex: 1 1 260px;"><label><?= __('notify_my_chat') ?></label><input type="text" id="uChat" class="form-control" placeholder="123456789" autocomplete="off"></div></div>
+                <div class="ntf-hint" id="myTgOff" style="margin-top: 8px; display: none;">⚠️ <?= __('notify_channel_off') ?></div>
+                <div class="ntf-hint" style="margin-top: 8px;"><?= __('notify_my_chat_hint') ?></div>
+                <div class="ntf-row"><button type="button" class="ntf-flat" data-test="tg">✈️ <?= __('notify_test_tg') ?></button><span class="ntf-msg"></span></div>
+            </div>
+        </div>
+        <div class="ntf-blk">
+            <h3>📋 <?= __('notify_my_what') ?></h3>
+            <table class="ntf-table" id="ntfEvTable"></table>
+            <div class="ntf-hint" style="margin-top: 10px;">ℹ️ <?= __('notify_future') ?></div>
+        </div>
+        <div class="ntf-row" style="margin: 0 0 12px;"><button type="button" class="btn btn-primary ntf-btn" data-save="my">💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
+    </div>
+
+    <?php if ($ntfAdmin): ?>
+    <div id="ntfCh" class="ntf-page">
+        <div class="ntf-hint" style="margin-bottom: 10px;">ℹ️ <?= __('notify_channels_hint') ?></div>
         <div class="ntf-blk">
             <h3>✉️ <?= __('notify_email') ?> <span id="ntfMailBadge" class="ntf-badge"></span></h3>
             <label class="ntf-chk"><input type="checkbox" id="mailOn"> <?= __('update_notify_enable') ?></label>
@@ -50,10 +83,8 @@ $ntfI18n = [
                 <div><label><?= __('notify_pass') ?></label><input type="password" id="mailPass" class="form-control" autocomplete="new-password"></div>
                 <div><label><?= __('notify_from') ?></label><input type="text" id="mailFrom" class="form-control" placeholder="KMS Monitor &lt;monitor@example.com&gt;" autocomplete="off"></div>
             </div>
-            <div style="margin-top: 10px;"><label><?= __('notify_to') ?></label><input type="text" id="mailTo" class="form-control" placeholder="admin@example.com, security@example.com" autocomplete="off"></div>
             <div class="ntf-row">
-                <button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button>
-                <button type="button" class="ntf-flat" data-test="mail">✉️ <?= __('notify_test_mail') ?></button>
+                <button type="button" class="btn btn-primary ntf-btn" data-save="global">💾 <?= __('save') ?></button>
                 <span class="ntf-msg"></span>
                 <span class="ntf-hint"><?= __('notify_secret_hint') ?></span>
             </div>
@@ -64,21 +95,11 @@ $ntfI18n = [
             <label class="ntf-chk"><input type="checkbox" id="tgOn"> <?= __('update_notify_enable') ?></label>
             <div class="ntf-grid">
                 <div><label><?= __('notify_token') ?></label><input type="password" id="tgToken" class="form-control" placeholder="123456:ABC…" autocomplete="new-password"></div>
-                <div><label><?= __('notify_chat') ?></label><input type="text" id="tgChat" class="form-control" placeholder="-1001234567890" autocomplete="off"></div>
             </div>
             <div class="ntf-row">
-                <button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button>
-                <button type="button" class="ntf-flat" data-test="tg">✈️ <?= __('notify_test_tg') ?></button>
+                <button type="button" class="btn btn-primary ntf-btn" data-save="global">💾 <?= __('save') ?></button>
                 <span class="ntf-msg"></span>
             </div>
-        </div>
-    </div>
-
-    <div id="ntfEv" class="ntf-page">
-        <div class="ntf-blk">
-            <table class="ntf-table" id="ntfEvTable"></table>
-            <div class="ntf-hint" style="margin-top: 10px;">ℹ️ <?= __('notify_future') ?></div>
-            <div class="ntf-row"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
         </div>
     </div>
 
@@ -105,13 +126,13 @@ $ntfI18n = [
                 </div>
             </div>
         </div>
-        <div class="ntf-row" style="margin: 0 0 12px;"><button type="button" class="btn btn-primary ntf-btn" data-save>💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row" style="margin: 0 0 12px;"><button type="button" class="btn btn-primary ntf-btn" data-save="global">💾 <?= __('save') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-blk">
             <h3>🕘 <?= __('notify_history') ?></h3>
             <table class="ntf-table" id="ntfHist"></table>
         </div>
     </div>
-
+    <?php endif; ?>
 </div>
 
 <style>
@@ -156,19 +177,21 @@ $ntfI18n = [
 .ntf-two .ntf-blk { margin-bottom: 0; height: 100%; box-sizing: border-box; }
 @media (max-width: 1000px) { .ntf-two { grid-template-columns: 1fr; } }
 </style>
-
 <script>
 (function () {
-    const CAT = <?= json_encode($ntfCatalog, JSON_UNESCAPED_UNICODE) ?>;
+    const NAMES = <?= json_encode($ntfNames, JSON_UNESCAPED_UNICODE) ?>;
     const T = <?= json_encode($ntfI18n, JSON_UNESCAPED_UNICODE) ?>;
+    const ADMIN = <?= $ntfAdmin ? 'true' : 'false' ?>;
     const $ = function (id) { return document.getElementById(id); };
-    let S = null, events = {}, loaded = false;
+    let events = {}, catalog = [], loaded = false;
 
     function post(params) {
         const fd = new FormData();
         Object.keys(params).forEach(function (k) { fd.append(k, params[k]); });
         return fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); });
     }
+    function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
     // Сообщение показывается рядом с нажатой кнопкой и только на своей вкладке; само исчезает
     function clearMsgs() { document.querySelectorAll('#section-notifications .ntf-msg').forEach(function (m) { m.textContent = ''; }); }
     function msg(btn, text, ok) {
@@ -178,15 +201,7 @@ $ntfI18n = [
         m.textContent = text || ''; m.className = 'ntf-msg ' + (ok ? 'ok' : 'err');
         setTimeout(function () { if (m.textContent === text) m.textContent = ''; }, ok ? 4000 : 8000);
     }
-    function fillTime(hId, mId) {
-        const h = $(hId), m = $(mId);
-        for (let i = 0; i < 24; i++) h.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
-        for (let i = 0; i < 60; i++) m.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
-    }
-    function setTime(hId, mId, v) { const p = String(v || '00:00').split(':'); $(hId).value = p[0]; $(mId).value = p[1]; }
-    function getTime(hId, mId) { return $(hId).value + ':' + $(mId).value; }
-    fillTime('rQFromH', 'rQFromM'); fillTime('rQToH', 'rQToM');
-    function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+    function fail(btn, e) { msg(btn, T.saveError + ' (' + (e && e.message ? e.message : '?') + ')', false); }
 
     document.querySelectorAll('#section-notifications .ntf-tab').forEach(function (b) {
         b.onclick = function () {
@@ -195,34 +210,31 @@ $ntfI18n = [
         };
     });
 
-    function badge(id, on) { const b = $(id); b.textContent = on ? T.on : T.off; b.className = 'ntf-badge' + (on ? ' on' : ''); }
+    function badge(id, on) { const b = $(id); if (!b) return; b.textContent = on ? T.on : T.off; b.className = 'ntf-badge' + (on ? ' on' : ''); }
 
-    function fill(s) {
-        S = s;
-        $('mailOn').checked = !!s.email.enabled; $('mailHost').value = s.email.host; $('mailPort').value = s.email.port;
-        $('mailSecure').value = s.email.secure; $('mailUser').value = s.email.user; $('mailPass').value = '';
-        $('mailPass').placeholder = s.email.has_pass ? T.secretSet : '';
-        $('mailFrom').value = s.email.from; $('mailTo').value = s.email.to;
-        $('tgOn').checked = !!s.telegram.enabled; $('tgToken').value = ''; $('tgToken').placeholder = s.telegram.has_token ? T.secretSet : '123456:ABC…';
-        $('tgChat').value = s.telegram.chat;
-        badge('ntfMailBadge', s.email.enabled); badge('ntfTgBadge', s.telegram.enabled);
-        const r = s.rules;
-        $('rFailN').value = r.fail_count; $('rFailM').value = r.fail_minutes; $('rSpam').value = r.antispam_minutes;
-        $('rQuiet').checked = !!r.quiet_enabled; setTime('rQFromH', 'rQFromM', r.quiet_from); setTime('rQToH', 'rQToM', r.quiet_to);
-        events = JSON.parse(JSON.stringify(s.events));
+    // ---------- мои уведомления ----------
+    function fillMy(d) {
+        const m = d.my;
+        $('uMailOn').checked = !!m.mail_on; $('uEmail').value = m.email;
+        $('uTgOn').checked = !!m.tg_on; $('uChat').value = m.tg_chat;
+        badge('myMailBadge', m.mail_on); badge('myTgBadge', m.tg_on);
+        $('myMailOff').style.display = d.channels.mail ? 'none' : 'block';
+        $('myTgOff').style.display = d.channels.tg ? 'none' : 'block';
+        catalog = d.catalog; events = JSON.parse(JSON.stringify(m.events));
         renderEvents();
     }
 
     function renderEvents() {
         const t = $('ntfEvTable'); t.textContent = '';
-        const head = el('tr'); ['<?= addslashes(__('notify_event')) ?>', '<?= addslashes(__('notify_severity')) ?>', '✉️ Email', '✈️ Telegram'].forEach(function (h, i) { const th = el('th', i ? 'c' : '', h); head.appendChild(th); });
+        if (!catalog.length) { const tr = el('tr'); tr.appendChild(el('td', 'ntf-hint', T.noEvents)); t.appendChild(tr); return; }
+        const head = el('tr'); [T.event, T.severity, '✉️ Email', '✈️ Telegram'].forEach(function (h, i) { head.appendChild(el('th', i ? 'c' : '', h)); });
         t.appendChild(head);
         [['audit', T.srcAudit], ['update', T.srcUpdate]].forEach(function (g) {
-            const rows = CAT.filter(function (c) { return c.src === g[0]; });
+            const rows = catalog.filter(function (c) { return c.src === g[0]; });
             if (!rows.length) return;
             const gr = el('tr', 'grp'); const gt = el('td', '', g[1]); gt.colSpan = 4; gr.appendChild(gt); t.appendChild(gr);
             rows.forEach(function (c) {
-                const tr = el('tr'); tr.appendChild(el('td', '', c.name));
+                const tr = el('tr'); tr.appendChild(el('td', '', NAMES[c.id] || c.id));
                 const sv = el('td', 'c'); sv.appendChild(el('span', 'ntf-sev ' + c.sev, c.sev === 'high' ? T.sevHigh : (c.sev === 'mid' ? T.sevMid : T.sevLow))); tr.appendChild(sv);
                 ['mail', 'tg'].forEach(function (ch) {
                     const td = el('td', 'c'); const cb = document.createElement('input'); cb.type = 'checkbox';
@@ -235,9 +247,33 @@ $ntfI18n = [
         });
     }
 
+    function myForm() {
+        return { u_mail_on: $('uMailOn').checked ? 1 : '', u_email: $('uEmail').value, u_tg_on: $('uTgOn').checked ? 1 : '', u_chat: $('uChat').value, u_events: JSON.stringify(events) };
+    }
+
+    // ---------- общие настройки (администратор) ----------
+    function fillTime(hId, mId) {
+        const h = $(hId), m = $(mId);
+        for (let i = 0; i < 24; i++) h.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
+        for (let i = 0; i < 60; i++) m.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
+    }
+    function setTime(hId, mId, v) { const p = String(v || '00:00').split(':'); $(hId).value = p[0]; $(mId).value = p[1]; }
+    function getTime(hId, mId) { return $(hId).value + ':' + $(mId).value; }
+
+    function fillGlobal(s) {
+        $('mailOn').checked = !!s.email.enabled; $('mailHost').value = s.email.host; $('mailPort').value = s.email.port;
+        $('mailSecure').value = s.email.secure; $('mailUser').value = s.email.user; $('mailPass').value = '';
+        $('mailPass').placeholder = s.email.has_pass ? T.secretSet : ''; $('mailFrom').value = s.email.from;
+        $('tgOn').checked = !!s.telegram.enabled; $('tgToken').value = ''; $('tgToken').placeholder = s.telegram.has_token ? T.secretSet : '123456:ABC…';
+        badge('ntfMailBadge', s.email.enabled); badge('ntfTgBadge', s.telegram.enabled);
+        const r = s.rules;
+        $('rFailN').value = r.fail_count; $('rFailM').value = r.fail_minutes; $('rSpam').value = r.antispam_minutes;
+        $('rQuiet').checked = !!r.quiet_enabled; setTime('rQFromH', 'rQFromM', r.quiet_from); setTime('rQToH', 'rQToM', r.quiet_to);
+    }
+
     function renderHistory(list) {
         const t = $('ntfHist'); t.textContent = '';
-        if (!list || !list.length) { const tr = el('tr'); const td = el('td', 'ntf-hint', T.empty); tr.appendChild(td); t.appendChild(tr); return; }
+        if (!list || !list.length) { const tr = el('tr'); tr.appendChild(el('td', 'ntf-hint', T.empty)); t.appendChild(tr); return; }
         list.forEach(function (h) {
             const tr = el('tr'); const d = new Date(h.t * 1000);
             tr.appendChild(el('td', '', d.toLocaleString()));
@@ -248,13 +284,11 @@ $ntfI18n = [
         });
     }
 
-    function form() {
+    function globalForm() {
         return {
             mail_on: $('mailOn').checked ? 1 : '', mail_host: $('mailHost').value, mail_port: $('mailPort').value,
-            mail_secure: $('mailSecure').value, mail_user: $('mailUser').value, mail_pass: $('mailPass').value,
-            mail_from: $('mailFrom').value, mail_to: $('mailTo').value,
-            tg_on: $('tgOn').checked ? 1 : '', tg_token: $('tgToken').value, tg_chat: $('tgChat').value,
-            events: JSON.stringify(events),
+            mail_secure: $('mailSecure').value, mail_user: $('mailUser').value, mail_pass: $('mailPass').value, mail_from: $('mailFrom').value,
+            tg_on: $('tgOn').checked ? 1 : '', tg_token: $('tgToken').value,
             rules: JSON.stringify({ fail_count: $('rFailN').value, fail_minutes: $('rFailM').value, antispam_minutes: $('rSpam').value,
                 quiet_enabled: $('rQuiet').checked, quiet_from: getTime('rQFromH', 'rQFromM'), quiet_to: getTime('rQToH', 'rQToM') })
         };
@@ -262,29 +296,39 @@ $ntfI18n = [
 
     function load() {
         post({ ajax: 'get_notify' }).then(function (d) {
-            if (d.success) { fill(d.settings); renderHistory(d.history); loaded = true; }
+            if (!d.success) return;
+            fillMy(d);
+            if (ADMIN && d.settings) { fillGlobal(d.settings); renderHistory(d.history); }
+            loaded = true;
         }).catch(function () {});
+    }
+
+    // После теста обновляем только историю: несохранённые правки формы не трогаем
+    function refreshHistory() {
+        post({ ajax: 'get_notify' }).then(function (d) { if (d.success && d.history) renderHistory(d.history); }).catch(function () {});
     }
 
     document.querySelectorAll('#section-notifications [data-save]').forEach(function (b) {
         b.onclick = function () {
-            const p = form(); p.ajax = 'save_notify';
+            const isMy = b.dataset.save === 'my';
+            const p = isMy ? myForm() : globalForm(); p.ajax = isMy ? 'save_my_notify' : 'save_notify';
             post(p).then(function (d) {
                 msg(b, d.message || (d.success ? '' : T.saveError), !!d.success);
-                if (d.success) { fill(d.settings); }
-            }).catch(function (e) { msg(b, T.saveError + ' (' + (e && e.message ? e.message : '?') + ')', false); });
+                if (d.success) { if (isMy) fillMy(d); else { fillGlobal(d.settings); refreshHistory(); } }
+            }).catch(function (e) { fail(b, e); });
         };
     });
     document.querySelectorAll('#section-notifications [data-test]').forEach(function (b) {
         b.onclick = function () {
-            const p = form(); p.ajax = 'test_notify'; p.channel = b.dataset.test; b.disabled = true;
-            post(p).then(function (d) { msg(b, d.message, !!d.success); load(); })
-                .catch(function (e) { msg(b, T.saveError + ' (' + (e && e.message ? e.message : '?') + ')', false); })
+            const p = myForm(); p.ajax = 'test_my_notify'; p.channel = b.dataset.test; b.disabled = true;
+            post(p).then(function (d) { msg(b, d.message, !!d.success); if (ADMIN) refreshHistory(); })
+                .catch(function (e) { fail(b, e); })
                 .then(function () { b.disabled = false; });
         };
     });
 
-    window.loadNotify = function () { if (!loaded) load(); else load(); };
+    if (ADMIN) { fillTime('rQFromH', 'rQFromM'); fillTime('rQToH', 'rQToM'); }
+    window.loadNotify = function () { load(); };
     function auto() { if ($('section-notifications').classList.contains('active') && !loaded) load(); }
     auto();
     new MutationObserver(auto).observe($('section-notifications'), { attributes: true, attributeFilter: ['class'] });

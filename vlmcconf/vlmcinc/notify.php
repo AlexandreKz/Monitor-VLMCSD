@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 2.0.0
 // ДАТА: 2026-11-17
 // @description: Уведомления (пункт 27): Email по SMTP (сокеты, без внешних пакетов) и Telegram; события журнала и обновлений, антиспам, тихие часы, история отправок; секреты хранятся зашифрованными
 // ============================================
@@ -16,14 +16,25 @@ require_once __DIR__ . '/http_client.php';
 
 const NOTIFY_HISTORY_KEEP = 50;
 
-/** События: важность и канал по умолчанию. Источник — для группировки в интерфейсе. */
+/** События: важность, источник и право, нужное для получения (иначе пользователь событие не увидит). */
 function notifyCatalog() {
     return [
-        'failed_logins'    => ['sev' => 'high', 'src' => 'audit',  'mail' => true,  'tg' => true],
-        'access_denied'    => ['sev' => 'mid',  'src' => 'audit',  'mail' => true,  'tg' => false],
-        'user_deleted'     => ['sev' => 'high', 'src' => 'audit',  'mail' => true,  'tg' => true],
-        'update_available' => ['sev' => 'low',  'src' => 'update', 'mail' => true,  'tg' => false],
+        'failed_logins'    => ['sev' => 'high', 'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => true],
+        'access_denied'    => ['sev' => 'mid',  'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => false],
+        'user_deleted'     => ['sev' => 'high', 'src' => 'audit',  'perm' => 16,   'mail' => true,  'tg' => true],
+        'update_available' => ['sev' => 'low',  'src' => 'update', 'perm' => 1024, 'mail' => true,  'tg' => false],
     ];
+}
+
+/** События, доступные пользователю с такими правами (PERM_LOGS_VIEW = 16, PERM_TOOLS_EDIT = 1024). */
+function notifyEventsFor($permissions) {
+    $out = [];
+    foreach (notifyCatalog() as $id => $e) {
+        if ((((int)$permissions) & $e['perm']) === $e['perm']) {
+            $out[$id] = $e;
+        }
+    }
+    return $out;
 }
 
 function notifyFile()    { return vlmcDataFile('notify.json'); }
@@ -31,15 +42,11 @@ function notifyState()   { return vlmcDataFile('notify_state.json'); }
 function notifyHistoryFile() { return vlmcDataFile('notify_history.jsonl'); }
 function notifyKeyFile() { return vlmcDataFile('notify.key'); }
 
+/** Общие настройки (администратор): способ отправки и правила. Получатели и подписки хранятся у пользователей. */
 function notifyDefaults() {
-    $events = [];
-    foreach (notifyCatalog() as $id => $e) {
-        $events[$id] = ['mail' => $e['mail'], 'tg' => $e['tg']];
-    }
     return [
-        'email' => ['enabled' => false, 'host' => '', 'port' => 587, 'secure' => 'tls', 'user' => '', 'pass' => '', 'from' => '', 'to' => ''],
-        'telegram' => ['enabled' => false, 'token' => '', 'chat' => ''],
-        'events' => $events,
+        'email' => ['enabled' => false, 'host' => '', 'port' => 587, 'secure' => 'tls', 'user' => '', 'pass' => '', 'from' => ''],
+        'telegram' => ['enabled' => false, 'token' => ''],
         'rules' => ['fail_count' => 5, 'fail_minutes' => 10, 'antispam_minutes' => 30, 'quiet_enabled' => false, 'quiet_from' => '23:00', 'quiet_to' => '07:00']
     ];
 }
@@ -104,17 +111,9 @@ function notifyLoad() {
             $d[$sec] = array_merge($d[$sec], array_intersect_key($j[$sec], $d[$sec]));
         }
     }
-    if (isset($j['events']) && is_array($j['events'])) {
-        foreach ($d['events'] as $id => $v) {
-            if (isset($j['events'][$id]) && is_array($j['events'][$id])) {
-                $d['events'][$id] = ['mail' => !empty($j['events'][$id]['mail']), 'tg' => !empty($j['events'][$id]['tg'])];
-            }
-        }
-    }
     return $d;
 }
 
-/** Сохранение настроек: атомарно (как конфиг панели). При сбое причина в $GLOBALS['notify_save_error']. */
 function notifySave(array $s) {
     require_once __DIR__ . '/safe_json.php';
     $f = notifyFile();
@@ -162,16 +161,10 @@ function notifyBuild(array $in, array $old) {
         $e['pass'] = notifyEncrypt((string)$in['mail_pass']);
     }
     $e['from'] = trim((string)($in['mail_from'] ?? ''));
-    $e['to'] = trim((string)($in['mail_to'] ?? ''));
     if ($e['enabled']) {
         if ($e['host'] === '' || !preg_match('/^[A-Za-z0-9.\-]+$/', $e['host'])) { return [null, 'notify_err_host']; }
         if ($e['port'] < 1 || $e['port'] > 65535) { return [null, 'notify_err_port']; }
         if (!filter_var(notifyAddress($e['from']), FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_from']; }
-        $rcpt = array_filter(array_map('trim', explode(',', $e['to'])));
-        if (!$rcpt) { return [null, 'notify_err_to']; }
-        foreach ($rcpt as $r) {
-            if (!filter_var($r, FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_to']; }
-        }
     }
     unset($e);
 
@@ -181,21 +174,11 @@ function notifyBuild(array $in, array $old) {
         if (!preg_match('/^\d+:[A-Za-z0-9_\-]+$/', trim((string)$in['tg_token']))) { return [null, 'notify_err_token']; }
         $t['token'] = notifyEncrypt(trim((string)$in['tg_token']));
     }
-    $t['chat'] = trim((string)($in['tg_chat'] ?? ''));
     if ($t['enabled']) {
         if ($t['token'] === '') { return [null, 'notify_err_token']; }
-        if (!preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $t['chat'])) { return [null, 'notify_err_chat']; }
     }
     unset($t);
 
-    $ev = json_decode((string)($in['events'] ?? ''), true);
-    if (is_array($ev)) {
-        foreach (notifyCatalog() as $id => $c) {
-            if (isset($ev[$id]) && is_array($ev[$id])) {
-                $s['events'][$id] = ['mail' => !empty($ev[$id]['mail']), 'tg' => !empty($ev[$id]['tg'])];
-            }
-        }
-    }
     $r = json_decode((string)($in['rules'] ?? ''), true);
     if (is_array($r)) {
         $n = (int)($r['fail_count'] ?? 0); $m = (int)($r['fail_minutes'] ?? 0); $a = (int)($r['antispam_minutes'] ?? -1);
@@ -206,6 +189,85 @@ function notifyBuild(array $in, array $old) {
             'quiet_enabled' => !empty($r['quiet_enabled']), 'quiet_from' => $qf, 'quiet_to' => $qt];
     }
     return [$s, ''];
+}
+
+// ---------- настройки пользователя (хранятся в его записи в users.json) ----------
+
+function notifyUserDefaults($permissions) {
+    $ev = [];
+    foreach (notifyEventsFor($permissions) as $id => $e) {
+        $ev[$id] = ['mail' => false, 'tg' => false];
+    }
+    return ['mail_on' => false, 'email' => '', 'tg_on' => false, 'tg_chat' => '', 'events' => $ev];
+}
+
+/** Настройки уведомлений пользователя с учётом его текущих прав (лишние события отбрасываются). */
+function notifyUserLoad(array $user) {
+    $d = notifyUserDefaults((int)($user['permissions'] ?? 0));
+    $n = isset($user['notify']) && is_array($user['notify']) ? $user['notify'] : [];
+    $d['mail_on'] = !empty($n['mail_on']);
+    $d['tg_on'] = !empty($n['tg_on']);
+    $d['email'] = is_string($n['email'] ?? null) ? $n['email'] : '';
+    $d['tg_chat'] = is_string($n['tg_chat'] ?? null) ? $n['tg_chat'] : '';
+    foreach ($d['events'] as $id => $v) {
+        if (isset($n['events'][$id]) && is_array($n['events'][$id])) {
+            $d['events'][$id] = ['mail' => !empty($n['events'][$id]['mail']), 'tg' => !empty($n['events'][$id]['tg'])];
+        }
+    }
+    return $d;
+}
+
+/** Проверка и сборка настроек пользователя из присланных полей. Возвращает [настройки|null, код ошибки]. */
+function notifyUserBuild(array $in, array $user) {
+    $n = notifyUserDefaults((int)($user['permissions'] ?? 0));
+    $n['mail_on'] = !empty($in['u_mail_on']);
+    $n['email'] = trim((string)($in['u_email'] ?? ''));
+    $n['tg_on'] = !empty($in['u_tg_on']);
+    $n['tg_chat'] = trim((string)($in['u_chat'] ?? ''));
+    if ($n['email'] !== '' && (strlen($n['email']) > 190 || !filter_var($n['email'], FILTER_VALIDATE_EMAIL))) { return [null, 'notify_err_email']; }
+    if ($n['tg_chat'] !== '' && !preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $n['tg_chat'])) { return [null, 'notify_err_chat']; }
+    if ($n['mail_on'] && $n['email'] === '') { return [null, 'notify_err_email']; }
+    if ($n['tg_on'] && $n['tg_chat'] === '') { return [null, 'notify_err_chat']; }
+    $ev = json_decode((string)($in['u_events'] ?? ''), true);
+    if (is_array($ev)) {
+        foreach ($n['events'] as $id => $v) {
+            if (isset($ev[$id]) && is_array($ev[$id])) {
+                $n['events'][$id] = ['mail' => !empty($ev[$id]['mail']), 'tg' => !empty($ev[$id]['tg'])];
+            }
+        }
+    }
+    return [$n, ''];
+}
+
+/** Сохраняет настройки уведомлений в записи пользователя. */
+function notifyUserSave($userId, array $n) {
+    require_once __DIR__ . '/users.php';
+    return updateUser($userId, ['notify' => $n]);
+}
+
+/** Получатели события: пользователи с подпиской и правом на это событие. */
+function notifyRecipients($event) {
+    require_once __DIR__ . '/users.php';
+    $mail = []; $tg = [];
+    foreach (getAllUsers() as $u) {
+        if (!isset(notifyEventsFor((int)($u['permissions'] ?? 0))[$event])) { continue; }
+        $n = notifyUserLoad($u);
+        if ($n['mail_on'] && $n['email'] !== '' && !empty($n['events'][$event]['mail'])) { $mail[$n['email']] = true; }
+        if ($n['tg_on'] && $n['tg_chat'] !== '' && !empty($n['events'][$event]['tg'])) { $tg[$n['tg_chat']] = true; }
+    }
+    return [array_keys($mail), array_keys($tg)];
+}
+
+/** Ограничение тестовых отправок пользователя (защита SMTP от злоупотребления): не чаще 5 в час. */
+function notifyTestAllowed($userId) {
+    return notifyStateUpdate(function (&$st) use ($userId) {
+        $now = time();
+        $list = array_values(array_filter((array)($st['tests'][$userId] ?? []), function ($t) use ($now) { return $now - $t < 3600; }));
+        if (count($list) >= 5) { $st['tests'][$userId] = $list; return false; }
+        $list[] = $now;
+        $st['tests'][$userId] = $list;
+        return true;
+    });
 }
 
 // ---------- отправка ----------
@@ -358,8 +420,9 @@ function notifyEvent($event, $title, $text = '') {
         $cat = notifyCatalog();
         if (!isset($cat[$event])) { return; }
         $s = notifyLoad();
-        $useMail = $s['email']['enabled'] && !empty($s['events'][$event]['mail']);
-        $useTg = $s['telegram']['enabled'] && !empty($s['events'][$event]['tg']);
+        [$mailTo, $tgTo] = notifyRecipients($event);
+        $useMail = $s['email']['enabled'] && $mailTo;
+        $useTg = $s['telegram']['enabled'] && $tgTo;
         if (!$useMail && !$useTg) { return; }
         if ($cat[$event]['sev'] !== 'high' && notifyInQuiet($s['rules'])) { return; }
 
@@ -381,15 +444,18 @@ function notifyEvent($event, $title, $text = '') {
         $host = (string)($_SERVER['HTTP_HOST'] ?? gethostname());
         $body = $title . "\n\n" . $text . ($extra > 0 ? "\n\n(+" . $extra . ")" : '') . "\n\nKMS Monitor, " . $host . ', ' . date('Y-m-d H:i:s');
         $subject = '[KMS Monitor] ' . $title;
-        $send = function () use ($event, $title, $body, $subject, $s, $useMail, $useTg) {
+        $send = function () use ($event, $title, $body, $subject, $s, $useMail, $useTg, $mailTo, $tgTo) {
             $chs = []; $errs = [];
             if ($useMail) {
-                [$ok, $er] = notifySendEmail($s['email'], $subject, $body);
+                [$ok, $er] = notifySendEmail($s['email'] + ['to' => implode(', ', $mailTo)], $subject, $body);
                 $chs[] = 'mail'; if (!$ok) { $errs[] = 'mail: ' . $er; }
             }
             if ($useTg) {
-                [$ok, $er] = notifySendTelegram($s['telegram'], $subject . "\n\n" . $body);
-                $chs[] = 'tg'; if (!$ok) { $errs[] = 'tg: ' . $er; }
+                foreach ($tgTo as $chat) {
+                    [$ok, $er] = notifySendTelegram($s['telegram'] + ['chat' => $chat], $subject . "\n\n" . $body);
+                    if (!$ok) { $errs[] = 'tg: ' . $er; }
+                }
+                $chs[] = 'tg';
             }
             notifyHistoryAdd($event, $title, $chs, !$errs, implode('; ', $errs));
         };

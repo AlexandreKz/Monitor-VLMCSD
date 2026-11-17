@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.1.1
+// ВЕРСИЯ: 3.1.2
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), ссылка на уведомления
 // ============================================
@@ -161,9 +161,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
     <div class="audit-panel">
         <div class="audit-panel-title">🔔 <?= __('audit_notify_title') ?></div>
         <div class="audit-hint"><?= __('notify_open_hint') ?></div>
-        <?php if ($canAuditAdmin): ?>
         <div style="margin-top: 8px;"><button type="button" class="btn" style="height: 30px; padding: 0 16px; font-size: 12px;" onclick="var m=document.querySelector('.menu-item[onclick*=&quot;notifications&quot;]'); if (m) m.click();">🔔 <?= __('notify_open_settings') ?></button></div>
-        <?php endif; ?>
     </div>
     </div>
 

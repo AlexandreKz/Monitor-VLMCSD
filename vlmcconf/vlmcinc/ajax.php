@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.11.1
+// ВЕРСИЯ: 3.12.2
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -76,10 +76,11 @@ function ajaxActionPermissions() {
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
-        // Уведомления (Email, Telegram): только администратор
-        'get_notify'            => PERM_ADMIN_FULL,
-        'save_notify'           => PERM_ADMIN_FULL,
-        'test_notify'           => PERM_ADMIN_FULL,
+        // Уведомления: каждый пользователь настраивает свои адреса и подписки, администратор — отправку и правила
+        'get_notify'            => 0,                 // любой вошедший: свои настройки; общие данные — только администратору
+        'save_my_notify'        => 0,                 // свои адреса и подписки
+        'test_my_notify'        => 0,                 // тест на свой адрес (с ограничением частоты)
+        'save_notify'           => PERM_ADMIN_FULL,   // общие настройки отправки и правила
 
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
@@ -129,6 +130,7 @@ function ajaxAuthorizeOrDie($action) {
         $deny();
     }
     if ($need === 0) {
+        auditBeginAjax($action);   // записываются только действия из списка журнала
         return;
     }
 
@@ -1294,33 +1296,78 @@ if (isset($_POST['ajax'])) {
 // ============================================
 // AJAX: Уведомления (пункт 27): настройки каналов, события, правила, тест, история
 // ============================================
-if ($_POST['ajax'] === 'get_notify') {
-    echo json_encode(['success' => true, 'settings' => notifyPublic(notifyLoad()), 'history' => notifyHistory(10)], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-if ($_POST['ajax'] === 'save_notify') {
-    [$new, $err] = notifyBuild($_POST, notifyLoad());
+if (in_array($_POST['ajax'], ['get_notify', 'save_my_notify', 'test_my_notify', 'save_notify'], true)) {
+    $ntfPerms = (int)($_SESSION['vlmc_permissions'] ?? 0);
+    if ($ntfPerms === 0 && ($_SESSION['vlmc_username'] ?? '') === 'root') { $ntfPerms = PERM_ADMIN_FULL; }
+    $ntfIsAdmin = ($ntfPerms & PERM_ADMIN_FULL) === PERM_ADMIN_FULL;
+    $ntfUser = getUserById((int)($_SESSION['vlmc_user_id'] ?? 0));
+    if (!$ntfUser) {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $ntfGlobal = notifyLoad();
+    $ntfMy = function () use (&$ntfUser, $ntfGlobal) {
+        $e = [];
+        foreach (notifyEventsFor((int)($ntfUser['permissions'] ?? 0)) as $id => $c) {
+            $e[] = ['id' => $id, 'sev' => $c['sev'], 'src' => $c['src']];
+        }
+        return ['my' => notifyUserLoad($ntfUser), 'catalog' => $e,
+            'channels' => ['mail' => (bool)$ntfGlobal['email']['enabled'], 'tg' => (bool)$ntfGlobal['telegram']['enabled']]];
+    };
+
+    if ($_POST['ajax'] === 'get_notify') {
+        $out = ['success' => true, 'admin' => $ntfIsAdmin] + $ntfMy();
+        if ($ntfIsAdmin) {
+            $out['settings'] = notifyPublic($ntfGlobal);
+            $out['history'] = notifyHistory(10);
+        }
+        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    if ($_POST['ajax'] === 'save_my_notify') {
+        [$n, $err] = notifyUserBuild($_POST, $ntfUser);
+        if ($n === null) {
+            echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $ok = notifyUserSave($ntfUser['id'], $n);
+        $ntfUser['notify'] = $n;
+        echo json_encode(['success' => $ok, 'message' => __($ok ? 'notify_saved' : 'msg_save_error')] + $ntfMy(), JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    if ($_POST['ajax'] === 'test_my_notify') {
+        $ch = ($_POST['channel'] ?? '') === 'tg' ? 'tg' : 'mail';
+        [$n, $err] = notifyUserBuild($_POST, $ntfUser);
+        $target = $n === null ? '' : ($ch === 'tg' ? $n['tg_chat'] : $n['email']);
+        if ($n === null || $target === '') {
+            echo json_encode(['success' => false, 'message' => __($err !== '' ? $err : ($ch === 'tg' ? 'notify_err_chat' : 'notify_err_email'))], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $cfg = $ntfGlobal[$ch === 'tg' ? 'telegram' : 'email'];
+        if (($ch === 'tg' && $cfg['token'] === '') || ($ch === 'mail' && $cfg['host'] === '')) {
+            echo json_encode(['success' => false, 'message' => __('notify_err_not_configured')], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if (!notifyTestAllowed((int)$ntfUser['id'])) {
+            echo json_encode(['success' => false, 'message' => __('notify_err_test_limit')], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $text = 'KMS Monitor: ' . __('notify_test_text') . ' ' . date('Y-m-d H:i:s');
+        [$ok, $detail] = $ch === 'tg'
+            ? notifySendTelegram($cfg + ['chat' => $target], $text)
+            : notifySendEmail($cfg + ['to' => $target], '[KMS Monitor] ' . __('notify_test_subject'), $text);
+        notifyHistoryAdd('test', __('notify_test_subject') . ' (' . ($ntfUser['username'] ?? '') . ')', [$ch], $ok, $detail);
+        echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_test_ok') : (__('notify_test_fail') . ' ' . $detail)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    // save_notify — общие настройки (проверка права выполнена таблицей прав)
+    [$new, $err] = notifyBuild($_POST, $ntfGlobal);
     if ($new === null) {
         echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
         exit;
     }
     $ok = notifySave($new);
     echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_saved') : (__('msg_save_error') . ' ' . ($GLOBALS['notify_save_error'] ?? '')), 'settings' => notifyPublic($new)], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-if ($_POST['ajax'] === 'test_notify') {
-    $ch = ($_POST['channel'] ?? '') === 'tg' ? 'tg' : 'mail';
-    $in = $_POST;
-    $in[$ch === 'tg' ? 'tg_on' : 'mail_on'] = '1';   // проверяем поля канала, даже если он ещё не включён
-    [$new, $err] = notifyBuild($in, notifyLoad());
-    if ($new === null) {
-        echo json_encode(['success' => false, 'message' => __($err)], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    $text = 'KMS Monitor: ' . __('notify_test_text') . ' ' . date('Y-m-d H:i:s');
-    [$ok, $detail] = $ch === 'tg' ? notifySendTelegram($new['telegram'], $text) : notifySendEmail($new['email'], '[KMS Monitor] ' . __('notify_test_subject'), $text);
-    notifyHistoryAdd('test', __('notify_test_subject'), [$ch], $ok, $detail);
-    echo json_encode(['success' => $ok, 'message' => $ok ? __('notify_test_ok') : (__('notify_test_fail') . ' ' . $detail)], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

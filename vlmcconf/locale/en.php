@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.7.0
+// ВЕРСИЯ: 5.7.1
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -975,6 +975,21 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_err_rules' => 'Invalid threshold values',
     'notify_err_time' => 'Time format: HH:MM',
     'notify_open_settings' => 'Configure in the “Notifications” section',
-    'notify_open_hint' => 'Channels, events and rules are set in the “Notifications” section.',
+    'notify_tab_my' => 'My notifications',
+    'notify_my_where' => 'Where to send',
+    'notify_my_what' => 'What to notify about',
+    'notify_my_email' => 'Your email',
+    'notify_my_chat' => 'Your Telegram Chat ID or @channel',
+    'notify_my_chat_hint' => 'You can find your Chat ID with the @userinfobot bot; press Start in the panel bot first.',
+    'notify_channel_off' => 'The channel is turned off by the administrator: nothing will be sent through it.',
+    'notify_my_empty' => 'No events are available for your permissions.',
+    'notify_channels_hint' => 'These are shared sending settings. Each user sets their own address and subscriptions on the “My notifications” tab, where delivery can be tested too.',
+    'notify_err_email' => 'Enter a valid email',
+    'notify_err_not_configured' => 'The channel is not set up by the administrator',
+    'notify_err_test_limit' => 'Too many tests: no more than 5 per hour',
+    'audit_act_save_notify' => '🔔 Notifications: shared settings',
+    'audit_act_save_my_notify' => '🔔 Notifications: own settings',
+    'audit_act_test_my_notify' => '🔔 Notification test',
+    'notify_open_hint' => 'Your address and event subscriptions are set in the “Notifications” section.',
 ];
 ?>
