@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.3.0
+// ВЕРСИЯ: 3.3.1
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -856,29 +856,31 @@ function updateStatChart(data) {
     let hl = -1;
     function comboClose() { comboList.style.display = 'none'; hl = -1; }
     closers.push(comboClose);
-    function comboOpen() {
+    // filtered = true — пользователь печатает: показываем совпадения; иначе (клик, фокус, стрелка) — весь список,
+    // а не только ранее выбранное значение, которое осталось в поле
+    function comboOpen(filtered) {
         const src = suggest[cur.param] || [];
-        const q = input.value.trim().toLowerCase();
-        const items = src.filter(function (v) { return !q || v.toLowerCase().indexOf(q) !== -1; }).slice(0, 50);
+        const q = filtered === true ? input.value.trim().toLowerCase() : '';
+        const items = src.filter(function (v) { return !q || v.toLowerCase().indexOf(q) !== -1; }).slice(0, 200);
         comboList.textContent = '';
         hl = -1;
         if (!items.length) { comboList.style.display = 'none'; return; }
         items.forEach(function (v) {
-            const d = el('div', 'rep-opt', v);
+            const d = el('div', 'rep-opt' + (v === input.value.trim() ? ' sel' : ''), v);
             d.onclick = function (e) { e.stopPropagation(); input.value = v; comboClose(); run(); };
             comboList.appendChild(d);
         });
         placePop(input, comboList);
     }
-    input.addEventListener('focus', function () { closeAll(comboClose); comboOpen(); });
-    input.addEventListener('click', function (e) { e.stopPropagation(); closeAll(comboClose); if (comboList.style.display === 'none') comboOpen(); });
-    input.addEventListener('input', comboOpen);
+    input.addEventListener('focus', function () { closeAll(comboClose); input.select(); comboOpen(false); });
+    input.addEventListener('click', function (e) { e.stopPropagation(); closeAll(comboClose); if (comboList.style.display === 'none') { input.select(); comboOpen(false); } });
+    input.addEventListener('input', function () { comboOpen(true); });
     comboList.addEventListener('click', function (e) { e.stopPropagation(); });
     input.addEventListener('keydown', function (e) {
         const opts = comboList.querySelectorAll('.rep-opt');
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
-            if (comboList.style.display === 'none') comboOpen();
+            if (comboList.style.display === 'none') { comboOpen(false); return; }
             if (!opts.length) return;
             hl = (hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
             opts.forEach(function (o, i) { o.classList.toggle('hl', i === hl); });
