@@ -114,7 +114,6 @@ return [
     'security_log_file' => 'Log file',
     'security_size' => 'Size',
     'security_status' => 'Status',
-    'security_first_event' => 'First event',
     'security_clear_by_date' => 'Clear by date',
     'security_from' => 'From',
     'security_to' => 'To',
@@ -816,7 +815,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'details' => 'Details',
 	'section_under_development' => 'Section under development',
 	'section_under_development_info' => 'Synchronization functionality will be available in future versions.',
-	'integrations_coming_soon' => 'Integrations with external systems will be available in future versions.',
     
     // API section (skeleton)
     'api_coming_soon' => 'API under development. REST API for external integrations will be available in future versions.',

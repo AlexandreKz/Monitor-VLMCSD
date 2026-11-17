@@ -115,7 +115,6 @@ return [
     'security_log_file' => 'Файл лога',
     'security_size' => 'Размер',
     'security_status' => 'Статус',
-    'security_first_event' => 'Первое событие',
     'security_clear_by_date' => 'Очистка по датам',
     'security_from' => 'С',
     'security_to' => 'По',
@@ -818,7 +817,6 @@ return [
     'details' => 'Детали',
 	'section_under_development' => 'Раздел в разработке',
 	'section_under_development_info' => 'Функционал синхронизации будет доступен в следующих версиях.',
-	'integrations_coming_soon' => 'Интеграции с внешними системами будут доступны в следующих версиях.',
     
     // Раздел API (каркас)
     'api_coming_soon' => 'API в разработке. REST API для внешних интеграций будет доступен в следующих версиях.',
