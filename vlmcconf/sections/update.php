@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.3.1
+// ВЕРСИЯ: 5.4.0
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -85,7 +85,7 @@ $updI18n = [
     <div class="upd-frame" style="margin-bottom: 8px;">
         <div class="upd-frame-title">
             <span>🎯 <?= __('update_type_label') ?></span>
-            <span id="channelSavedMsg" style="display: none; font-size: 12px; white-space: nowrap;"></span>
+            <span id="channelSavedMsg" style="visibility: hidden; font-size: 12px; white-space: nowrap;"></span>
         </div>
         <input type="hidden" id="updateType" value="<?= htmlspecialchars($updSettings['type']) ?>">
         <div class="update-channels" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -117,7 +117,7 @@ $updI18n = [
                     <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 12px; font-size: 11px;">💾</button>
                     <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 12px; font-size: 11px;" title="<?= htmlspecialchars(__('update_token_clear')) ?>">🗑️</button>
                 </div>
-                <div id="tokenStatus" style="font-size: 11px; margin-top: 4px;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></div>
+                <div id="tokenStatus" style="font-size: 11px; margin-top: 4px; min-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?= $tokenInfo['set'] ? sprintf(__('update_token_set'), htmlspecialchars($tokenInfo['hint'])) : __('update_token_unset') ?></div>
             </div>
             <!-- Автоматическая проверка: не чаще раза в 6 часов, сохраняется сразу -->
             <div class="upd-col">
@@ -130,7 +130,7 @@ $updI18n = [
                     <option value="<?= $hours ?>" <?= $updSettings['interval'] === $hours ? 'selected' : '' ?>><?= sprintf(__('update_auto_check_every'), $hours) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <div id="autoSavedMsg" style="display: none; font-size: 12px; margin-top: 4px;"></div>
+                <div id="autoSavedMsg" style="visibility: hidden; min-height: 16px; font-size: 12px; margin-top: 4px;"></div>
             </div>
             <!-- Автообновление, расписание и уведомления: в разработке -->
             <div class="upd-col" style="opacity: 0.55;">
@@ -193,15 +193,19 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-console::-webkit-scrollbar-thumb { background: #00ff00; border-radius: 3px; }
 .update-console::-webkit-scrollbar-thumb:hover { background: #00cc00; }
 
-.update-channel-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; background: <?= $themeCSS['card'] ?>; border-radius: 8px; padding: 8px 12px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+/* фиксированная высота: содержимое подгружается позже, но блок не меняет размер */
+.update-channel-card { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 18px 18px 16px; align-content: start; height: 76px; box-sizing: border-box; overflow: hidden; gap: 2px 12px; background: <?= $themeCSS['card'] ?>; border-radius: 8px; padding: 8px 12px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
 .update-channel-card:hover { border-color: <?= $themeCSS['primary'] ?>; }
 .update-channel-card:focus-visible { outline: 2px solid <?= $themeCSS['primary'] ?>; outline-offset: 2px; }
 .update-channel-card.selected { box-shadow: 0 0 0 1px <?= $themeCSS['primary'] ?> inset; }
 /* компактная раскладка: больше места под консоль */
 .upd-frame { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; }
 .upd-frame-title { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px; gap: 10px; }
-.upd-info-grid { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; font-size: 11px; }
-.upd-info-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; word-break: break-word; }
+.upd-info-grid { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 4px 22px; font-size: 11px; overflow: hidden; min-height: 16px; }
+@media (max-width: 800px) { .upd-info-grid { flex-wrap: wrap; } }
+.upd-info-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; flex: 0 0 auto; white-space: nowrap; }
+.upd-info-item:last-child { flex: 1 1 auto; overflow: hidden; }
+#updateStatusText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .upd-info-label { color: #8aa0bb; white-space: nowrap; }
 .upd-info-label::after { content: ':'; }
 .upd-info-item code { font-size: 11px; }
@@ -214,10 +218,12 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .upd-hint { font-size: 11px; color: #8aa0bb; margin-top: 6px; line-height: 1.4; }
 .upd-dev-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8aa0bb; margin: 2px 12px 0 0; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
-.update-channel-card .uc-line { margin-top: 0; }
-.update-channel-card .uc-title { margin-bottom: 0 !important; }
-.update-channel-card .uc-small { flex-basis: 100%; }
-.update-channel-card .uc-small:empty { display: none; }
+.update-channel-card .uc-line { margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 18px; min-width: 0; }
+.update-channel-card .uc-title { grid-column: 1 / -1; margin-bottom: 0 !important; line-height: 18px; white-space: nowrap; overflow: hidden; }
+.update-channel-card .uc-small { grid-column: 1 / -1; line-height: 16px; }
+.update-channel-card #chReleaseVersion, .update-channel-card #chEarlyVersion { grid-column: 1; }
+.update-channel-card .uc-status { grid-column: 2; }
+#section-tools .section-title { min-height: 34px; }
 .update-channel-card .uc-small { font-size: 11px; color: #8aa0bb; word-break: break-word; }
 .update-channel-card .uc-status.ok { color: <?= $themeCSS['success'] ?>; }
 .update-channel-card .uc-status.avail { color: #e0a800; font-weight: 600; }
@@ -351,6 +357,12 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         lastData = data;
         markSelected();
         setTimeout(fitConsole, 0);   // высота карточек могла измениться
+        setTimeout(function () {
+            ['chReleaseVersion', 'chReleaseStatus', 'chReleaseExtra', 'chEarlyVersion', 'chEarlyStatus', 'chEarlyExtra', 'updateStatusText'].forEach(function (id) {
+                const e = $(id);
+                if (e) e.title = e.textContent;
+            });
+        }, 0);
         if (!data || !data.enabled) {
             return;
         }
@@ -543,9 +555,9 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
             el.style.color = '#e74c3c';
             el.textContent = '❌ ' + I18N.saveError;
         }).then(function () {
-            el.style.display = el.tagName === 'SPAN' ? 'inline' : 'block';
+            el.style.visibility = 'visible';
             clearTimeout(savedTimers[msgId]);
-            savedTimers[msgId] = setTimeout(function () { el.style.display = 'none'; }, 4000);
+            savedTimers[msgId] = setTimeout(function () { el.style.visibility = 'hidden'; }, 4000);
         });
     }
 
@@ -566,6 +578,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         st.style.color = data.success ? '#2ecc71' : '#e74c3c';
         const base = data.set ? I18N.tokenSet.replace('%s', data.hint) : I18N.tokenUnset;
         st.textContent = (data.message || '') + ' (' + base + ')';
+        st.title = st.textContent;
     }
 
     function saveGithubToken(clear) {
