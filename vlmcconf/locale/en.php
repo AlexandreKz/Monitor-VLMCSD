@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.5
+// ВЕРСИЯ: 5.8.6
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1070,7 +1070,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     
     'notify_saved_off' => '⚠️ Rule saved but not enabled: select at least one delivery channel.',
     'info_tab_structure' => 'Project structure',
-    'info_tab_data' => 'Files outside web folder',
+    'info_tab_data' => 'Service files',
     'info_data_dir' => 'Data directory',
     'info_data_dir_hidden' => 'hidden (path is shown on Ubuntu only)',
     'info_data_legacy' => 'Legacy data location inside the web folder is in use',
