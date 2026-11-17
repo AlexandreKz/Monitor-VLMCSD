@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.14.0
+// ВЕРСИЯ: 3.14.1
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -75,7 +75,7 @@ function ajaxActionPermissions() {
         'get_audit'             => PERM_LOGS_VIEW,
         'export_audit'          => PERM_LOGS_VIEW,
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
-        'save_privacy_settings' => PERM_ADMIN_FULL,   // скрытие IP от неавторизованных: только администратор
+        'save_privacy_settings' => PERM_ADMIN_FULL,   // скрытие всех IP от неавторизованных: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
         // Уведомления: каналы, правила, тест и история — право «Уведомления: изменение» или полный администратор
@@ -1487,7 +1487,7 @@ if ($_POST['ajax'] === 'save_audit_settings') {
 }
 
 if ($_POST['ajax'] === 'save_privacy_settings') {
-    $hide = (($_POST['hide_device_ips'] ?? '0') === '1');
+    $hide = (($_POST['hide_ips'] ?? '0') === '1');
     $configFile = vlmcConfigFile();
     config_lock($configFile);
     $config = config_read($configFile)['config'];
@@ -1495,7 +1495,7 @@ if ($_POST['ajax'] === 'save_privacy_settings') {
         echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $config['privacy']['hide_device_ips'] = $hide;
+    $config['privacy']['hide_ips'] = $hide;
     $saved = save_config($configFile, $config);
     echo json_encode(['success' => $saved, 'enabled' => $hide, 'message' => __($saved ? ($hide ? 'privacy_saved_on' : 'privacy_saved_off') : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
     exit;

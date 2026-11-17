@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.3.0
+// ВЕРСИЯ: 5.3.1
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных (только администратор)
 // ============================================
@@ -17,7 +17,7 @@ $canViewUsers = hasPermission($userPerms, PERM_USERS_VIEW);
 $canEditUsers = hasPermission($userPerms, PERM_USERS_EDIT);
 $canManageWhitelist = hasPermission($userPerms, PERM_IP_WHITELIST);
 $isFullAdmin = hasPermission($userPerms, PERM_ADMIN_FULL);
-$hideDeviceIps = !empty($config['privacy']['hide_device_ips']);
+$hideIps = !empty($config['privacy']['hide_ips']);
 
 // Получаем список белых IP из конфига
 $whitelistIps = $config['whitelist_ips'] ?? [];
@@ -121,7 +121,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 			<div class="settings-card privacy-card">
 				<div class="settings-card-title">🙈 <?= __('privacy_title') ?></div>
 				<label class="privacy-switch">
-					<input type="checkbox" id="hideDeviceIps" <?= $hideDeviceIps ? 'checked' : '' ?> onchange="savePrivacySettings(this)">
+					<input type="checkbox" id="hideIps" <?= $hideIps ? 'checked' : '' ?> onchange="savePrivacySettings(this)">
 					<span><?= __('privacy_hide_ips_label') ?></span>
 				</label>
 				<p class="privacy-hint"><?= __('privacy_hide_ips_hint') ?></p>
@@ -952,7 +952,7 @@ function savePrivacySettings(box) {
     const msg = document.getElementById('privacyMessage');
     const fd = new FormData();
     fd.append('ajax', 'save_privacy_settings');
-    fd.append('hide_device_ips', box.checked ? '1' : '0');
+    fd.append('hide_ips', box.checked ? '1' : '0');
     box.disabled = true;
     fetch('', { method: 'POST', body: fd })
         .then(response => response.json())

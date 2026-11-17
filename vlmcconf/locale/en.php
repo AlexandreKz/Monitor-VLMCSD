@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.9.0
+// ВЕРСИЯ: 5.9.1
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1095,8 +1095,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'info_data_backups' => 'Settings and users backups (config and users subfolders)',
     'info_auto_note' => 'Project structure and data files are refreshed automatically when the section is opened.',
     'privacy_title' => 'IP address privacy',
-    'privacy_hide_ips_label' => 'Hide IP addresses of added devices from unauthorized visitors',
-    'privacy_hide_ips_hint' => 'When enabled, on the main page without logging in to the panel the IP addresses of added devices are replaced with a blurred placeholder: in the log and in the “Unknown devices” and “Suspicious IPs” lists. Real addresses are not sent to the page. Logged-in users see everything.',
+    'privacy_hide_ips_label' => 'Hide IP addresses from unauthorized visitors',
+    'privacy_hide_ips_hint' => 'When enabled, on the main page without logging in to the panel all IP addresses are replaced with a blurred placeholder: in the log and in the “Unknown devices” and “Suspicious IPs” lists. When disabled, everyone sees the addresses. Real addresses are not sent to the page. Logged-in users see everything.',
     'privacy_saved_on' => 'IP address hiding enabled',
     'privacy_saved_off' => 'IP address hiding disabled',
     'audit_act_save_privacy_settings' => 'IP hiding from unauthorized visitors',

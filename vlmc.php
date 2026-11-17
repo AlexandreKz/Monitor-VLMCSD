@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.6.0
+// ВЕРСИЯ: 5.6.1
 // ДАТА: 2026-11-18
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.6.0
+ * Version: 5.6.1
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -123,10 +123,10 @@ if (!empty($config['devices'])) {
     }
 }
 
-// Скрытие IP добавленных устройств от неавторизованных (настройка в разделе «Безопасность»).
+// Скрытие всех IP от неавторизованных (настройка в разделе «Безопасность»).
 // Подмена делается на сервере: настоящие адреса в страницу и в ответы опроса не попадают.
 $viewerLoggedIn = isset($_SESSION['vlmc_admin']) && $_SESSION['vlmc_admin'] === true;
-$hideDeviceIps = !empty($config['privacy']['hide_device_ips']) && !$viewerLoggedIn;
+$hideIps = !empty($config['privacy']['hide_ips']) && !$viewerLoggedIn;
 
 // ============================================
 // AJAX ОБРАБОТЧИКИ (ДО HTML)
@@ -148,7 +148,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_log') {
     }
     
     echo processLog($logFile, $devices, $deviceComments, $groups, $groupColors, $filter, $groupFilter,
-        $hideDeviceIps ? vlmcLoadKnownIps($logFile, $devices) : null);
+        $hideIps);
     exit;
 }
 
@@ -532,20 +532,15 @@ if (!empty($stats['suspicious_ips'])) {
     }
 }
 
-// IP добавленных устройств заменяем заглушкой (для неавторизованных при включённой настройке)
-$maskedIps = $hideDeviceIps ? vlmcLoadKnownIps($logFile, $devices) : [];
-if ($maskedIps) {
+// IP заменяем заглушкой (для неавторизованных при включённой настройке)
+if ($hideIps) {
     foreach ($unknownDevicesArray as $k => $row) {
-        if (isset($maskedIps[$row['last_ip']])) {
-            $unknownDevicesArray[$k]['last_ip'] = '';
-            $unknownDevicesArray[$k]['masked'] = true;
-        }
+        $unknownDevicesArray[$k]['last_ip'] = '';
+        $unknownDevicesArray[$k]['masked'] = true;
     }
     foreach ($suspiciousIpsArray as $k => $row) {
-        if (isset($maskedIps[$row['ip']])) {
-            $suspiciousIpsArray[$k]['ip'] = '';
-            $suspiciousIpsArray[$k]['masked'] = true;
-        }
+        $suspiciousIpsArray[$k]['ip'] = '';
+        $suspiciousIpsArray[$k]['masked'] = true;
     }
 }
 
@@ -559,7 +554,7 @@ foreach ($config['devices'] as $group => $deviceList) {
     }
 }
 
-$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 'all', 'all', $hideDeviceIps ? $maskedIps : null);
+$initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupColors, 'all', 'all', $hideIps);
 
 ?>
 <!DOCTYPE html>
