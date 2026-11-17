@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.5
+// ВЕРСИЯ: 5.6.6
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -547,6 +547,12 @@ return [
     'audit_date_from' => 'From date',
     'audit_date_to' => 'To date',
     'audit_reset' => 'Reset',
+    'audit_range_label' => 'Period',
+    'audit_range_placeholder' => 'All time',
+    'audit_range_today' => 'Today',
+    'audit_range_7' => '7 days',
+    'audit_range_30' => '30 days',
+    'audit_range_all' => 'All time',
     'audit_export' => 'Export CSV',
     'audit_refresh' => 'Refresh',
     'audit_auto' => 'Auto-refresh',

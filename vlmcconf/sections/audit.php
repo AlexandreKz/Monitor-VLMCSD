@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 2.3.1
+// ВЕРСИЯ: 3.0.0
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -35,8 +35,14 @@ $auditI18n = [
     'sumIps'     => __('audit_sum_ips'),
     'sumTop'     => __('audit_sum_top'),
     'filterUser' => __('audit_filter_by_user'),
-    'count'      => __('audit_chart_count')
+    'count'      => __('audit_chart_count'),
+    'today'      => __('audit_range_today'),
+    'days7'      => __('audit_range_7'),
+    'days30'     => __('audit_range_30'),
+    'all'        => __('audit_range_all'),
+    'placeholder' => __('audit_range_placeholder')
 ];
+$auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 ?>
 
 <div id="section-audit" class="settings-section <?= $activeSection === 'audit' ? 'active' : '' ?>">
@@ -66,34 +72,31 @@ $auditI18n = [
                 <option value="denied"><?= __('audit_result_denied') ?></option>
             </select>
         </div>
-        <div class="audit-f">
-            <label><?= __('audit_date_from') ?></label>
-            <input type="date" id="auditFrom" class="form-control">
+        <div class="audit-f audit-range-wrap">
+            <label><?= __('audit_range_label') ?></label>
+            <div class="audit-range" id="auditRange">
+                <input type="text" id="auditRangeInput" class="form-control" readonly autocomplete="off" placeholder="<?= htmlspecialchars(__('audit_range_placeholder')) ?>">
+                <div class="audit-cal" id="auditCal" style="display: none;"></div>
+            </div>
+            <input type="hidden" id="auditFrom">
+            <input type="hidden" id="auditTo">
         </div>
-        <div class="audit-f">
-            <label><?= __('audit_date_to') ?></label>
-            <input type="date" id="auditTo" class="form-control">
+        <div class="audit-f audit-f-reset">
+            <label>&nbsp;</label>
+            <button class="btn" id="auditResetBtn" type="button" style="padding: 6px 14px; font-size: 12px; width: 100%;">✖ <?= __('audit_reset') ?></button>
         </div>
     </div>
 
     <div class="audit-bar">
         <div class="audit-bar-left">
             <button class="btn btn-primary" id="auditRefreshBtn" style="padding: 6px 14px; font-size: 12px;">🔄 <?= __('audit_refresh') ?></button>
-            <button class="btn" id="auditResetBtn" style="padding: 6px 14px; font-size: 12px;">✖ <?= __('audit_reset') ?></button>
-            <button class="btn" id="auditExportBtn" style="padding: 6px 14px; font-size: 12px;">📥 <?= __('audit_export') ?></button>
-            <?php if ($canAuditAdmin): ?>
-            <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px;">🗑️ <?= __('audit_clear') ?></button>
-            <?php endif; ?>
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
         </div>
         <div class="audit-bar-right">
             <span id="auditFound"></span>
-            <select id="auditPerPage" class="form-control" style="width: 90px;" title="<?= htmlspecialchars(__('audit_per_page')) ?>">
-                <option value="25">25</option>
-                <option value="50" selected>50</option>
-                <option value="100">100</option>
-                <option value="200">200</option>
-            </select>
+            <?php if ($canAuditAdmin): ?>
+            <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px;">🗑️ <?= __('audit_clear') ?></button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -113,10 +116,23 @@ $auditI18n = [
         </table>
     </div>
 
-    <div class="audit-pager">
-        <button class="btn" id="auditPrev" style="padding: 5px 12px;">←</button>
-        <span id="auditPageInfo"></span>
-        <button class="btn" id="auditNext" style="padding: 5px 12px;">→</button>
+    <div class="audit-pager-row">
+        <div class="audit-pager-left">
+            <button class="btn" id="auditExportBtn" style="padding: 5px 14px; font-size: 12px;">📥 <?= __('audit_export') ?></button>
+        </div>
+        <div class="audit-pager">
+            <button class="btn" id="auditPrev" style="padding: 5px 12px;">←</button>
+            <span id="auditPageInfo"></span>
+            <button class="btn" id="auditNext" style="padding: 5px 12px;">→</button>
+        </div>
+        <div class="audit-pager-right">
+            <select id="auditPerPage" class="form-control" style="width: 90px;" title="<?= htmlspecialchars(__('audit_per_page')) ?>">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+            </select>
+        </div>
     </div>
 
     <!-- Срок хранения и уведомления: в одну строку -->
@@ -178,7 +194,28 @@ $auditI18n = [
 .audit-badge.ok { color: #2ecc71; border: 1px solid #2ecc7155; }
 .audit-badge.error { color: #f39c12; border: 1px solid #f39c1255; }
 .audit-badge.denied { color: #e74c3c; border: 1px solid #e74c3c55; }
-.audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px 0; font-size: 12px; }
+.audit-pager-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 10px 0 12px; }
+.audit-pager-left { justify-self: start; }
+.audit-pager-right { justify-self: end; }
+.audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
+.audit-f-reset { align-self: end; }
+.audit-range { position: relative; }
+.audit-range .form-control { cursor: pointer; width: 100%; box-sizing: border-box; }
+.audit-cal { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 268px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); color: <?= $themeCSS['text'] ?>; }
+.audit-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 600; text-transform: capitalize; }
+.audit-cal-nav { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; line-height: 1; }
+.audit-cal-nav:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.audit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.audit-cal-wd { font-size: 10px; color: #8aa0bb; text-align: center; padding: 2px 0; text-transform: uppercase; }
+.audit-cal-day { background: transparent; border: 1px solid transparent; color: <?= $themeCSS['text'] ?>; border-radius: 6px; height: 28px; font-size: 12px; cursor: pointer; padding: 0; }
+.audit-cal-day:hover { background: <?= $themeCSS['hover'] ?>; }
+.audit-cal-day.other { opacity: 0.35; }
+.audit-cal-day.today { border-color: <?= $themeCSS['primary'] ?>; }
+.audit-cal-day.in-range { background: <?= $themeCSS['primary'] ?>33; border-radius: 0; }
+.audit-cal-day.edge { background: <?= $themeCSS['primary'] ?>; color: #fff; border-radius: 6px; }
+.audit-cal-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
+.audit-cal-preset { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; }
+.audit-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
 .audit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: stretch; }
 .audit-row .audit-panel { margin-bottom: 0; }
 @media (max-width: 900px) { .audit-row { grid-template-columns: 1fr; } }
@@ -191,6 +228,7 @@ $auditI18n = [
 <script>
 (function () {
     const I18N = <?= json_encode($auditI18n, JSON_UNESCAPED_UNICODE) ?>;
+    const LANG = <?= json_encode($auditLang) ?>;
     const $ = function (id) { return document.getElementById(id); };
     let page = 1, pages = 1, timer = null, autoTimer = null, loadedOnce = false;
 
@@ -225,6 +263,110 @@ $auditI18n = [
         values.forEach(function (v) { sel.appendChild(Object.assign(el('option', '', v.label), { value: v.value })); });
         sel.value = cur;
     }
+
+    // --- Выбор периода: один календарь на «с» и «по» (оформление берётся из темы панели) ---
+    const cal = { view: new Date(), start: '', end: '', picking: false };
+    const pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+    const isoDate = function (d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+    const fromIso = function (s) { const p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); };
+
+    function setRange(a, b, apply) {
+        cal.start = a; cal.end = b;
+        $('auditFrom').value = a;
+        $('auditTo').value = b;
+        $('auditRangeInput').value = a ? (a + ' — ' + (b || '…')) : '';
+        if (apply) reload();
+    }
+
+    function calOpen() { return $('auditCal').style.display !== 'none'; }
+    function closeCal() {
+        if (!calOpen()) return;
+        if (cal.picking && cal.start) { setRange(cal.start, cal.start, true); }   // выбран один день
+        cal.picking = false;
+        $('auditCal').style.display = 'none';
+    }
+    function openCal() {
+        cal.picking = false;
+        cal.view = cal.start ? fromIso(cal.start) : new Date();
+        cal.view.setDate(1);
+        $('auditCal').style.display = 'block';
+        renderCal();
+    }
+
+    function pickDay(d) {
+        if (!cal.picking) {
+            cal.picking = true;
+            setRange(d, '', false);
+            renderCal();
+        } else {
+            let a = cal.start, b = d;
+            if (b < a) { const t = a; a = b; b = t; }
+            cal.picking = false;
+            setRange(a, b, true);
+            $('auditCal').style.display = 'none';
+        }
+    }
+
+    function preset(days) {
+        const end = new Date(), start = new Date();
+        start.setDate(start.getDate() - (days - 1));
+        cal.picking = false;
+        setRange(isoDate(start), isoDate(end), true);
+        $('auditCal').style.display = 'none';
+    }
+
+    function renderCal() {
+        const box = $('auditCal');
+        box.textContent = '';
+        const head = el('div', 'audit-cal-head');
+        const prev = el('button', 'audit-cal-nav', '‹'); prev.type = 'button';
+        const next = el('button', 'audit-cal-nav', '›'); next.type = 'button';
+        prev.onclick = function (e) { e.stopPropagation(); cal.view.setMonth(cal.view.getMonth() - 1); renderCal(); };
+        next.onclick = function (e) { e.stopPropagation(); cal.view.setMonth(cal.view.getMonth() + 1); renderCal(); };
+        head.appendChild(prev);
+        head.appendChild(el('span', '', new Intl.DateTimeFormat(LANG, { month: 'long', year: 'numeric' }).format(cal.view)));
+        head.appendChild(next);
+        box.appendChild(head);
+
+        const grid = el('div', 'audit-cal-grid');
+        for (let i = 0; i < 7; i++) {   // неделя с понедельника (1 января 2024 — понедельник)
+            grid.appendChild(el('div', 'audit-cal-wd', new Intl.DateTimeFormat(LANG, { weekday: 'short' }).format(new Date(2024, 0, 1 + i))));
+        }
+        const first = new Date(cal.view.getFullYear(), cal.view.getMonth(), 1);
+        const offset = (first.getDay() + 6) % 7;
+        const today = isoDate(new Date());
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(first.getFullYear(), first.getMonth(), 1 - offset + i);
+            const iso = isoDate(d);
+            let cls = 'audit-cal-day';
+            if (d.getMonth() !== first.getMonth()) cls += ' other';
+            if (iso === today) cls += ' today';
+            const hi = cal.end || cal.start;
+            if (cal.start && iso === cal.start || hi && iso === hi) cls += ' edge';
+            else if (cal.start && cal.end && iso > cal.start && iso < cal.end) cls += ' in-range';
+            const b = el('button', cls, String(d.getDate()));
+            b.type = 'button';
+            b.onclick = function (e) { e.stopPropagation(); pickDay(iso); };
+            grid.appendChild(b);
+        }
+        box.appendChild(grid);
+
+        const presets = el('div', 'audit-cal-presets');
+        [[I18N.today, 1], [I18N.days7, 7], [I18N.days30, 30]].forEach(function (p) {
+            const b = el('button', 'audit-cal-preset', p[0]); b.type = 'button';
+            b.onclick = function (e) { e.stopPropagation(); preset(p[1]); };
+            presets.appendChild(b);
+        });
+        const all = el('button', 'audit-cal-preset', I18N.all); all.type = 'button';
+        all.onclick = function (e) { e.stopPropagation(); cal.picking = false; setRange('', '', true); $('auditCal').style.display = 'none'; };
+        presets.appendChild(all);
+        box.appendChild(presets);
+    }
+
+    $('auditRangeInput').addEventListener('click', function (e) { e.stopPropagation(); calOpen() ? closeCal() : openCal(); });
+    $('auditCal').addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', closeCal);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCal(); });
 
     // Окно записей занимает всё свободное место: весь раздел (таблица, страницы, срок хранения,
     // уведомления) помещается в видимую область .settings-content без общей прокрутки
@@ -356,10 +498,12 @@ $auditI18n = [
     }
 
     $('auditSearch').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(reload, 300); });
-    ['auditUser', 'auditAction', 'auditResult', 'auditFrom', 'auditTo', 'auditPerPage'].forEach(function (id) { $(id).addEventListener('change', reload); });
+    ['auditUser', 'auditAction', 'auditResult', 'auditPerPage'].forEach(function (id) { $(id).addEventListener('change', reload); });
     $('auditRefreshBtn').onclick = load;
     $('auditResetBtn').onclick = function () {
-        ['auditSearch', 'auditUser', 'auditAction', 'auditResult', 'auditFrom', 'auditTo'].forEach(function (id) { $(id).value = ''; });
+        ['auditSearch', 'auditUser', 'auditAction', 'auditResult'].forEach(function (id) { $(id).value = ''; });
+        cal.picking = false;
+        setRange('', '', false);
         reload();
     };
     $('auditExportBtn').onclick = exportCsv;
