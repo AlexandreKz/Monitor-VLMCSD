@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/version.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.1.1
 // ДАТА: 2026-11-17
 // @description: Единый источник версии проекта и текста подвала (главная страница и панель настроек)
 // ============================================
@@ -12,8 +12,8 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'version.php') {
 }
 
 // Версия проекта и дата её выпуска. Меняется только здесь (в релизе: тег vX.Y.Z = VLMC_VERSION).
-if (!defined('VLMC_VERSION')) define('VLMC_VERSION', '5.9.2');
-if (!defined('VLMC_DATE'))    define('VLMC_DATE', '2026-11-14');
+if (!defined('VLMC_VERSION')) define('VLMC_VERSION', '5.9.3');
+if (!defined('VLMC_DATE'))    define('VLMC_DATE', '2026-11-17');
 
 // Первый год проекта. Конечный год вычисляется (не меньше года релиза).
 if (!defined('VLMC_FIRST_YEAR')) define('VLMC_FIRST_YEAR', 2025);
