@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.0.1
+// ВЕРСИЯ: 5.0.2
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -376,6 +376,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
                 return;
             }
             renderState(data);
+            if (window.vlmcRenderUpdateBanner && data.banner) window.vlmcRenderUpdateBanner(data.banner);
             ['release', 'early'].forEach(function (name) {
                 const c = data.channels[name];
                 if (!c) return;
@@ -518,6 +519,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         post({ ajax: 'update_auto_check' }).then(function (data) {
             if (data && data.success && data.enabled) {
                 renderState(data);
+                if (window.vlmcRenderUpdateBanner && data.banner) window.vlmcRenderUpdateBanner(data.banner);
             } else {
                 markSelected();
             }

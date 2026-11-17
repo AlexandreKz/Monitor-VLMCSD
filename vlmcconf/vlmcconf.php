@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.7.1
+// ВЕРСИЯ: 5.7.2
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1687,12 +1687,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
             $updBannerUpdater = new Updater();
             $updBannerSettings = $updBannerUpdater->getSettings();
-            if ($updBannerSettings['auto_check']) {
-                $updBannerOn = true;
-                $updBannerState = $updBannerUpdater->loadState();
-                $updBanner = $updBannerUpdater->bannerData($updBannerState);
-                $updStale = $updBannerUpdater->isStale($updBannerState, $updBannerSettings['interval']);
-            }
+            // Значок есть всегда (его обновляет и ручная проверка); автопроверка в фоне — только если включена
+            $updBannerOn = true;
+            $updBannerState = $updBannerUpdater->loadState();
+            $updBanner = $updBannerUpdater->bannerData($updBannerState);
+            $updStale = $updBannerSettings['auto_check'] && $updBannerUpdater->isStale($updBannerState, $updBannerSettings['interval']);
         }
         ?>
         <div class="header">
@@ -1714,6 +1713,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                         document.getElementById('updateBannerText').textContent = T.text + ' ' + parts.join('; ');
                         box.style.display = 'inline-flex';
                     }
+                    window.vlmcRenderUpdateBanner = render; // вызывается из раздела «Обновление» после проверки
                     render(<?= json_encode($updBanner) ?>);
                     <?php if ($updStale): ?>
                     // Проверка устарела: обновляем в фоне (не задерживает страницу)
