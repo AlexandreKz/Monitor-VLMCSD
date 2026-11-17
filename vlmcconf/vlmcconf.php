@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.8.1
+// ВЕРСИЯ: 5.9.0
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -344,6 +344,10 @@ $GLOBALS['themeCSS'] = $themeCSS;
 require_once __DIR__ . '/vlmcinc/ajax.php';
 
 $activeSection = $_GET['section'] ?? 'general';
+// Разделы «Интеграции» и «API» пока недоступны (в разработке): открытие по ссылке или из запомненной вкладки ведёт в «Общие»
+if (in_array($activeSection, ['integrations', 'api'], true)) {
+    $activeSection = 'general';
+}
 $message = $_GET['message'] ?? '';
 $messageType = $_GET['type'] ?? 'success';
 
@@ -736,6 +740,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             flex-direction: column;
             gap: 4px;
             flex-shrink: 0;
+        }
+        .menu-item.menu-item-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .menu-item.menu-item-disabled:hover {
+            background: transparent;
         }
         .menu-item {
             padding: 12px 12px;
@@ -1633,7 +1644,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         };
         
         const urlSection = new URLSearchParams(window.location.search).get('section');
-        const sectionToActivate = urlSection || getActiveSection();
+        let sectionToActivate = urlSection || getActiveSection();
+        if (sectionToActivate === 'integrations' || sectionToActivate === 'api') sectionToActivate = 'general';   // разделы в разработке
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
         const target = document.getElementById('section-' + sectionToActivate);
         if (target) target.classList.add('active');
@@ -1782,7 +1794,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     
     <!-- Интеграции - только если есть права на просмотр -->
     <?php if (hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW)): ?>
-    <div class="menu-item <?= $activeSection === 'integrations' ? 'active' : '' ?>" onclick="showSection('integrations', this)">
+    <div class="menu-item menu-item-disabled" title="<?= htmlspecialchars(__('section_under_development')) ?>">
         <span class="menu-item-icon">🔌</span>
         <span><?= __('integrations') ?></span>
     </div>
@@ -1790,7 +1802,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     
     <!-- API - только если есть права на просмотр -->
     <?php if (hasPermission($currentUserPermissions, PERM_API_VIEW)): ?>
-    <div class="menu-item <?= $activeSection === 'api' ? 'active' : '' ?>" onclick="showSection('api', this)">
+    <div class="menu-item menu-item-disabled" title="<?= htmlspecialchars(__('section_under_development')) ?>">
         <span class="menu-item-icon">🖥️</span>
         <span><?= __('api') ?></span>
     </div>

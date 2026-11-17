@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.3.2
+// ВЕРСИЯ: 3.4.0
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -234,7 +234,14 @@ $totalGroups = count($groupStats);
                 </div>
             </div>
             <div class="report-hint" id="repDesc"></div>
-            <div id="reportSummary" class="report-summary" style="display: none;"></div>
+            <div id="reportHead" class="report-head" style="display: none;">
+                <div id="reportSummary" class="report-summary"></div>
+                <div class="report-actions">
+                    <span id="reportExportMsg" class="report-export-msg"></span>
+                    <button type="button" class="rep-export" data-fmt="xlsx" title="<?= htmlspecialchars(__('report_export_xlsx_title')) ?>">📗 XLSX</button>
+                    <button type="button" class="rep-export" data-fmt="pdf" title="<?= htmlspecialchars(__('report_export_pdf_title')) ?>">📕 PDF</button>
+                </div>
+            </div>
             <div id="reportResult" class="report-result"></div>
         </div>
     </div>
@@ -431,7 +438,13 @@ $totalGroups = count($groupStats);
 .rep-opt.empty { color: #8aa0bb; cursor: default; }
 .rep-opt.empty:hover { background: transparent; }
 .report-hint { font-size: 11px; color: #8aa0bb; margin-top: 10px; }
-.report-summary { font-size: 12px; color: <?= $themeCSS['text'] ?>; margin: 12px 0 8px; font-weight: 600; }
+.report-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 12px 0 8px; flex-wrap: wrap; }
+.report-summary { font-size: 12px; color: <?= $themeCSS['text'] ?>; font-weight: 600; }
+.report-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.report-export-msg { font-size: 11px; color: <?= $themeCSS['danger'] ?>; }
+.rep-export { height: 28px; padding: 0 12px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s; }
+.rep-export:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.rep-export:disabled { opacity: 0.5; cursor: wait; }
 .report-result { margin-top: 10px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .report-empty { font-size: 12px; color: #8aa0bb; padding: 12px 0; }
 .report-table-wrap { overflow: auto; flex: 1; min-height: 0; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
@@ -714,7 +727,7 @@ function updateStatChart(data) {
 <script>
 (function () {
     const T = {
-<?php foreach (['report_label_type', 'report_label_days_inactive', 'report_label_days_new', 'report_days_n', 'report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_col_ips', 'report_col_devices', 'report_col_days_ago', 'report_col_last_ip', 'report_col_ip_list', 'report_col_product', 'report_sum_device', 'report_sum_devices', 'report_sum_ip', 'report_sum_rows', 'report_sum_rows_limit', 'report_mode_device', 'report_mode_ip', 'report_type_multi_ip', 'report_type_shared_ip', 'report_type_top_devices', 'report_type_inactive', 'report_type_new', 'report_type_products', 'report_desc_device_ips', 'report_desc_ip_devices', 'report_desc_multi_ip', 'report_desc_shared_ip', 'report_desc_top_devices', 'report_desc_inactive', 'report_desc_new', 'report_desc_country', 'report_label_country', 'report_country_all', 'report_country_unknown', 'report_col_device_list', 'report_sum_country', 'report_geo_hint', 'report_type_country', 'report_desc_products'] as $k): ?>
+<?php foreach (['report_label_type', 'report_label_days_inactive', 'report_label_days_new', 'report_days_n', 'report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_col_ips', 'report_col_devices', 'report_col_days_ago', 'report_col_last_ip', 'report_col_ip_list', 'report_col_product', 'report_sum_device', 'report_sum_devices', 'report_sum_ip', 'report_sum_rows', 'report_sum_rows_limit', 'report_mode_device', 'report_mode_ip', 'report_type_multi_ip', 'report_type_shared_ip', 'report_type_top_devices', 'report_type_inactive', 'report_type_new', 'report_type_products', 'report_desc_device_ips', 'report_desc_ip_devices', 'report_desc_multi_ip', 'report_desc_shared_ip', 'report_desc_top_devices', 'report_desc_inactive', 'report_desc_new', 'report_desc_country', 'report_label_country', 'report_country_all', 'report_country_unknown', 'report_col_device_list', 'report_sum_country', 'report_geo_hint', 'report_export_error', 'report_type_country', 'report_desc_products'] as $k): ?>
         <?= $k ?>: <?= json_encode(__($k), JSON_UNESCAPED_UNICODE) ?>,
 <?php endforeach; ?>
     };
@@ -954,11 +967,11 @@ function updateStatChart(data) {
     }
 
     function clearResult() {
-        $('reportSummary').style.display = 'none';
+        $('reportHead').style.display = 'none';
         $('reportResult').textContent = '';
     }
     function showMessage(text) {
-        $('reportSummary').style.display = 'none';
+        $('reportHead').style.display = 'none';
         const r = $('reportResult');
         r.textContent = '';
         r.appendChild(el('div', 'report-empty', text));
@@ -1020,6 +1033,61 @@ function updateStatChart(data) {
         return wrap;
     }
 
+    // ---- Экспорт: выгружается ровно то, что показано в таблице ----
+    let lastExport = null;
+    function cellText(col, row) {
+        const v = row[col.k];
+        if (col.t === 'country') return v || '';                       // без флага-эмодзи
+        if (col.t === 'devlist') return (v || []).join(', ') + (row.devices_more ? ' +' + row.devices_more : '');
+        return v === undefined || v === null ? '' : String(v);
+    }
+    function exportTitle(d, q) {
+        let t = cur.name;
+        if (cur.id === 'device_ips') t += ' — ' + ((d.matched && d.matched.length === 1) ? d.matched[0] : q);
+        else if (cur.id === 'ip_devices') t += ' — ' + q;
+        else if (cur.param === 'days') t += ' — ' + fmt(T.report_days_n, [days]);
+        else if (cur.id === 'by_country') t += ' — ' + (country === '' ? T.report_country_all : (country === '__unknown__' ? T.report_country_unknown : country));
+        return t;
+    }
+    function buildExport(cols, rows, d, q) {
+        return {
+            name: cur.id,
+            title: exportTitle(d, q),
+            headers: cols.map(function (c) { return c.l; }),
+            types: cols.map(function (c) { return c.t === 'num' ? 'num' : 'text'; }),
+            rows: rows.map(function (row) { return cols.map(function (c) { return cellText(c, row); }); })
+        };
+    }
+    function download(name, mime, b64) {
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }
+    function exportReport(fmtName) {
+        if (!lastExport) return;
+        const btns = document.querySelectorAll('.rep-export');
+        btns.forEach(function (b) { b.disabled = true; });
+        $('reportExportMsg').textContent = '';
+        const fd = new FormData();
+        fd.append('ajax', 'export_report');
+        fd.append('format', fmtName);
+        fd.append('data', JSON.stringify(lastExport));
+        fetch('', { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d.success) throw new Error('fail');
+                download(d.filename, d.mime, d.data);
+            })
+            .catch(function () { $('reportExportMsg').textContent = T.report_export_error; })
+            .then(function () { btns.forEach(function (b) { b.disabled = false; }); });
+    }
+    document.querySelectorAll('.rep-export').forEach(function (b) { b.onclick = function () { exportReport(b.dataset.fmt); }; });
+
     function render(d, q) {
         const rows = d.rows || [];
         if (!rows.length) { showMessage(T.report_not_found); return; }
@@ -1045,7 +1113,9 @@ function updateStatChart(data) {
         } else {
             sum.textContent = d.total ? fmt(T.report_sum_rows_limit, [d.total, rows.length]) : fmt(T.report_sum_rows, [rows.length]);
         }
-        sum.style.display = 'block';
+        $('reportHead').style.display = 'flex';
+        $('reportExportMsg').textContent = '';
+        lastExport = buildExport(cols, rows, d, q);
         const r = $('reportResult');
         r.textContent = '';
         r.appendChild(table(cols, rows));

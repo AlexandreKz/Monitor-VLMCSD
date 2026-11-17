@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.9
+// ВЕРСИЯ: 5.6.10
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -208,6 +208,9 @@ return [
     'report_col_device_list' => 'Devices',
     'report_sum_country' => '%s: IP addresses — %d, devices — %d, requests — %d',
     'report_geo_hint' => 'The country of some IPs is not determined yet: it is resolved in the background on the “Statistics” tab. Such addresses are grouped under “Unknown”.',
+    'report_export_xlsx_title' => 'Download the table as Excel (XLSX)',
+    'report_export_pdf_title' => 'Download the report as PDF',
+    'report_export_error' => 'Could not create the file',
     
     // Information
     'info_title' => 'Project Information',

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.9.2
+// ВЕРСИЯ: 3.10.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -43,6 +43,7 @@ function ajaxActionPermissions() {
         'get_activity'          => 0,
         'get_device_activity'   => 0,
         'get_report'            => 0,
+        'export_report'         => 0,
         'preview_theme'         => 0,
         'geo_resolve_portion'   => 0,
         'file_info'             => PERM_INFO_VIEW,
@@ -348,6 +349,33 @@ if (isset($_POST['ajax'])) {
             $res['rows'] = array_slice($res['rows'], 0, REPORT_MAX_ROWS);
         }
         echo json_encode($res, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Экспорт таблицы отчёта в XLSX / PDF (данные приходят с клиента: выгружается ровно то, что на экране)
+    if ($_POST['ajax'] === 'export_report') {
+        require_once __DIR__ . '/export.php';
+        $fmt = (($_POST['format'] ?? '') === 'pdf') ? 'pdf' : 'xlsx';
+        $payload = json_decode((string)($_POST['data'] ?? ''), true);
+        $d = is_array($payload)
+            ? exportNormalize($payload['title'] ?? '', $payload['headers'] ?? null, $payload['types'] ?? null, $payload['rows'] ?? null)
+            : null;
+        if ($d === null) {
+            echo json_encode(['success' => false, 'error' => 'bad_data']);
+            exit;
+        }
+        try {
+            $bin = ($fmt === 'pdf') ? exportPdf($d) : exportXlsx($d);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'error' => 'export_failed']);
+            exit;
+        }
+        echo json_encode([
+            'success'  => true,
+            'filename' => 'report-' . exportSafeName($payload['name'] ?? 'report') . '-' . date('Y-m-d') . '.' . $fmt,
+            'mime'     => $fmt === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'data'     => base64_encode($bin)
+        ]);
         exit;
     }
 
