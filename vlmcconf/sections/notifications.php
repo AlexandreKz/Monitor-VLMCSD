@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 2.0.0
+// ВЕРСИЯ: 2.0.1
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): у каждого пользователя свои адреса (email, Telegram) и подписки на события; у администратора ещё общие настройки отправки (SMTP, токен бота) и правила (пороги, антиспам, тихие часы, история)
 // ============================================
@@ -120,9 +120,9 @@ $ntfI18n = [
                 <label class="ntf-chk" style="margin-top: 12px;"><input type="checkbox" id="rQuiet"> <?= __('notify_quiet') ?></label>
                 <div class="ntf-row" style="margin-top: 6px;">
                     <span><?= __('notify_quiet_from') ?></span>
-                    <select id="rQFromH" class="form-control ntf-time"></select><span>:</span><select id="rQFromM" class="form-control ntf-time"></select>
+                    <select id="rQFrom" class="form-control ntf-time"></select>
                     <span style="margin-left: 8px;"><?= __('notify_quiet_to') ?></span>
-                    <select id="rQToH" class="form-control ntf-time"></select><span>:</span><select id="rQToM" class="form-control ntf-time"></select>
+                    <select id="rQTo" class="form-control ntf-time"></select>
                 </div>
             </div>
         </div>
@@ -172,7 +172,7 @@ $ntfI18n = [
 .ntf-w { width: 120px; }
 .ntf-fields { display: flex; gap: 16px; flex-wrap: wrap; }
 .ntf-fields label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
-.ntf-time { width: 68px; padding-right: 4px; cursor: pointer; }
+.ntf-time { width: 96px; cursor: pointer; }
 .ntf-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
 .ntf-two .ntf-blk { margin-bottom: 0; height: 100%; box-sizing: border-box; }
 @media (max-width: 1000px) { .ntf-two { grid-template-columns: 1fr; } }
@@ -252,13 +252,19 @@ $ntfI18n = [
     }
 
     // ---------- общие настройки (администратор) ----------
-    function fillTime(hId, mId) {
-        const h = $(hId), m = $(mId);
-        for (let i = 0; i < 24; i++) h.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
-        for (let i = 0; i < 60; i++) m.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
+    // Время одним списком, шаг 15 минут; ранее сохранённое «нестандартное» время добавляется в список
+    function fillTime(id) {
+        const sel = $(id);
+        for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 15) {
+            const v = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+            sel.appendChild(new Option(v, v));
+        }
     }
-    function setTime(hId, mId, v) { const p = String(v || '00:00').split(':'); $(hId).value = p[0]; $(mId).value = p[1]; }
-    function getTime(hId, mId) { return $(hId).value + ':' + $(mId).value; }
+    function setTime(id, v) {
+        const sel = $(id); v = v || '00:00';
+        if (!Array.prototype.some.call(sel.options, function (o) { return o.value === v; })) { sel.appendChild(new Option(v, v)); }
+        sel.value = v;
+    }
 
     function fillGlobal(s) {
         $('mailOn').checked = !!s.email.enabled; $('mailHost').value = s.email.host; $('mailPort').value = s.email.port;
@@ -268,7 +274,7 @@ $ntfI18n = [
         badge('ntfMailBadge', s.email.enabled); badge('ntfTgBadge', s.telegram.enabled);
         const r = s.rules;
         $('rFailN').value = r.fail_count; $('rFailM').value = r.fail_minutes; $('rSpam').value = r.antispam_minutes;
-        $('rQuiet').checked = !!r.quiet_enabled; setTime('rQFromH', 'rQFromM', r.quiet_from); setTime('rQToH', 'rQToM', r.quiet_to);
+        $('rQuiet').checked = !!r.quiet_enabled; setTime('rQFrom', r.quiet_from); setTime('rQTo', r.quiet_to);
     }
 
     function renderHistory(list) {
@@ -290,7 +296,7 @@ $ntfI18n = [
             mail_secure: $('mailSecure').value, mail_user: $('mailUser').value, mail_pass: $('mailPass').value, mail_from: $('mailFrom').value,
             tg_on: $('tgOn').checked ? 1 : '', tg_token: $('tgToken').value,
             rules: JSON.stringify({ fail_count: $('rFailN').value, fail_minutes: $('rFailM').value, antispam_minutes: $('rSpam').value,
-                quiet_enabled: $('rQuiet').checked, quiet_from: getTime('rQFromH', 'rQFromM'), quiet_to: getTime('rQToH', 'rQToM') })
+                quiet_enabled: $('rQuiet').checked, quiet_from: $('rQFrom').value, quiet_to: $('rQTo').value })
         };
     }
 
@@ -327,7 +333,7 @@ $ntfI18n = [
         };
     });
 
-    if (ADMIN) { fillTime('rQFromH', 'rQFromM'); fillTime('rQToH', 'rQToM'); }
+    if (ADMIN) { fillTime('rQFrom'); fillTime('rQTo'); }
     window.loadNotify = function () { load(); };
     function auto() { if ($('section-notifications').classList.contains('active') && !loaded) load(); }
     auto();

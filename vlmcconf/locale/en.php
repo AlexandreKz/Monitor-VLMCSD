@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.7.1
+// ВЕРСИЯ: 5.7.2
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -991,5 +991,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'audit_act_save_my_notify' => '🔔 Notifications: own settings',
     'audit_act_test_my_notify' => '🔔 Notification test',
     'notify_open_hint' => 'Your address and event subscriptions are set in the “Notifications” section.',
+    'notify_update_hint' => 'Event subscriptions are set in the “Notifications” section.',
 ];
 ?>
