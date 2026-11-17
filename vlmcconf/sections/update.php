@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 4.0.1
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 4.0.2
+// ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
 // ============================================
@@ -48,7 +48,7 @@ $updI18n = [
 ];
 ?>
 
-<div id="toolsTabUpdate" class="tools-tab-content <?= $activeTab === 'update' ? 'active' : '' ?>">
+<div class="update-root"><!-- контейнер вкладки (id toolsTabUpdate и класс tools-tab-content задаёт tools.php) -->
     
     <!-- ============================================ -->
     <!-- ЗАГОЛОВОК С ЭЛЕМЕНТАМИ УПРАВЛЕНИЯ / HEADER   -->
