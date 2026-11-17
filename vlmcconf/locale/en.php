@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.2
+// ВЕРСИЯ: 5.8.3
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1068,5 +1068,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_err_dialog' => 'Recipient: user ID or chatN',
     'notify_tab_templates' => 'Templates',
     'notify_templates_soon' => 'Section under development.',
+    'notify_err_no_channels' => '⚠️ A rule cannot be enabled without a channel. Select at least one delivery channel.',
+    
 ];
 ?>

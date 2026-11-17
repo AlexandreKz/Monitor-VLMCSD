@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.3.1
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -31,7 +31,7 @@ $ntfKeys = ['rule_new', 'channel_new', 'rules_empty', 'channels_empty', 'col_nam
     'rule_title_new', 'rule_title_edit', 'ch_title_new', 'ch_title_edit', 'f_name', 'f_events', 'f_channels', 'f_channels_none', 'f_filter', 'f_filter_groups',
     'f_filter_devices', 'f_filter_hint', 'f_params', 'f_throttle', 'f_throttle_hint', 'f_quiet', 'f_quiet_from', 'f_quiet_to', 'f_active', 'soon',
     'f_type', 'f_host', 'f_port', 'f_secure', 'f_secure_tls', 'f_secure_ssl', 'f_secure_none', 'f_user', 'f_pass', 'f_from', 'f_to', 'f_to_hint',
-    'f_token', 'f_chat', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
+    'f_token', 'f_chat', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'err_no_channels', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
     'confirm_delete_channel', 'hist_empty', 'hist_ok', 'hist_fail', 'hist_quiet', 'sev_high', 'sev_mid', 'sev_low', 'ch_off', 'more'];
 $ntfT = [];
 foreach ($ntfKeys as $k) {
@@ -52,14 +52,14 @@ $ntfT['saveError'] = __('msg_save_error');
 
     <div id="ntfRules" class="ntf-page">
         <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
-        <table class="ntf-table" id="ntfRulesTable"></table>
+        <div class="ntf-wrap"><table class="ntf-table" id="ntfRulesTable"></table></div>
     </div>
     <div id="ntfChannels" class="ntf-page active">
         <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
-        <table class="ntf-table" id="ntfChannelsTable"></table>
+        <div class="ntf-wrap"><table class="ntf-table" id="ntfChannelsTable"></table></div>
     </div>
     <div id="ntfHistory" class="ntf-page">
-        <table class="ntf-table" id="ntfHistTable"></table>
+        <div class="ntf-wrap"><table class="ntf-table" id="ntfHistTable"></table></div>
     </div>
     <div id="ntfTemplates" class="ntf-page">
         <div class="ntf-hint">🚧 <?= __('notify_templates_soon') ?></div>
@@ -76,15 +76,19 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ntf-top { margin: 0 0 12px; }
 .ntf-hint { font-size: 12px; color: #8aa0bb; }
-.ntf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ntf-table th, .ntf-table td { padding: 9px 10px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; text-align: left; vertical-align: middle; }
-.ntf-table th { font-size: 12px; font-weight: 500; color: #8aa0bb; }
+.ntf-wrap { overflow: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
+.ntf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ntf-table th { text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.ntf-table td { padding: 6px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: middle; }
 .ntf-table tr.ntf-click { cursor: pointer; }
 .ntf-table tr.ntf-click:hover td { background: <?= $themeCSS['hover'] ?>; }
 .ntf-none { color: <?= $themeCSS['danger'] ?>; }
-.ntf-badge { font-size: 11px; padding: 2px 10px; border-radius: 10px; font-weight: 500; background: <?= $themeCSS['border'] ?>; display: inline-block; }
+.ntf-badge { font-size: 10px; line-height: 16px; padding: 1px 9px; border-radius: 9px; font-weight: 500; white-space: nowrap; background: <?= $themeCSS['border'] ?>; display: inline-block; }
 .ntf-badge.on { background: <?= $themeCSS['success'] ?>; color: #fff; }
-.ntf-badge.btn { cursor: pointer; }
+.ntf-badge.ntf-tg { cursor: pointer; transition: filter .15s; }
+.ntf-badge.ntf-tg:hover { filter: brightness(1.15); }
+.ntf-sec.ntf-bad { border-color: <?= $themeCSS['danger'] ?>; box-shadow: 0 0 0 2px <?= $themeCSS['danger'] ?>33; animation: ntfShake .35s; }
+@keyframes ntfShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 .ntf-sev { font-size: 11px; padding: 1px 8px; border-radius: 4px; }
 .ntf-sev.high { background: <?= $themeCSS['danger'] ?>33; color: <?= $themeCSS['danger'] ?>; }
 .ntf-sev.mid { background: <?= $themeCSS['warning'] ?>33; color: <?= $themeCSS['warning'] ?>; }
@@ -115,7 +119,7 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
 .ntf-f { margin-bottom: 14px; }
 .ntf-sec .ntf-f:last-child { margin-bottom: 0; }
-.ntf-f > label.ntf-l { display: block; font-size: 12px; color: #8aa0bb; margin-bottom: 5px; }
+.ntf-l { display: block; font-size: 12px; color: #8aa0bb; margin-bottom: 5px; }
 .ntf-gh { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #8aa0bb; }
 .ntf-evg { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; }
 .ntf-chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin: 0; }
@@ -181,7 +185,7 @@ $ntfT['saveError'] = __('msg_save_error');
             tr.appendChild(chs.length ? el('td', '', chs.join(', ')) : el('td', 'ntf-none', T.no_channels));
             tr.appendChild(el('td', '', r.throttle > 0 ? T.every_min.replace('%d', r.throttle) : T.unlimited));
             tr.appendChild(el('td', '', r.quiet_enabled ? r.quiet_from + '–' + r.quiet_to : '—'));
-            const ts = el('td'); const b = el('span', 'ntf-badge btn' + (r.active ? ' on' : ''), r.active ? T.st_on : T.st_off);
+            const ts = el('td'); const b = el('span', 'ntf-badge ntf-tg' + (r.active ? ' on' : ''), r.active ? T.st_on : T.st_off);
             b.onclick = function (ev) {
                 ev.stopPropagation();
                 post({ ajax: 'notify_rule_toggle', id: r.id, active: r.active ? '' : '1' }).then(function (d) {
@@ -290,16 +294,18 @@ $ntfT['saveError'] = __('msg_save_error');
 
         // каналы
         const chBox = el('div', 'ntf-box');
+        const chSec = el('div', 'ntf-sec');
         if (!D.channels.length) { chBox.appendChild(el('span', 'ntf-hint', T.f_channels_none)); }
         D.channels.forEach(function (c) {
             const k = check((c.type === 'email' ? '✉️ ' : (c.type === 'bitrix24' ? '🏢 ' : '✈️ ')) + c.name + (c.enabled ? '' : ' (' + T.ch_off + ')'), st.channels.indexOf(c.id) >= 0);
             k.box.onchange = function () {
+                chSec.classList.remove('ntf-bad');
                 const i = st.channels.indexOf(c.id);
                 if (k.box.checked && i < 0) st.channels.push(c.id); else if (!k.box.checked && i >= 0) st.channels.splice(i, 1);
             };
             chBox.appendChild(k.label);
         });
-        const chSec = el('div', 'ntf-sec'); chSec.appendChild(el('div', 'ntf-st', T.f_channels)); chSec.appendChild(chBox); body.appendChild(chSec);
+        chSec.appendChild(el('div', 'ntf-st', T.f_channels)); chSec.appendChild(chBox); body.appendChild(chSec);
 
         // фильтр и пороги — зависят от выбранных событий
         const dynBox = el('div'); body.appendChild(dynBox);
@@ -359,6 +365,11 @@ $ntfT['saveError'] = __('msg_save_error');
         const save = btn('ntf-prim', '💾 ' + T.btn_save, function () {
             const data = { events: st.events, channels: st.channels, groups: st.groups, devices: st.devices, throttle: thr.value, quiet_enabled: qk.box.checked,
                 quiet_from: qf.value, quiet_to: qt.value, active: ak.box.checked, params: st.params };
+            if (data.active && !data.channels.length) {
+                chSec.classList.remove('ntf-bad'); void chSec.offsetWidth; chSec.classList.add('ntf-bad');
+                chSec.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                say(msg, T.err_no_channels, false); return;
+            }
             save.disabled = true;
             post({ ajax: 'notify_rule_save', id: isNew ? '' : rule.id, name: name.value, data: JSON.stringify(data) }).then(function (d) {
                 if (d.success) { close(); apply(d); say(pageMsg(), d.message, true); } else { say(msg, d.message, false); }

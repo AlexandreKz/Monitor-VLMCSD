@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.1.0
+// ВЕРСИЯ: 3.1.1
 // ДАТА: 2026-11-17
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -285,6 +285,7 @@ function notifyRuleBuild(array $in, array $s, $old) {
     $r['quiet_enabled'] = !empty($d['quiet_enabled']);
     $r['quiet_from'] = $qf; $r['quiet_to'] = $qt;
     $r['active'] = !empty($d['active']);
+    if ($r['active'] && !$r['channels']) { return [null, 'notify_err_no_channels']; }
     $r['params'] = $params;
     return [$r, ''];
 }

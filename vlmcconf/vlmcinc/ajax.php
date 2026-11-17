@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.13.0
+// ВЕРСИЯ: 3.13.1
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -1388,6 +1388,7 @@ if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_chann
             $s['channels'] = array_values(array_filter($s['channels'], function ($c) use ($ntfId) { return ($c['id'] ?? '') !== $ntfId; }));
             foreach ($s['rules'] as &$r) {
                 $r['channels'] = array_values(array_diff((array)($r['channels'] ?? []), [$ntfId]));
+                if (!$r['channels']) { $r['active'] = false; }   // правило без каналов выключается
             }
             unset($r);
             return true;
@@ -1422,7 +1423,11 @@ if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_chann
         $on = !empty($_POST['active']);
         $res = notifyMutate(function (&$s) use ($ntfId, $on) {
             $found = false;
-            foreach ($s['rules'] as &$r) { if (($r['id'] ?? '') === $ntfId) { $r['active'] = $on; $found = true; } }
+            foreach ($s['rules'] as &$r) {
+                if (($r['id'] ?? '') !== $ntfId) { continue; }
+                if ($on && empty($r['channels'])) { return 'notify_err_no_channels'; }   // без канала включать нельзя
+                $r['active'] = $on; $found = true;
+            }
             unset($r);
             return $found ? true : 'notify_err_notfound';
         });
