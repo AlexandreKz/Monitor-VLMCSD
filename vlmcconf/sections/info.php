@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.8.0
+// ВЕРСИЯ: 1.9.0
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -91,8 +91,8 @@ if (!$canViewInfo) {
                 </tr></thead>
                 <tbody>
                 <?php foreach ($dataFiles as $df): $full = vlmcDataFile($df[0]); $exists = file_exists($full); ?>
-                    <tr class="<?= $exists ? '' : 'info-data-absent' ?>">
-                        <td class="info-data-name"><?= is_dir($full) || $df[0] === 'backups' ? '📂' : '📄' ?> <?= htmlspecialchars($df[0]) ?><?= $df[0] === 'backups' ? '/' : '' ?><?php if (!$exists): ?> <span class="info-data-badge"><?= __('info_data_absent') ?></span><?php endif; ?></td>
+                    <tr class="info-data-row <?= $exists ? '' : 'info-data-absent' ?>" data-name="<?= htmlspecialchars($df[0]) ?>">
+                        <td class="info-data-name"><?= is_dir($full) || $df[0] === 'backups' ? '📂' : '📄' ?> <?= htmlspecialchars($df[0]) ?><?= $df[0] === 'backups' ? '/' : '' ?><span class="info-data-badge"<?= $exists ? ' style="display:none"' : '' ?>><?= __('info_data_absent') ?></span></td>
                         <td><?= __($df[1]) ?></td>
                         <?php if ($isUnix): ?><td class="info-data-path"><code><?= htmlspecialchars($full) ?></code></td><?php endif; ?>
                     </tr>
@@ -104,7 +104,7 @@ if (!$canViewInfo) {
         </div>
     </div>
 
-    <div class="info-auto-note">🔄 <?= __('info_auto_note') ?><span id="fileInfoStatus" class="file-info-status" style="display: none;"></span></div>
+    <div class="info-auto-note"><span>🔄 <?= __('info_auto_note') ?></span><span id="fileInfoStatus" class="file-info-status" style="display: none;"></span></div>
 </div>
 
 <style>
@@ -114,8 +114,8 @@ if (!$canViewInfo) {
 .info-page.active { display: flex; flex-direction: column; }
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
 .info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
-.info-auto-note { flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
-.info-auto-note .file-info-status { margin-left: 6px; }
+.info-auto-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
+.info-auto-note .file-info-status { margin-left: auto; text-align: right; }
 .info-tab { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .info-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .info-tab.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
@@ -270,17 +270,20 @@ if (!$canViewInfo) {
         if (busy) return;
         const rows = {};
         const paths = [];
+        const dataRows = {};
+        document.querySelectorAll('.info-data-row').forEach(function (r) { dataRows[r.dataset.name] = r; });
         document.querySelectorAll('.file-row').forEach(function (row) {
             const p = row.dataset.path;
             if (p && !rows[p]) { rows[p] = row; paths.push(p); }
         });
-        if (!paths.length) return;
+        if (!paths.length && !Object.keys(dataRows).length) return;
 
         busy = true;
 
         const fd = new FormData();
         fd.append('ajax', 'file_info_batch');
         fd.append('paths', JSON.stringify(paths));
+        fd.append('data_names', JSON.stringify(Object.keys(dataRows)));
 
         fetch('', { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
@@ -300,7 +303,16 @@ if (!$canViewInfo) {
                     if (ver && f.version && ver.textContent !== f.version) { ver.textContent = f.version; flash(ver); did = true; }
                     if (did) changed++;
                 });
-                let text = '✅ ' + fmt(I18N.refreshed, d.time || '', paths.length - failed, changed);
+                const dm = d.data || {};
+                Object.keys(dataRows).forEach(function (n) {
+                    if (!(n in dm)) return;
+                    const r = dataRows[n], was = r.classList.contains('info-data-absent');
+                    r.classList.toggle('info-data-absent', !dm[n]);
+                    const b = r.querySelector('.info-data-badge');
+                    if (b) b.style.display = dm[n] ? 'none' : '';
+                    if (was === !!dm[n]) { changed++; flash(r.querySelector('.info-data-name')); }
+                });
+                let text = '✅ ' + fmt(I18N.refreshed, d.time || '', paths.length - failed + Object.keys(dm).length, changed);
                 if (failed) text += fmt(I18N.unavailable, failed);
                 setStatus(text, failed ? 'err' : 'ok', 0);
             })

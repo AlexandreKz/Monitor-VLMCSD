@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.13.2
+// ВЕРСИЯ: 3.13.3
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -423,7 +423,7 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
-    // Пакетное получение сведений о файлах (кнопка «Обновить» в разделе «Информация»): один запрос на все файлы
+    // Пакетное получение сведений о файлах (автообновление раздела «Информация»): один запрос на все файлы
     if ($_POST['ajax'] === 'file_info_batch') {
         $paths = json_decode($_POST['paths'] ?? '[]', true);
         $files = [];
@@ -435,7 +435,17 @@ if (isset($_POST['ajax'])) {
                     : ['path' => $requested, 'success' => true] + fileInfoPayload($real);
             }
         }
-        echo json_encode(['success' => true, 'files' => $files, 'time' => date('H:i:s')]);
+        // Наличие файлов данных вне веб-папки (только имена без путей)
+        $data = [];
+        $names = json_decode($_POST['data_names'] ?? '[]', true);
+        if (is_array($names)) {
+            foreach (array_slice($names, 0, 100) as $n) {
+                if (is_string($n) && preg_match('/^[A-Za-z0-9._-]{1,64}$/', $n)) {
+                    $data[$n] = file_exists(vlmcDataFile($n));
+                }
+            }
+        }
+        echo json_encode(['success' => true, 'files' => $files, 'data' => $data, 'time' => date('H:i:s')]);
         exit;
     }
     
