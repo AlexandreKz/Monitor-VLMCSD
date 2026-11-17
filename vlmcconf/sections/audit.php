@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 2.3.0
+// ВЕРСИЯ: 2.3.1
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -226,6 +226,25 @@ $auditI18n = [
         sel.value = cur;
     }
 
+    // Окно записей занимает всё свободное место: весь раздел (таблица, страницы, срок хранения,
+    // уведомления) помещается в видимую область .settings-content без общей прокрутки
+    function fitTable() {
+        const wrap = document.querySelector('#section-audit .audit-table-wrap');
+        const sec = $('section-audit');
+        if (!wrap || !sec || wrap.offsetParent === null) return;
+        const cont = sec.closest('.settings-content');
+        if (!cont) return;
+        const wr = wrap.getBoundingClientRect();
+        const top = wr.top - cont.getBoundingClientRect().top + cont.scrollTop;
+        const below = sec.lastElementChild.getBoundingClientRect().bottom - wr.bottom;   // всё, что ниже таблицы
+        const pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
+        const h = cont.clientHeight - top - below - pad - 4;
+        wrap.style.maxHeight = 'none';
+        wrap.style.height = Math.max(140, Math.floor(h)) + 'px';
+    }
+    window.addEventListener('resize', fitTable);
+    window.fitAuditTable = fitTable;
+
     function render(data) {
         fillSelect($('auditUser'), I18N.allUsers, data.users.map(function (u) { return { value: u, label: u }; }));
         fillSelect($('auditAction'), I18N.allActions, data.actions.map(function (a) { return { value: a.code, label: a.label }; }));
@@ -264,6 +283,7 @@ $auditI18n = [
         $('auditPrev').disabled = page <= 1;
         $('auditNext').disabled = page >= pages;
         renderStats(data.stats);
+        setTimeout(fitTable, 0);
     }
 
     function renderStats(st) {
@@ -359,7 +379,8 @@ $auditI18n = [
         }
     });
 
-    window.loadAudit = function () { if (!loadedOnce) { reload(); } else { load(); } };
+    window.loadAudit = function () {
+        setTimeout(fitTable, 0); if (!loadedOnce) { reload(); } else { load(); } };
     if ($('section-audit').classList.contains('active')) window.loadAudit();
 })();
 </script>
