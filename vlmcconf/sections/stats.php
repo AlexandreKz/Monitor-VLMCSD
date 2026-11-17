@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.3.0
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -206,7 +206,7 @@ $totalGroups = count($groupStats);
 
     <!-- Вкладка «Отчёты» -->
     <div id="statsPageReports" class="stats-page">
-        <div class="stat-block">
+        <div class="stat-block rep-block" id="repBlock">
             <div class="stat-block-title">📑 <?= __('stats_tab_reports') ?></div>
             <div class="rep-controls">
                 <div class="rep-field">
@@ -217,7 +217,6 @@ $totalGroups = count($groupStats);
                     <label id="repQueryLabel"></label>
                     <div class="rep-combo">
                         <input type="text" id="reportInput" class="form-control" autocomplete="off" spellcheck="false">
-                        <div class="rep-pop" id="repComboList" style="display: none;"></div>
                     </div>
                 </div>
                 <div class="rep-field" id="repDaysWrap" style="display: none;">
@@ -413,12 +412,13 @@ $totalGroups = count($groupStats);
 .rep-field .form-control { height: 34px; box-sizing: border-box; }
 .rep-field-btn .btn { padding: 0 18px; height: 34px; font-size: 13px; }
 .rep-dd, .rep-combo { position: relative; }
+.rep-block { display: flex; flex-direction: column; box-sizing: border-box; }
 .rep-dd-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 260px; width: 100%; box-sizing: border-box; height: 34px; padding: 0 12px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 13px; font-family: inherit; cursor: pointer; text-align: left; }
 .rep-dd.sm .rep-dd-btn { min-width: 110px; }
 .rep-dd-btn:hover, .rep-dd.open .rep-dd-btn { border-color: <?= $themeCSS['primary'] ?>; }
 .rep-dd-btn .arrow { font-size: 10px; opacity: 0.7; transition: transform 0.15s; }
 .rep-dd.open .arrow { transform: rotate(180deg); }
-.rep-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 60; min-width: 100%; max-height: 260px; overflow-y: auto; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); box-sizing: border-box; }
+.rep-pop { position: fixed; z-index: 3000; overflow-y: auto; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); box-sizing: border-box; }
 .rep-opt { padding: 7px 10px; font-size: 13px; color: <?= $themeCSS['text'] ?>; border-radius: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rep-opt:hover, .rep-opt.hl { background: <?= $themeCSS['hover'] ?>; }
 .rep-opt.sel { color: <?= $themeCSS['primary'] ?>; font-weight: 600; }
@@ -426,9 +426,9 @@ $totalGroups = count($groupStats);
 .rep-opt.empty:hover { background: transparent; }
 .report-hint { font-size: 11px; color: #8aa0bb; margin-top: 10px; }
 .report-summary { font-size: 12px; color: <?= $themeCSS['text'] ?>; margin: 12px 0 8px; font-weight: 600; }
-.report-result { margin-top: 10px; }
+.report-result { margin-top: 10px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .report-empty { font-size: 12px; color: #8aa0bb; padding: 12px 0; }
-.report-table-wrap { overflow: auto; max-height: 420px; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
+.report-table-wrap { overflow: auto; flex: 1; min-height: 0; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .report-table th { position: sticky; top: 0; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
 .report-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
@@ -776,11 +776,37 @@ function updateStatChart(data) {
     const suggest = { device: [], ip: [] };
     let listsLoaded = false;
 
-    // ---- Выпадающий список в стиле панели ----
+    // ---- Выпадающие списки в стиле панели ----
+    // Список выносится в <body> и позиционируется по кнопке (position: fixed): его не обрезает прокрутка окна
+    // и не перекрывают соседние блоки.
     const closers = [];
     function closeAll(except) { closers.forEach(function (c) { if (c !== except) c(); }); }
     document.addEventListener('click', function () { closeAll(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+    window.addEventListener('resize', function () { closeAll(); });
+    window.addEventListener('scroll', function (e) {
+        if (e.target && e.target.closest && e.target.closest('.rep-pop')) return;   // прокрутка самого списка
+        closeAll();
+    }, true);
+
+    function placePop(anchor, pop) {
+        const r = anchor.getBoundingClientRect();
+        pop.style.minWidth = r.width + 'px';
+        pop.style.left = r.left + 'px';
+        pop.style.display = 'block';
+        const below = window.innerHeight - r.bottom - 12;
+        const above = r.top - 12;
+        const h = Math.min(pop.scrollHeight + 10, 340);
+        if (h > below && above > below) {            // снизу тесно — открываем вверх
+            pop.style.maxHeight = Math.min(340, above) + 'px';
+            pop.style.top = 'auto';
+            pop.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+        } else {
+            pop.style.maxHeight = Math.min(340, Math.max(120, below)) + 'px';
+            pop.style.bottom = 'auto';
+            pop.style.top = (r.bottom + 4) + 'px';
+        }
+    }
 
     function makeDropdown(box, options, value, onChange) {
         let val = value;
@@ -790,10 +816,10 @@ function updateStatChart(data) {
         const label = el('span');
         btn.appendChild(label);
         btn.appendChild(el('span', 'arrow', '▼'));
+        box.appendChild(btn);
         const pop = el('div', 'rep-pop');
         pop.style.display = 'none';
-        box.appendChild(btn);
-        box.appendChild(pop);
+        document.body.appendChild(pop);
 
         function close() { pop.style.display = 'none'; box.classList.remove('open'); }
         function paint() {
@@ -811,19 +837,22 @@ function updateStatChart(data) {
         }
         btn.onclick = function (e) {
             e.stopPropagation();
-            const open = pop.style.display !== 'none';
+            const wasOpen = pop.style.display !== 'none';
             closeAll();
-            if (!open) { paint(); pop.style.display = 'block'; box.classList.add('open'); }
+            if (!wasOpen) { paint(); placePop(btn, pop); box.classList.add('open'); }
         };
         pop.addEventListener('click', function (e) { e.stopPropagation(); });
-        closers.push(close);
+        const closer = close;
+        closers.push(closer);
         set(value);
-        return { set: set };
+        return { set: set, destroy: function () { close(); pop.remove(); const i = closers.indexOf(closer); if (i >= 0) closers.splice(i, 1); } };
     }
 
     // ---- Поле с подсказками (устройства / IP) ----
     const input = $('reportInput');
-    const comboList = $('repComboList');
+    const comboList = el('div', 'rep-pop');
+    comboList.style.display = 'none';
+    document.body.appendChild(comboList);
     let hl = -1;
     function comboClose() { comboList.style.display = 'none'; hl = -1; }
     closers.push(comboClose);
@@ -839,7 +868,7 @@ function updateStatChart(data) {
             d.onclick = function (e) { e.stopPropagation(); input.value = v; comboClose(); run(); };
             comboList.appendChild(d);
         });
-        comboList.style.display = 'block';
+        placePop(input, comboList);
     }
     input.addEventListener('focus', function () { closeAll(comboClose); comboOpen(); });
     input.addEventListener('click', function (e) { e.stopPropagation(); closeAll(comboClose); if (comboList.style.display === 'none') comboOpen(); });
@@ -882,6 +911,7 @@ function updateStatChart(data) {
         if (cur.param === 'days') {
             days = cur.defDays;
             $('repDaysLabel').textContent = cur.daysLabel;
+            if (daysDd) daysDd.destroy();
             daysDd = makeDropdown($('repDays'), cur.days.map(function (d) { return { value: d, label: fmt(T.report_days_n, [d]) }; }), days, function (v) { days = v; run(); });
             $('repDays').classList.add('sm');
         }
@@ -901,6 +931,7 @@ function updateStatChart(data) {
                 opts.push({ value: c.country === '' ? '__unknown__' : c.country, label: name + ' · ' + c.ips + ' IP · ' + c.count });
             });
             country = '';
+            if (countryDd) countryDd.destroy();
             countryDd = makeDropdown($('repCountry'), opts, country, function (v) { country = v; run(); });
             run();
         }).catch(function () { showMessage(T.report_error); });
@@ -1043,12 +1074,29 @@ function updateStatChart(data) {
         }).catch(function () { listsLoaded = false; });
     }
 
+    // Блок отчётов занимает всё оставшееся место окна; таблица прокручивается внутри
+    function fitReports() {
+        const block = $('repBlock');
+        if (!block || block.offsetParent === null) return;
+        const cont = block.closest('.settings-content');
+        const top = block.getBoundingClientRect().top;
+        let bottom = window.innerHeight;
+        let pad = 0;
+        if (cont) {
+            bottom = cont.getBoundingClientRect().bottom;
+            pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
+        }
+        block.style.height = Math.max(260, Math.floor(bottom - top - pad - 2)) + 'px';
+    }
+    window.addEventListener('resize', fitReports);
+    window.fitStatsReports = fitReports;
+
     window.switchStatsPage = function (page) {
         document.querySelectorAll('.stats-page-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.page === page); });
         $('statsPageOverview').classList.toggle('active', page === 'overview');
         $('statsPageReports').classList.toggle('active', page === 'reports');
         closeAll();
-        if (page === 'reports') loadLists();
+        if (page === 'reports') { loadLists(); setTimeout(fitReports, 0); }
     };
 
     $('reportRun').onclick = run;

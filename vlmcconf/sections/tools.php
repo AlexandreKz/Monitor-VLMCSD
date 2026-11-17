@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.3.0
 // ДАТА: 2026-11-17
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
@@ -52,16 +52,15 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
         <?php if ($activeSection === 'tools' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
-    </div>
-    
-    <!-- Вкладки -->
-    <div class="tools-tabs">
+        <!-- Вкладки (в строке заголовка, как в «Статистике и отчётах») -->
+        <div class="tools-tabs">
         <button class="tools-tab-btn <?= $activeTab === 'project' ? 'active' : '' ?>" onclick="switchToolsTab('project')">🚀 <?= __('tools_tab_project') ?></button>
         <?php if ($canEditTools): ?>
         <button class="tools-tab-btn <?= $activeTab === 'update' ? 'active' : '' ?>" onclick="switchToolsTab('update')">🔄 <?= __('tools_tab_update') ?></button>
         <?php endif; ?>
         <button class="tools-tab-btn <?= $activeTab === 'log' ? 'active' : '' ?>" onclick="switchToolsTab('log')">📝 <?= __('tools_tab_log') ?></button>
         <button class="tools-tab-btn <?= $activeTab === 'cache' ? 'active' : '' ?>" onclick="switchToolsTab('cache')">🗑️ <?= __('tools_tab_cache') ?></button>
+        </div>
     </div>
     
     <!-- Вкладка: Проект -->
@@ -237,8 +236,8 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 <style>
 /* ===== Вкладки ===== */
-.tools-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.tools-tab-btn { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; }
+.tools-tabs { display: flex; gap: 10px; margin: 0 0 0 auto; flex-wrap: nowrap; flex-shrink: 0; }
+.tools-tab-btn { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
 .tools-tab-btn:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .tools-tab-btn.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .tools-tab-content { display: none; animation: fadeIn 0.3s; }
