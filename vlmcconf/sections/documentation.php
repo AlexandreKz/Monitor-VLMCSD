@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.3.1
+// ВЕРСИЯ: 5.3.2
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -1161,7 +1161,7 @@ renderDocumentation();
 }
 
 .doc-lang-btn.active {
-    color: <?= $themeCSS['primary'] ?> !important;
+    color: <?= $themeCSS['accentText'] ?> !important;
     background: <?= $themeCSS['card'] ?> !important;
 }
 
@@ -1183,7 +1183,7 @@ renderDocumentation();
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 20px;
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1261,7 +1261,7 @@ renderDocumentation();
 
 .btn-primary {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
 }
 .btn-primary:hover {
     background: #2563eb;

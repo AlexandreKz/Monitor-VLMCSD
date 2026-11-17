@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.6.0
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 1.6.1
+// ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW)
 // ============================================
 
@@ -15,7 +15,7 @@ if (basename($_SERVER['PHP_SELF']) === 'info.php') {
 $canViewInfo = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_INFO_VIEW);
 
 if (!$canViewInfo) {
-    echo '<div class="settings-section" id="section-info"><div class="section-title"><span>ℹ️ ' . __('info_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
+    echo '<div class="settings-section" id="section-info"><div class="section-title"><span>ℹ️ ' . __('info_title') . '</span></div><div style="text-align: center; padding: 40px; color: ' . $themeCSS['muted'] . ';">🔒 ' . __('access_denied') . '</div></div>';
     return;
 }
 ?>
@@ -36,10 +36,10 @@ if (!$canViewInfo) {
     <div style="background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 10px; margin-bottom: 20px; font-size: 12px;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; flex: 1;">
-                <div><strong style="color: #8aa0bb;"><?= __('info_version') ?>:</strong> <?= CONFIG_VERSION ?></div>
-                <div><strong style="color: #8aa0bb;"><?= __('info_theme') ?>:</strong> <?= __($themeCSS['name']) ?></div>
-                <div><strong style="color: #8aa0bb;"><?= __('info_config') ?>:</strong> <?= htmlspecialchars(basename($configFile)) ?></div>
-                <div><strong style="color: #8aa0bb;"><?= __('info_log') ?>:</strong> <span style="color: <?= $logFileExists ? $themeCSS['success'] : $themeCSS['danger'] ?>;"><?= $logFileExists ? '✓' : '✗' ?></span></div>
+                <div><strong style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_version') ?>:</strong> <?= CONFIG_VERSION ?></div>
+                <div><strong style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_theme') ?>:</strong> <?= __($themeCSS['name']) ?></div>
+                <div><strong style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_config') ?>:</strong> <?= htmlspecialchars(basename($configFile)) ?></div>
+                <div><strong style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_log') ?>:</strong> <span style="color: <?= $logFileExists ? $themeCSS['success'] : $themeCSS['danger'] ?>;"><?= $logFileExists ? '✓' : '✗' ?></span></div>
             </div>
         </div>
     </div>
@@ -48,13 +48,13 @@ if (!$canViewInfo) {
     <div class="settings-card">
         <div class="settings-card-title">🖥️ <?= __('info_server') ?></div>
         <div class="server-info-grid">
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_os') ?>:</span><span><?= htmlspecialchars($osName) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_kernel') ?>:</span><span><?= htmlspecialchars(php_uname('r')) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_host') ?>:</span><span><?= htmlspecialchars($hostname) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_ip') ?>:</span><span><?= htmlspecialchars($serverIp) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_web_server') ?>:</span><span><?= htmlspecialchars($serverSoftware) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_php') ?>:</span><span><?= htmlspecialchars($phpVersion) ?></span></div>
-            <div class="server-info-item"><span style="color: #8aa0bb;"><?= __('info_uptime') ?>:</span><span><?= $uptimeFormatted ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_os') ?>:</span><span><?= htmlspecialchars($osName) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_kernel') ?>:</span><span><?= htmlspecialchars(php_uname('r')) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_host') ?>:</span><span><?= htmlspecialchars($hostname) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_ip') ?>:</span><span><?= htmlspecialchars($serverIp) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_web_server') ?>:</span><span><?= htmlspecialchars($serverSoftware) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_php') ?>:</span><span><?= htmlspecialchars($phpVersion) ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_uptime') ?>:</span><span><?= $uptimeFormatted ?></span></div>
         </div>
     </div>
     
@@ -89,7 +89,7 @@ if (!$canViewInfo) {
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -109,7 +109,7 @@ if (!$canViewInfo) {
 
 .btn-primary {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
 }
 .btn-primary:hover {
     background: #2563eb;

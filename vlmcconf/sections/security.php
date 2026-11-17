@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.2.0
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 5.2.1
+// ДАТА: 2026-11-17
 // @description: Секция "Безопасность" — управление пользователями + белые IP
 // ============================================
 
@@ -84,7 +84,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 					<?php if ($canManageWhitelist): ?>
 					<button class="btn btn-primary" style="white-space: nowrap;" onclick="showAddWhitelistIpModal()"><?= __('whitelist_add_ip') ?></button>
 					<?php endif; ?>
-					<p style="margin: 0; flex: 1; font-size: 11px; color: #8aa0bb; line-height: 1.4;"><?= __('whitelist_description') ?></p>
+					<p style="margin: 0; flex: 1; font-size: 11px; color: <?= $themeCSS['muted'] ?>; line-height: 1.4;"><?= __('whitelist_description') ?></p>
 				</div>
 				
 				<!-- Таблица белых IP -->
@@ -95,7 +95,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 					</div>
 					<div id="whitelistListContainer">
 					<?php if (empty($whitelistIps)): ?>
-						<div style="text-align: center; padding: 20px; color: #8aa0bb;"><?= __('whitelist_empty') ?></div>
+						<div style="text-align: center; padding: 20px; color: <?= $themeCSS['muted'] ?>;"><?= __('whitelist_empty') ?></div>
 					<?php else: ?>
 						<?php foreach ($whitelistIps as $ip): ?>
 						<div class="whitelist-item" data-ip="<?= htmlspecialchars($ip) ?>">
@@ -285,7 +285,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 12px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -294,7 +294,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     margin: 0;
     flex: 1;
     font-size: 11px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     line-height: 1.4;
 }
 
@@ -329,7 +329,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 }
 
 .lock-icon {
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     font-size: 12px;
 }
 
@@ -342,13 +342,13 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     font-size: 12px;
     font-weight: 500;
     margin-bottom: 4px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
 }
 
 .form-hint {
     display: block;
     font-size: 10px;
-    color: #6b8ba4;
+    color: <?= $themeCSS['muted'] ?>;
     margin-top: 3px;
 }
 
@@ -377,7 +377,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 
 .btn-primary {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
 }
 
 .btn-primary:hover {
@@ -462,11 +462,11 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     font-size: 18px;
     font-weight: 600;
     margin: 0;
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
 }
 
 .modal-close {
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     font-size: 24px;
     font-weight: bold;
     cursor: pointer;
@@ -507,7 +507,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     border: none;
     cursor: pointer;
     font-size: 16px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     padding: 0;
     margin: 0;
     width: 24px;
@@ -518,7 +518,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 }
 
 .toggle-password-btn:hover {
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
 }
 
 @keyframes modalFadeIn {
@@ -799,7 +799,7 @@ function getRoleDisplay(permissions) {
 function renderUsers(users) {
     const container = document.getElementById('usersListContainer');
     if (!users || users.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #8aa0bb;"><?= __('users_empty') ?></div>';
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: <?= $themeCSS['muted'] ?>;"><?= __('users_empty') ?></div>';
         return;
     }
     
@@ -814,10 +814,10 @@ function renderUsers(users) {
                 <span style="font-size: 10px;">${escapeHtml(roleDisplay)}</span>
                 <span style="font-size: 10px;">${user.created || '—'}</span>
                 <span>
-                    ${isCurrent ? '<span style="color: #8aa0bb; font-size: 10px;"><?= __('current_user') ?></span>' : `
+                    ${isCurrent ? '<span style="color: <?= $themeCSS['muted'] ?>; font-size: 10px;"><?= __('current_user') ?></span>' : `
                         <?php if ($canEditUsers): ?>
                         <button onclick="editUser(${user.id}, '${escapeHtml(user.username)}', ${user.permissions})" style="background: none; border: none; color: #3b82f6; cursor: pointer; margin-right: 8px;" title="<?= __('edit') ?>">✎</button>
-                        <button onclick="showChangePasswordModal(${user.id}, '${escapeHtml(user.username)}')" style="background: none; border: none; color: #f39c12; cursor: pointer; margin-right: 8px;" title="<?= __('change_password') ?>">🔑</button>
+                        <button onclick="showChangePasswordModal(${user.id}, '${escapeHtml(user.username)}')" style="background: none; border: none; color: <?= $themeCSS['warnText'] ?>; cursor: pointer; margin-right: 8px;" title="<?= __('change_password') ?>">🔑</button>
                         <button onclick="deleteUser(${user.id})" style="background: none; border: none; color: #e74c3c; cursor: pointer;" title="<?= __('delete') ?>">✕</button>
                         <?php endif; ?>
                     `}

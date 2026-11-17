@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.7.0
+// ВЕРСИЯ: 5.7.1
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -139,7 +139,7 @@ $updI18n = [
                 <label class="upd-dev-item"><input type="checkbox" disabled> <?= __('update_schedule_enable') ?></label>
                 </div>
                 <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>;">
-                    <div style="font-size: 12px; color: #8aa0bb; line-height: 1.4;"><?= __('notify_update_hint') ?></div>
+                    <div style="font-size: 12px; color: <?= $themeCSS['muted'] ?>; line-height: 1.4;"><?= __('notify_update_hint') ?></div>
                 </div>
             </div>
         </div>
@@ -209,17 +209,17 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .upd-info-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; flex: 0 0 auto; white-space: nowrap; }
 .upd-info-item:last-child { flex: 1 1 auto; overflow: hidden; }
 #updateStatusText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.upd-info-label { color: #8aa0bb; white-space: nowrap; }
+.upd-info-label { color: <?= $themeCSS['muted'] ?>; white-space: nowrap; }
 .upd-info-label::after { content: ':'; }
 .upd-info-item code { font-size: 11px; }
 .upd-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed <?= $themeCSS['border'] ?>; }
 .upd-extra-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 1000px) { .upd-extra-row { grid-template-columns: 1fr; } .update-channels { grid-template-columns: 1fr !important; } }
 .upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 10px; min-width: 0; }
-.upd-i { color: #8aa0bb; font-weight: 400; cursor: help; }
+.upd-i { color: <?= $themeCSS['muted'] ?>; font-weight: 400; cursor: help; }
 .upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
-.upd-hint { font-size: 11px; color: #8aa0bb; margin-top: 6px; line-height: 1.4; }
-.upd-dev-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8aa0bb; margin: 2px 12px 0 0; }
+.upd-hint { font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-top: 6px; line-height: 1.4; }
+.upd-dev-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: <?= $themeCSS['muted'] ?>; margin: 2px 12px 0 0; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
 .update-channel-card .uc-line { margin-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 18px; min-width: 0; }
 .update-channel-card .uc-title { grid-column: 1 / -1; margin-bottom: 0 !important; line-height: 18px; white-space: nowrap; overflow: hidden; }
@@ -227,11 +227,11 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .update-channel-card #chReleaseVersion, .update-channel-card #chEarlyVersion { grid-column: 1; }
 .update-channel-card .uc-status { grid-column: 2; }
 #section-tools .section-title { min-height: 34px; }
-.update-channel-card .uc-small { font-size: 11px; color: #8aa0bb; word-break: break-word; }
+.update-channel-card .uc-small { font-size: 11px; color: <?= $themeCSS['muted'] ?>; word-break: break-word; }
 .update-channel-card .uc-status.ok { color: <?= $themeCSS['success'] ?>; }
 .update-channel-card .uc-status.avail { color: #e0a800; font-weight: 600; }
 .update-channel-card .uc-status.err { color: <?= $themeCSS['danger'] ?>; }
-.uc-badge { font-size: 10px; font-weight: 400; color: <?= $themeCSS['primary'] ?>; margin-left: 6px; }
+.uc-badge { font-size: 10px; font-weight: 400; color: <?= $themeCSS['accentText'] ?>; margin-left: 6px; }
 .section-message.update-persist { animation: none; opacity: 1; max-width: 560px; }
 .update-dev-badge { font-size: 11px; color: #e0a800; }
 
@@ -240,7 +240,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 .block-message { padding: 8px 12px; border-radius: 6px; font-size: 12px; }
 .block-message.success { background: <?= $themeCSS['success'] ?>20; color: <?= $themeCSS['success'] ?>; border: 1px solid <?= $themeCSS['success'] ?>; }
 .block-message.error { background: <?= $themeCSS['danger'] ?>20; color: <?= $themeCSS['danger'] ?>; border: 1px solid <?= $themeCSS['danger'] ?>; }
-.block-message.info { background: <?= $themeCSS['primary'] ?>20; color: <?= $themeCSS['primary'] ?>; border: 1px solid <?= $themeCSS['primary'] ?>; }
+.block-message.info { background: <?= $themeCSS['primary'] ?>20; color: <?= $themeCSS['accentText'] ?>; border: 1px solid <?= $themeCSS['primary'] ?>; }
 </style>
 
 <script>

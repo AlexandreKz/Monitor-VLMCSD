@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.1.4
+// ВЕРСИЯ: 3.1.5
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), ссылка на уведомления
 // ============================================
@@ -171,59 +171,59 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
 <style>
 .audit-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: end; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
-.audit-f label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
+.audit-f label { display: block; font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 4px; }
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
 .audit-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px 15px; }
 .audit-bar-left, .audit-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.audit-check { font-size: 12px; color: #8aa0bb; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
-#auditFound { font-size: 12px; color: #8aa0bb; }
+.audit-check { font-size: 12px; color: <?= $themeCSS['muted'] ?>; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+#auditFound { font-size: 12px; color: <?= $themeCSS['muted'] ?>; }
 .audit-table-wrap { overflow: auto; max-height: clamp(220px, 46vh, 560px); border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.audit-table th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.audit-table th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['muted'] ?>; font-weight: 600; white-space: nowrap; }
 .audit-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: top; }
 .audit-table td.audit-time, .audit-table td.audit-ip { white-space: nowrap; font-family: monospace; }
-.audit-table td.audit-details { word-break: break-word; overflow-wrap: anywhere; color: #8aa0bb; min-width: 260px; }
-.audit-user-link { cursor: pointer; color: <?= $themeCSS['primary'] ?>; }
+.audit-table td.audit-details { word-break: break-word; overflow-wrap: anywhere; color: <?= $themeCSS['muted'] ?>; min-width: 260px; }
+.audit-user-link { cursor: pointer; color: <?= $themeCSS['accentText'] ?>; }
 .audit-user-link:hover { text-decoration: underline; }
 .audit-change { font-family: monospace; font-size: 11px; color: <?= $themeCSS['text'] ?>; opacity: 0.85; margin-top: 2px; }
 .audit-table tr:hover td { background: <?= $themeCSS['hover'] ?>; }
 .audit-table tr.audit-bad td { background: <?= $themeCSS['danger'] ?>14; }
 .audit-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; }
-.audit-badge.ok { color: #2ecc71; border: 1px solid #2ecc7155; }
-.audit-badge.error { color: #f39c12; border: 1px solid #f39c1255; }
-.audit-badge.denied { color: #e74c3c; border: 1px solid #e74c3c55; }
+.audit-badge.ok { color: <?= $themeCSS['okText'] ?>; border: 1px solid #2ecc7155; }
+.audit-badge.error { color: <?= $themeCSS['warnText'] ?>; border: 1px solid #f39c1255; }
+.audit-badge.denied { color: <?= $themeCSS['dangerText'] ?>; border: 1px solid #e74c3c55; }
 .audit-pager-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 10px 0 12px; }
 .audit-pager-left { justify-self: start; }
 .audit-pager-right { justify-self: end; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
 .audit-f-reset { display: flex; flex-direction: column; justify-content: flex-end; }
 .audit-flat { box-sizing: border-box; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 16px; height: 30px; font-size: 12px; line-height: 28px; cursor: pointer; white-space: nowrap; font-family: inherit; transition: border-color .15s, color .15s; }
-.audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 
 .audit-range { position: relative; }
 .audit-range .form-control { cursor: pointer; width: 100%; box-sizing: border-box; }
 .audit-cal { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 268px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); color: <?= $themeCSS['text'] ?>; }
 .audit-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 600; text-transform: capitalize; }
 .audit-cal-nav { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; line-height: 1; }
-.audit-cal-nav:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.audit-cal-nav:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 .audit-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.audit-cal-wd { font-size: 10px; color: #8aa0bb; text-align: center; padding: 2px 0; text-transform: uppercase; }
+.audit-cal-wd { font-size: 10px; color: <?= $themeCSS['muted'] ?>; text-align: center; padding: 2px 0; text-transform: uppercase; }
 .audit-cal-day { background: transparent; border: 1px solid transparent; color: <?= $themeCSS['text'] ?>; border-radius: 6px; height: 28px; font-size: 12px; cursor: pointer; padding: 0; }
 .audit-cal-day:hover { background: <?= $themeCSS['hover'] ?>; }
 .audit-cal-day.other { opacity: 0.35; }
 .audit-cal-day.today { border-color: <?= $themeCSS['primary'] ?>; }
 .audit-cal-day.in-range { background: <?= $themeCSS['primary'] ?>33; border-radius: 0; }
-.audit-cal-day.edge { background: <?= $themeCSS['primary'] ?>; color: #fff; border-radius: 6px; }
+.audit-cal-day.edge { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; border-radius: 6px; }
 .audit-cal-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
 .audit-cal-preset { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; }
-.audit-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.audit-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 .audit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: stretch; }
 .audit-row .audit-panel { margin-bottom: 0; }
 @media (max-width: 900px) { .audit-row { grid-template-columns: 1fr; } }
 .audit-panel { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
-.audit-hint { font-size: 11px; color: #8aa0bb; }
-.audit-empty { text-align: center; padding: 24px; color: #8aa0bb; }
+.audit-hint { font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
+.audit-empty { text-align: center; padding: 24px; color: <?= $themeCSS['muted'] ?>; }
 </style>
 
 <script>

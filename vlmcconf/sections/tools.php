@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.3.2
+// ВЕРСИЯ: 3.3.3
 // ДАТА: 2026-11-17
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
@@ -21,7 +21,7 @@ $canEditTools = hasPermission($userPerms, PERM_TOOLS_EDIT);
 $isAdmin = hasPermission($userPerms, PERM_USERS_EDIT);
 
 if (!$canViewTools) {
-    echo '<div class="settings-section" id="section-tools"><div class="section-title"><span>🛠️ ' . __('tools_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
+    echo '<div class="settings-section" id="section-tools"><div class="section-title"><span>🛠️ ' . __('tools_title') . '</span></div><div style="text-align: center; padding: 40px; color: ' . $themeCSS['muted'] . ';">🔒 ' . __('access_denied') . '</div></div>';
     return;
 }
 
@@ -115,7 +115,7 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
                         <?php endif; ?>
                     </div>
                     <div><strong><?= __('security_first_event') ?>:</strong> 
-                        <?= $firstLogDate ? htmlspecialchars($firstLogDate) : '<span style="color: #8aa0bb;">—</span>' ?>
+                        <?= $firstLogDate ? htmlspecialchars($firstLogDate) : '<span style="color: ' . $themeCSS['muted'] . ';">—</span>' ?>
                     </div>
                 </div>
                 <div class="tools-subsection">
@@ -244,23 +244,23 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 #section-tools .section-title .section-message { order: 1; margin: 0; flex: 0 1 auto; text-align: center; }
 .tools-tab-btn { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; white-space: nowrap; }
 .tools-tab-btn:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
-.tools-tab-btn.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
+.tools-tab-btn.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .tools-tab-content { display: none; animation: fadeIn 0.3s; }
 .tools-tab-content.active { display: block; }
 
 /* ===== Карточки ===== */
 .tools-row { display: flex; gap: 15px; align-items: stretch; }
 .tools-card { flex: 1; min-width: 260px; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.tools-card-title { font-size: 14px; font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.tools-card-title { font-size: 14px; font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 .tools-subsection { background: <?= $themeCSS['card'] ?>; border-radius: 6px; padding: 6px 8px; }
-.tools-subsection-title { font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #8aa0bb; }
-.tools-desc { font-size: 10px; color: #8aa0bb; margin-bottom: 6px; }
+.tools-subsection-title { font-size: 11px; font-weight: 600; margin-bottom: 4px; color: <?= $themeCSS['muted'] ?>; }
+.tools-desc { font-size: 10px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 6px; }
 
 /* ===== Лог ===== */
 .log-info-compact { background: <?= $themeCSS['card'] ?>; border-radius: 6px; padding: 6px 8px; font-size: 11px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
 .date-range-row { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; }
 .date-field { flex: 1; }
-.date-field label { display: block; font-size: 9px; margin-bottom: 2px; color: #8aa0bb; }
+.date-field label { display: block; font-size: 9px; margin-bottom: 2px; color: <?= $themeCSS['muted'] ?>; }
 .date-field input { padding: 4px 6px; font-size: 11px; }
 .two-buttons { display: flex; gap: 8px; }
 .two-buttons button { flex: 1; }
@@ -270,11 +270,11 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 /* ===== Кнопки ===== */
 .btn { padding: 4px 8px; border: none; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: <?= $themeCSS['primary'] ?>; color: white; }
+.btn-primary { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
 .btn-primary:hover { background: #2563eb; }
-.btn-warning { background: <?= $themeCSS['warning'] ?>; color: white; }
-.btn-danger { background: <?= $themeCSS['danger'] ?>; color: white; }
-.btn-success { background: <?= $themeCSS['success'] ?>; color: white; }
+.btn-warning { background: <?= $themeCSS['warning'] ?>; color: <?= $themeCSS['onWarning'] ?>; }
+.btn-danger { background: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['onDanger'] ?>; }
+.btn-success { background: <?= $themeCSS['success'] ?>; color: <?= $themeCSS['onSuccess'] ?>; }
 .btn-info { background: #17a2b8; color: white; }
 .btn-secondary { background: #6c757d; color: white; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -314,9 +314,9 @@ input[type="date"]:disabled {
 .tools-modal-content { background: <?= $themeCSS['card'] ?>; border-radius: 12px; width: 450px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); color: <?= $themeCSS['text'] ?>; animation: modalFadeIn 0.3s; }
 .tools-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; }
 .tools-modal-header h2 { font-size: 18px; font-weight: 600; margin: 0; }
-.tools-modal-close { color: #8aa0bb; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
+.tools-modal-close { color: <?= $themeCSS['muted'] ?>; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
 .tools-modal-body { padding: 20px; }
-.tools-modal-estimate { font-size: 12px; color: #8aa0bb; background: <?= $themeCSS['input'] ?>; padding: 8px; border-radius: 6px; margin-top: 10px; }
+.tools-modal-estimate { font-size: 12px; color: <?= $themeCSS['muted'] ?>; background: <?= $themeCSS['input'] ?>; padding: 8px; border-radius: 6px; margin-top: 10px; }
 .tools-modal-footer { padding: 15px 20px; border-top: 1px solid <?= $themeCSS['border'] ?>; display: flex; justify-content: flex-end; gap: 10px; }
 
 /* ===== Оверлей блокировки ===== */

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.12.0
+// ВЕРСИЯ: 5.13.0
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -361,7 +361,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_update_tab') {
     // Обновление проекта — только с правом «Инструменты: редактирование»
     if (!hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
         http_response_code(403);
-        echo '<div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div>';
+        echo '<div style="text-align: center; padding: 40px; color: ' . $themeCSS['muted'] . ';">🔒 ' . __('access_denied') . '</div>';
         exit;
     }
     if (!defined('VLMCS_CONF')) {
@@ -709,7 +709,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .version-badge {
             background: <?= $themeCSS['input'] ?>;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
@@ -862,7 +862,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 12px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
@@ -874,7 +874,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             font-size: 12px;
             font-weight: 500;
             margin-bottom: 4px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
         }
         .form-control {
             width: 100%;
@@ -891,6 +891,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             box-shadow: 0 0 0 2px <?= $themeCSS['primary'] ?>20;
         }
         .btn {
+            background: <?= $themeCSS['input'] ?>;
+            color: <?= $themeCSS['text'] ?>;
             padding: 8px 16px;
             border: none;
             border-radius: 6px;
@@ -902,11 +904,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             align-items: center;
             gap: 6px;
         }
-        .btn-primary { background: <?= $themeCSS['primary'] ?>; color: white; }
+        /* кнопки без своего цвета текста берут цвет темы, а не системный чёрный */
+        button { color: <?= $themeCSS['text'] ?>; }
+        .btn-primary { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
         .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
-        .btn-warning { background: <?= $themeCSS['warning'] ?>; color: white; }
-        .btn-danger { background: <?= $themeCSS['danger'] ?>; color: white; }
-        .btn-success { background: <?= $themeCSS['success'] ?>; color: white; }
+        .btn-warning { background: <?= $themeCSS['warning'] ?>; color: <?= $themeCSS['onWarning'] ?>; }
+        .btn-danger { background: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['onDanger'] ?>; }
+        .btn-success { background: <?= $themeCSS['success'] ?>; color: <?= $themeCSS['onSuccess'] ?>; }
         .btn-small { padding: 4px 8px; font-size: 11px; }
         .theme-selector {
             display: flex;
@@ -958,7 +962,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             margin-bottom: 10px;
             text-align: center;
         }
@@ -992,7 +996,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .preview-muted {
             font-size: 10px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             transition: all 0.3s;
         }
         .path-preview {
@@ -1015,7 +1019,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .device-filter span {
             font-size: 12px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
         }
         .devices-list {
             display: flex;
@@ -1056,13 +1060,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .device-comment {
             font-size: 10px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             margin-top: 2px;
         }
         .device-meta {
             flex: 1;
             font-size: 11px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
         }
         .device-actions {
             display: flex;
@@ -1080,11 +1084,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .edit-device-btn {
             background: <?= $themeCSS['primary'] ?>;
-            color: white;
+            color: <?= $themeCSS['onPrimary'] ?>;
         }
         .delete-device-btn {
             background: <?= $themeCSS['danger'] ?>;
-            color: white;
+            color: <?= $themeCSS['onDanger'] ?>;
         }
         .log-info-card {
             background: <?= $themeCSS['card'] ?>;
@@ -1117,12 +1121,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         .stat-card-value {
             font-size: 28px;
             font-weight: 600;
-            color: <?= $themeCSS['primary'] ?>;
+            color: <?= $themeCSS['accentText'] ?>;
             margin-bottom: 4px;
         }
         .stat-card-label {
             font-size: 10px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
@@ -1142,7 +1146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
@@ -1159,7 +1163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             border-bottom: 1px dashed <?= $themeCSS['border'] ?>;
         }
         .stat-list-label {
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
         }
         .stat-list-value {
             font-weight: 600;
@@ -1199,7 +1203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .group-devices-count {
             font-size: 11px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
         }
         .group-actions {
             display: flex;
@@ -1238,7 +1242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         .info-item:last-child { border-bottom: none; }
         .info-item-label {
             width: 120px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             font-size: 12px;
             text-transform: uppercase;
         }
@@ -1254,7 +1258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         .footer {
             padding: 8px;
             text-align: center;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             font-size: 11px;
             flex-shrink: 0;
         }
@@ -1296,10 +1300,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             font-size: 18px;
             font-weight: 600;
             margin: 0;
-            color: <?= $themeCSS['primary'] ?>;
+            color: <?= $themeCSS['accentText'] ?>;
         }
         .modal-close {
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             font-size: 24px;
             font-weight: bold;
             cursor: pointer;
@@ -1322,7 +1326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         .modal-form-group label {
             font-size: 12px;
             font-weight: 500;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             text-transform: uppercase;
         }
         .modal-form-control {
@@ -1345,7 +1349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .modal-btn-primary {
             background: <?= $themeCSS['primary'] ?>;
-            color: white;
+            color: <?= $themeCSS['onPrimary'] ?>;
         }
         .modal-message {
             padding: 8px;
@@ -1385,7 +1389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         }
         .period-btn.active {
             background: <?= $themeCSS['primary'] ?>;
-            color: white;
+            color: <?= $themeCSS['onPrimary'] ?>;
             border-color: <?= $themeCSS['primary'] ?>;
         }
         ::-webkit-scrollbar { width: 6px; }
@@ -1405,24 +1409,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             border-bottom: 1px dashed <?= $themeCSS['border'] ?>;
         }
 		
-		/* Стили только для темы Корпоративный синий (only) */
-		<?php if ($config['theme'] === 'corporate_blue'): ?>
-		.section-title {
-			color: #0097dc !important;
-		}
-		.section-title span {
-			color: #0097dc !important;
-		}
-		.settings-card-title {
-			color: #0097dc !important;
-		}
-		.menu-item span {
-			color: #0097dc !important;
-		}
-		.header h1 {
-			color: #0097dc !important;
-		}
-		<?php endif; ?>
 		
         .password-wrapper {
             position: relative;
@@ -1442,7 +1428,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             border: none;
             cursor: pointer;
             font-size: 16px;
-            color: #8aa0bb;
+            color: <?= $themeCSS['muted'] ?>;
             padding: 0;
             margin: 0;
             width: 24px;
@@ -1452,7 +1438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             justify-content: center;
         }
         .toggle-password-btn:hover {
-            color: <?= $themeCSS['primary'] ?>;
+            color: <?= $themeCSS['accentText'] ?>;
         }
     </style>
 <script>

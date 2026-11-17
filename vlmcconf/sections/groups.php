@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/groups.php
-// ВЕРСИЯ: 3.6.0
-// ДАТА: 2026-06-05
+// ВЕРСИЯ: 3.6.1
+// ДАТА: 2026-11-17
 // @description: Секция "Группы" с модальным окном (редактирование имени, иконки, цвета, удаление)
 // ============================================
 
@@ -17,7 +17,7 @@ $canEditGroups = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_GROUPS_E
 
 // Если нет прав на просмотр — не показываем секцию
 if (!$canViewGroups) {
-    echo '<div class="settings-section" id="section-groups"><div class="section-title"><span>👥 ' . __('groups_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
+    echo '<div class="settings-section" id="section-groups"><div class="section-title"><span>👥 ' . __('groups_title') . '</span></div><div style="text-align: center; padding: 40px; color: ' . $themeCSS['muted'] . ';">🔒 ' . __('access_denied') . '</div></div>';
     return;
 }
 
@@ -191,7 +191,7 @@ $fullEmojiList = get_emoji_list();
 .btn-edit-group {
     background: none;
     border: none;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     cursor: pointer;
     font-size: 12px;
     padding: 2px 4px;
@@ -206,7 +206,7 @@ $fullEmojiList = get_emoji_list();
 
 .group-devices-count {
     font-size: 11px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
 }
 
 .btn-emoji-picker,
@@ -284,7 +284,7 @@ $fullEmojiList = get_emoji_list();
 }
 
 .emoji-modal-close {
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     font-size: 24px;
     font-weight: bold;
     cursor: pointer;
@@ -357,11 +357,11 @@ $fullEmojiList = get_emoji_list();
     font-size: 16px;
     font-weight: 600;
     margin: 0;
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
 }
 
 .modal-close {
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     font-size: 20px;
     font-weight: bold;
     cursor: pointer;
@@ -380,7 +380,7 @@ $fullEmojiList = get_emoji_list();
     font-size: 11px;
     font-weight: 500;
     margin-bottom: 4px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
 }
 
 .form-control {
@@ -430,7 +430,7 @@ $fullEmojiList = get_emoji_list();
 
 .btn-primary {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
 }
 
 .btn-primary:hover {
@@ -439,7 +439,7 @@ $fullEmojiList = get_emoji_list();
 
 .btn-danger {
     background: <?= $themeCSS['danger'] ?>;
-    color: white;
+    color: <?= $themeCSS['onDanger'] ?>;
 }
 
 .btn-danger:hover {

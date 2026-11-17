@@ -1,12 +1,12 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmctheme.php
-// ВЕРСИЯ: 1.5.2
-// ДАТА: 2026-04-03
+// ВЕРСИЯ: 1.6.2
+// ДАТА: 2026-11-17
 // @description: Библиотека тем для KMS Monitor (добавлены Summer и Autumn)
 // ============================================
 
-function getThemeCSS($theme) {
+function getThemeCSSBase($theme) {
     switch ($theme) {
         case 'light':
             return [
@@ -374,28 +374,29 @@ function getThemeCSS($theme) {
 			];
 			
 		case 'corporate_blue':
+			// В духе тёмной темы веб-интерфейса Keenetic: графитово-синий фон, светлый текст, яркий синий акцент
 			return [
 				'name' => 'theme_corporate_blue',
-				'bg' => '#1b2434',
-				'card' => '#1e2a3a',
-				'text' => '#0097dc',
-				'border' => '#2d4055',
-				'header' => 'linear-gradient(145deg, #1b2434 0%, #16202e 100%)',
-				'input' => '#1e2a3a',
-				'inputBorder' => '#2d4055',
-				'success' => '#2ecc71',
-				'warning' => '#f39c12',
-				'danger' => '#e74c3c',
-				'shadow' => '0 4px 15px rgba(0,151,220,0.2)',
-				'hover' => '#243449',
-				'menuBg' => '#16202e',
-				'menuHover' => '#1e2e42',
-				'menuText' => '#0097dc',
-				'accent' => '#0097dc',
-				'primary' => '#0097dc',
-				'primary_hover' => '#0077b3',
-				'logBg' => '#1b2434',
-				'logText' => '#0097dc'
+				'bg' => '#181c24',
+				'card' => '#222733',
+				'text' => '#e4e8ef',
+				'border' => '#323a4a',
+				'header' => 'linear-gradient(145deg, #222733 0%, #1c212b 100%)',
+				'input' => '#1a1f29',
+				'inputBorder' => '#363f51',
+				'success' => '#2fbf71',
+				'warning' => '#f0a020',
+				'danger' => '#e5484d',
+				'shadow' => '0 4px 15px rgba(0,0,0,0.35)',
+				'hover' => '#2a3040',
+				'menuBg' => '#1c212b',
+				'menuHover' => '#262d3b',
+				'menuText' => '#c3cad6',
+				'accent' => '#2d8cf0',
+				'primary' => '#2d8cf0',
+				'primary_hover' => '#1f74d0',
+				'logBg' => '#14181f',
+				'logText' => '#c9d1dc'
 			];	
 	}
 }
@@ -420,4 +421,76 @@ function getAvailableThemes() {
 		'poker' => 'theme_poker',
 		'corporate_blue' => 'theme_corporate_blue',
     ];
+}
+// ---------- производные цвета: читаемость в любой теме (палитры не меняются, добавляются только запасные цвета) ----------
+
+function themeLum($hex) {
+    $hex = ltrim((string)$hex, '#');
+    if (strlen($hex) === 3) { $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2]; }
+    if (strlen($hex) !== 6) { return 0.5; }
+    $l = 0;
+    foreach ([0.2126, 0.7152, 0.0722] as $i => $k) {
+        $v = hexdec(substr($hex, $i * 2, 2)) / 255;
+        $l += $k * ($v <= 0.03928 ? $v / 12.92 : pow(($v + 0.055) / 1.055, 2.4));
+    }
+    return $l;
+}
+
+function themeContrast($a, $b) {
+    $x = themeLum($a); $y = themeLum($b);
+    return (max($x, $y) + 0.05) / (min($x, $y) + 0.05);
+}
+
+/** Смесь двух цветов: $t = 0 — $a, 1 — $b. */
+function themeMix($a, $b, $t) {
+    $a = ltrim($a, '#'); $b = ltrim($b, '#');
+    $o = '#';
+    for ($i = 0; $i < 3; $i++) {
+        $x = hexdec(substr($a, $i * 2, 2)); $y = hexdec(substr($b, $i * 2, 2));
+        $o .= str_pad(dechex((int)round($x + ($y - $x) * $t)), 2, '0', STR_PAD_LEFT);
+    }
+    return $o;
+}
+
+function getThemeCSS($theme) {
+    $c = getThemeCSSBase($theme);
+    $bgs = [$c['card'], $c['bg'], $c['input'], $c['hover']];
+    $min = function ($fg) use ($bgs) { $m = 99; foreach ($bgs as $b) { $m = min($m, themeContrast($fg, $b)); } return $m; };
+    $dark = themeLum($c['card']) < 0.3;
+    // второстепенный текст (подписи): прежний серо-голубой, если читается, иначе светлее/темнее по теме
+    $muted = '#8aa0bb';
+    if ($min($muted) < 3.5) {
+        foreach ($dark ? ['#a3b4c8', '#b8c5d6', '#cfd8e3'] : ['#6b7f96', '#5b6f86', '#4a5d73'] as $cand) {
+            $muted = $cand;
+            if ($min($cand) >= 3.5) { break; }
+        }
+    }
+    // текст акцентного цвета на фоне карточек: сам акцент, если читается, иначе смесь с цветом текста
+    $accent = $c['primary'];
+    if (themeContrast($accent, $c['card']) < 3.0) {
+        for ($t = 0.15; $t <= 1.0; $t += 0.15) {
+            $accent = themeMix($c['primary'], $c['text'], $t);
+            if (themeContrast($accent, $c['card']) >= 3.0) { break; }
+        }
+    }
+    $on = function ($bg, $min = 2.0) { return themeContrast('#ffffff', $bg) >= $min ? '#ffffff' : '#111111'; };   // белый текст на цветной кнопке, пока он читается (иначе тёмный)
+    // цвета статусов как текст на фоне карточек: свой цвет, если читается, иначе смесь с цветом текста
+    $txt = function ($col) use ($c) {
+        if (themeContrast($col, $c['card']) >= 3.0) { return $col; }
+        for ($t = 0.15; $t <= 1.0; $t += 0.15) {
+            $m = themeMix($col, $c['text'], $t);
+            if (themeContrast($m, $c['card']) >= 3.0) { return $m; }
+        }
+        return $c['text'];
+    };
+    $c['okText'] = $txt($c['success']);
+    $c['warnText'] = $txt($c['warning']);
+    $c['dangerText'] = $txt($c['danger']);
+    $c['muted'] = $muted;
+    $c['accentText'] = $accent;
+    $c['onPrimary'] = $on($c['primary'], 3.0);
+    $c['onSuccess'] = $on($c['success']);
+    $c['onWarning'] = $on($c['warning']);
+    $c['onDanger'] = $on($c['danger']);
+    return $c;
 }

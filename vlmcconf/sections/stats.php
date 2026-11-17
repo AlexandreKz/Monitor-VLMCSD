@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.4.0
+// ВЕРСИЯ: 3.4.1
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -266,13 +266,13 @@ $totalGroups = count($groupStats);
 .stat-card-value {
     font-size: 28px;
     font-weight: 600;
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
     margin-bottom: 4px;
 }
 
 .stat-card-label {
     font-size: 10px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -295,7 +295,7 @@ $totalGroups = count($groupStats);
     font-size: 13px;
     font-weight: 600;
     margin-bottom: 10px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     text-transform: uppercase;
     letter-spacing: 0.3px;
     border-bottom: 1px solid <?= $themeCSS['border'] ?>;
@@ -335,7 +335,7 @@ $totalGroups = count($groupStats);
 .stat-copy-badge.err { color: #f85149; }
 
 .stat-list-label {
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -343,12 +343,12 @@ $totalGroups = count($groupStats);
 
 .stat-list-value {
     font-weight: 600;
-    color: <?= $themeCSS['primary'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
 }
 
 .stat-list-empty {
     text-align: center;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     font-size: 11px;
     padding: 15px 0;
 }
@@ -365,7 +365,7 @@ $totalGroups = count($groupStats);
 
 .stat-tab-btn.active {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
     border-color: <?= $themeCSS['primary'] ?>;
 }
 
@@ -393,7 +393,7 @@ $totalGroups = count($groupStats);
 
 .period-btn.active {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
     border-color: <?= $themeCSS['primary'] ?>;
 }
 
@@ -409,13 +409,13 @@ $totalGroups = count($groupStats);
 .stats-pages { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
 .stats-page-btn { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .stats-page-btn:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
-.stats-page-btn.active { opacity: 1; color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
+.stats-page-btn.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .stats-page { display: none; }
 .stats-page.active { display: block; }
 
 /* Отчёты */
 .rep-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 4px; }
-.rep-field label { display: block; font-size: 11px; color: #8aa0bb; margin-bottom: 4px; }
+.rep-field label { display: block; font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 4px; }
 .rep-field-query { flex: 1; min-width: 220px; max-width: 340px; }
 .rep-field .form-control { height: 34px; box-sizing: border-box; }
 .rep-combo .form-control { padding-right: 32px; }
@@ -434,29 +434,29 @@ $totalGroups = count($groupStats);
 .rep-pop { position: fixed; z-index: 3000; overflow-y: auto; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); box-sizing: border-box; }
 .rep-opt { padding: 7px 10px; font-size: 13px; color: <?= $themeCSS['text'] ?>; border-radius: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rep-opt:hover, .rep-opt.hl { background: <?= $themeCSS['hover'] ?>; }
-.rep-opt.sel { color: <?= $themeCSS['primary'] ?>; font-weight: 600; }
-.rep-opt.empty { color: #8aa0bb; cursor: default; }
+.rep-opt.sel { color: <?= $themeCSS['accentText'] ?>; font-weight: 600; }
+.rep-opt.empty { color: <?= $themeCSS['muted'] ?>; cursor: default; }
 .rep-opt.empty:hover { background: transparent; }
-.report-hint { font-size: 11px; color: #8aa0bb; margin-top: 10px; }
+.report-hint { font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-top: 10px; }
 .report-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 12px 0 8px; flex-wrap: wrap; }
 .report-summary { font-size: 12px; color: <?= $themeCSS['text'] ?>; font-weight: 600; }
 .report-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .report-export-msg { font-size: 11px; color: <?= $themeCSS['danger'] ?>; }
 .rep-export { height: 28px; padding: 0 12px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 12px; font-family: inherit; cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s; }
-.rep-export:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
+.rep-export:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 .rep-export:disabled { opacity: 0.5; cursor: wait; }
 .report-result { margin-top: 10px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.report-empty { font-size: 12px; color: #8aa0bb; padding: 12px 0; }
+.report-empty { font-size: 12px; color: <?= $themeCSS['muted'] ?>; padding: 12px 0; }
 .report-table-wrap { overflow: auto; flex: 1; min-height: 0; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; background: <?= $themeCSS['input'] ?>; }
 .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.report-table th { position: sticky; top: 0; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: #8aa0bb; font-weight: 600; white-space: nowrap; }
+.report-table th { position: sticky; top: 0; text-align: left; padding: 8px 10px; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['muted'] ?>; font-weight: 600; white-space: nowrap; }
 .report-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
 .report-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .report-table th.num { text-align: right; }
 .report-table td.mono { font-family: monospace; white-space: nowrap; }
-.report-table td.muted { color: #8aa0bb; }
+.report-table td.muted { color: <?= $themeCSS['muted'] ?>; }
 .report-table tr:hover td { background: <?= $themeCSS['hover'] ?>; }
-.report-link { color: <?= $themeCSS['primary'] ?>; cursor: pointer; }
+.report-link { color: <?= $themeCSS['accentText'] ?>; cursor: pointer; }
 .report-link:hover { text-decoration: underline; }
 .stats-pages { margin: 0 0 0 auto; margin-bottom: 0; }
 .stats-page-btn { padding: 4px 16px; font-size: 12px; }

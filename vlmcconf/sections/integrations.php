@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 5.1.3
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 5.1.4
+// ДАТА: 2026-11-17
 // @description: Раздел интеграций (в разработке)
 // @description: Integrations section (under development)
 // ============================================
@@ -28,12 +28,12 @@ if (!check_permission(PERM_INTEGRATIONS_VIEW)) {
 // Стилизованный баннер "Раздел в разработке"
 ?>
 <div class="under-development-banner" style="background: linear-gradient(135deg, <?= $themeCSS['primary'] ?>10 0%, <?= $themeCSS['primary'] ?>05 100%); border-left: 4px solid <?= $themeCSS['primary'] ?>; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-    <i class="fas fa-code-branch fa-2x" style="color: <?= $themeCSS['primary'] ?>;"></i>
+    <i class="fas fa-code-branch fa-2x" style="color: <?= $themeCSS['accentText'] ?>;"></i>
     <div style="flex: 1;">
         <strong style="font-size: 14px;"><?= __('section_under_development') ?></strong>
-        <p style="margin: 4px 0 0 0; font-size: 12px; color: #8aa0bb;"><?= __('integrations_coming_soon') ?></p>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: <?= $themeCSS['muted'] ?>;"><?= __('integrations_coming_soon') ?></p>
     </div>
-    <span class="badge" style="background: <?= $themeCSS['primary'] ?>20; color: <?= $themeCSS['primary'] ?>; padding: 4px 10px; border-radius: 20px; font-size: 11px;">Coming soon</span>
+    <span class="badge" style="background: <?= $themeCSS['primary'] ?>20; color: <?= $themeCSS['accentText'] ?>; padding: 4px 10px; border-radius: 20px; font-size: 11px;">Coming soon</span>
 </div>
 
 <?php

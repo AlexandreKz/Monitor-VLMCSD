@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/general.php
-// ВЕРСИЯ: 1.6.0
-// ДАТА: 2026-03-28
+// ВЕРСИЯ: 1.6.1
+// ДАТА: 2026-11-17
 // @description: Секция "Общие настройки" (доступна всем)
 // ============================================
 
@@ -100,10 +100,10 @@ $canEditGeneral = true;
                         <?php if ($logFileExists): ?>
                             <span style="color: <?= $themeCSS['success'] ?>;">✓ <?= __('log_status_found') ?></span>
                         <?php else: ?>
-                            <span style="color: <?= $themeCSS['danger'] ?>;">✗ <?= __('log_status_not_found') ?></span>
+                            <span style="color: <?= $themeCSS['dangerText'] ?>;">✗ <?= __('log_status_not_found') ?></span>
                         <?php endif; ?>
                     </div>
-                    <div style="margin-top: 4px; font-size: 10px; color: #8aa0bb; word-break: break-all;"><?= htmlspecialchars($fullLogPath) ?></div>
+                    <div style="margin-top: 4px; font-size: 10px; color: <?= $themeCSS['muted'] ?>; word-break: break-all;"><?= htmlspecialchars($fullLogPath) ?></div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-small">💾 <?= __('log_save') ?></button>
             </form>

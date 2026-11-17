@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/devices.php
-// ВЕРСИЯ: 2.5.0
-// ДАТА: 2026-06-09
+// ВЕРСИЯ: 2.5.1
+// ДАТА: 2026-11-17
 // @description: Секция "Устройства" с групповыми операциями
 // @description: "Devices" section with bulk operations
 // ============================================
@@ -18,7 +18,7 @@ $canEditDevices = hasPermission($_SESSION['vlmc_permissions'] ?? 0, PERM_DEVICES
 
 // Если нет прав на просмотр — не показываем секцию
 if (!$canViewDevices) {
-    echo '<div class="settings-section" id="section-devices"><div class="section-title"><span>📱 ' . __('devices_title') . '</span></div><div style="text-align: center; padding: 40px; color: #8aa0bb;">🔒 ' . __('access_denied') . '</div></div>';
+    echo '<div class="settings-section" id="section-devices"><div class="section-title"><span>📱 ' . __('devices_title') . '</span></div><div style="text-align: center; padding: 40px; color: ' . $themeCSS['muted'] . ';">🔒 ' . __('access_denied') . '</div></div>';
     return;
 }
 ?>
@@ -101,8 +101,8 @@ if (!$canViewDevices) {
             
             <!-- Счётчики -->
             <div style="margin-left: auto; text-align: right;">
-                <div id="deviceCount" style="font-size: 12px; color: #8aa0bb;"></div>
-                <div style="font-size: 11px; color: #8aa0bb; margin-top: 2px;">
+                <div id="deviceCount" style="font-size: 12px; color: <?= $themeCSS['muted'] ?>;"></div>
+                <div style="font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-top: 2px;">
                     <?= __('devices_selected') ?>: <span id="selectedCount">0</span>
                 </div>
             </div>
@@ -165,19 +165,19 @@ if (!$canViewDevices) {
 
 .device-comment {
     font-size: 10px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
     margin-top: 2px;
 }
 
 .device-meta {
     flex: 1;
     font-size: 11px;
-    color: #8aa0bb;
+    color: <?= $themeCSS['muted'] ?>;
 }
 
 .device-date {
     font-size: 10px;
-    color: #6b8ba4;
+    color: <?= $themeCSS['muted'] ?>;
     font-family: 'JetBrains Mono', monospace;
     white-space: nowrap;
 }
@@ -200,12 +200,12 @@ if (!$canViewDevices) {
 
 .edit-device-btn {
     background: <?= $themeCSS['primary'] ?>;
-    color: white;
+    color: <?= $themeCSS['onPrimary'] ?>;
 }
 
 .delete-device-btn {
     background: <?= $themeCSS['danger'] ?>;
-    color: white;
+    color: <?= $themeCSS['onDanger'] ?>;
 }
 
 .btn-secondary {
@@ -310,7 +310,7 @@ function renderDevicesList() {
     countSpan.textContent = `${translations.showing} ${devices.length} ${translations.of} ${allDevicesData.length}`;
     
     if (devices.length === 0) {
-        container.innerHTML = `<div style="text-align: center; padding: 30px; color: #8aa0bb;">${translations.devicesEmpty}</div>`;
+        container.innerHTML = `<div style="text-align: center; padding: 30px; color: <?= $themeCSS['muted'] ?>;">${translations.devicesEmpty}</div>`;
         updateSelectedStats();
         return;
     }
@@ -343,7 +343,7 @@ function renderDevicesList() {
                         <button type="submit" class="delete-device-btn">✕</button>
                     </form>
                     ` : `
-                    <span style="color: #8aa0bb; font-size: 10px;">${translations.readonly}</span>
+                    <span style="color: <?= $themeCSS['muted'] ?>; font-size: 10px;">${translations.readonly}</span>
                     `}
                 </div>
             </div>
