@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.1.0
+// ВЕРСИЯ: 3.2.0
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -43,22 +43,26 @@ $ntfT['saveError'] = __('msg_save_error');
     <div class="section-title">
         <span>🔔 <?= __('notify_title') ?></span>
         <div class="ntf-tabs">
-            <button type="button" class="ntf-tab active" data-p="ntfRules">📋 <?= __('notify_tab_rules') ?></button>
-            <button type="button" class="ntf-tab" data-p="ntfChannels">📡 <?= __('notify_tab_channels') ?></button>
+            <button type="button" class="ntf-tab active" data-p="ntfChannels">📡 <?= __('notify_tab_channels') ?></button>
+            <button type="button" class="ntf-tab" data-p="ntfRules">📋 <?= __('notify_tab_rules') ?></button>
             <button type="button" class="ntf-tab" data-p="ntfHistory">🕘 <?= __('notify_tab_history') ?></button>
+            <button type="button" class="ntf-tab" data-p="ntfTemplates">🧩 <?= __('notify_tab_templates') ?></button>
         </div>
     </div>
 
-    <div id="ntfRules" class="ntf-page active">
+    <div id="ntfRules" class="ntf-page">
         <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
         <table class="ntf-table" id="ntfRulesTable"></table>
     </div>
-    <div id="ntfChannels" class="ntf-page">
+    <div id="ntfChannels" class="ntf-page active">
         <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
         <table class="ntf-table" id="ntfChannelsTable"></table>
     </div>
     <div id="ntfHistory" class="ntf-page">
         <table class="ntf-table" id="ntfHistTable"></table>
+    </div>
+    <div id="ntfTemplates" class="ntf-page">
+        <div class="ntf-hint">🚧 <?= __('notify_templates_soon') ?></div>
     </div>
 </div>
 

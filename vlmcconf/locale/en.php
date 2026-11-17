@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.1
+// ВЕРСИЯ: 5.8.2
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1066,5 +1066,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_f_schedule' => 'Frequency and quiet hours',
     'notify_err_webhook' => 'Invalid Bitrix24 webhook URL (https://portal/rest/ID/code/)',
     'notify_err_dialog' => 'Recipient: user ID or chatN',
+    'notify_tab_templates' => 'Templates',
+    'notify_templates_soon' => 'Section under development.',
 ];
 ?>
