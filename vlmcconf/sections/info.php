@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.7.1
+// ВЕРСИЯ: 1.8.0
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -26,10 +26,6 @@ if (!$canViewInfo) {
         <div class="info-tabs">
             <button type="button" class="info-tab active" data-p="infoStructure">📁 <?= __('info_tab_structure') ?></button>
             <button type="button" class="info-tab" data-p="infoData">🗄️ <?= __('info_tab_data') ?></button>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span id="fileInfoStatus" class="file-info-status" style="display: none;"></span>
-            <button id="refreshFileInfoBtn" class="btn btn-primary btn-small" onclick="refreshFileInfo(true)" style="font-size: 11px; padding: 4px 10px;">🔄 <?= __('refresh') ?></button>
         </div>
         <?php if ($activeSection === 'info' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
@@ -107,6 +103,8 @@ if (!$canViewInfo) {
         </div>
         </div>
     </div>
+
+    <div class="info-auto-note">🔄 <?= __('info_auto_note') ?><span id="fileInfoStatus" class="file-info-status" style="display: none;"></span></div>
 </div>
 
 <style>
@@ -115,7 +113,9 @@ if (!$canViewInfo) {
 .info-page { display: none; flex: 1 1 auto; min-height: 0; }
 .info-page.active { display: flex; flex-direction: column; }
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
-.info-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+.info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
+.info-auto-note { flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
+.info-auto-note .file-info-status { margin-left: 6px; }
 .info-tab { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .info-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .info-tab.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
@@ -233,7 +233,6 @@ if (!$canViewInfo) {
     });
 
     const I18N = <?= json_encode([
-        'refreshing' => __('info_refreshing'),
         'refreshed'  => __('info_refreshed'),
         'unavailable'=> __('info_refresh_unavailable'),
         'failed'     => __('info_refresh_failed')
@@ -266,8 +265,8 @@ if (!$canViewInfo) {
         setTimeout(function () { cell.classList.remove('file-flash'); }, 1600);
     }
 
-    // manual === true: вызвано кнопкой (показываем ход и результат); иначе — тихое обновление при открытии раздела
-    window.refreshFileInfo = function (manual) {
+    // Автоматическое обновление при открытии раздела
+    window.refreshFileInfo = function () {
         if (busy) return;
         const rows = {};
         const paths = [];
@@ -277,13 +276,7 @@ if (!$canViewInfo) {
         });
         if (!paths.length) return;
 
-        const btn = document.getElementById('refreshFileInfoBtn');
-        const label = btn ? btn.innerHTML : '';
         busy = true;
-        if (manual === true) {
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ ' + I18N.refreshing; }
-            setStatus('', '');
-        }
 
         const fd = new FormData();
         fd.append('ajax', 'file_info_batch');
@@ -307,20 +300,15 @@ if (!$canViewInfo) {
                     if (ver && f.version && ver.textContent !== f.version) { ver.textContent = f.version; flash(ver); did = true; }
                     if (did) changed++;
                 });
-                if (manual === true) {
-                    let text = '✅ ' + fmt(I18N.refreshed, d.time || '', paths.length - failed, changed);
-                    if (failed) text += fmt(I18N.unavailable, failed);
-                    setStatus(text, failed ? 'err' : 'ok', 8000);
-                }
+                let text = '✅ ' + fmt(I18N.refreshed, d.time || '', paths.length - failed, changed);
+                if (failed) text += fmt(I18N.unavailable, failed);
+                setStatus(text, failed ? 'err' : 'ok', 0);
             })
             .catch(function (e) {
                 console.error('File info error:', e);
-                if (manual === true) setStatus('❌ ' + I18N.failed, 'err', 10000);
+                setStatus('❌ ' + I18N.failed, 'err', 0);
             })
-            .then(function () {
-                busy = false;
-                if (manual === true && btn) { btn.disabled = false; btn.innerHTML = label; }
-            });
+            .then(function () { busy = false; });
     };
 
     // Тихое обновление при открытии раздела

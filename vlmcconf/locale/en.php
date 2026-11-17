@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.7
+// ВЕРСИЯ: 5.8.8
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -739,7 +739,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'update_banner_early' => 'early access: %d files',
     'update_banner_open' => 'Open',
     'stats_geo_ssl_error' => 'Cannot verify certificates (SSL), countries are not resolved. See Documentation, section "SSL certificate verification".',
-    'info_refreshing' => 'Refreshing…',
     'info_refreshed' => 'Updated at %s: %d files, changed %d',
     'info_refresh_unavailable' => ', unavailable: %d',
     'info_refresh_failed' => 'Could not refresh file information',
@@ -1094,5 +1093,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'info_data_users_changes' => 'Accounts change trace',
     'info_data_lock' => 'Parallel-write lock of the same-named file',
     'info_data_backups' => 'Settings and users backups (config and users subfolders)',
+    'info_auto_note' => 'Project structure and data files are refreshed automatically when the section is opened.',
 ];
 ?>
