@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.0.3
+// ВЕРСИЯ: 3.0.4
 // ДАТА: 2026-11-17
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), заготовка уведомлений
 // ============================================
@@ -82,6 +82,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             <input type="hidden" id="auditTo">
         </div>
         <div class="audit-f audit-f-reset">
+            <label style="visibility: hidden;">&nbsp;</label>
             <button class="audit-flat" id="auditResetBtn" type="button">✖ <?= __('audit_reset') ?></button>
         </div>
     </div>
@@ -196,10 +197,11 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-pager-left { justify-self: start; }
 .audit-pager-right { justify-self: end; }
 .audit-pager { display: flex; justify-content: center; align-items: center; gap: 12px; font-size: 12px; }
-.audit-f-reset { align-self: end; }
-.audit-flat { box-sizing: border-box; height: 34px; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 12px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.audit-f-reset { display: flex; flex-direction: column; }
+.audit-f-reset .audit-flat { flex: 1; }
+.audit-flat { box-sizing: border-box; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 10px; font-size: 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .audit-flat:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
-.audit-f-reset .audit-flat { width: auto; }
+
 .audit-range { position: relative; }
 .audit-range .form-control { cursor: pointer; width: 100%; box-sizing: border-box; }
 .audit-cal { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 268px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); color: <?= $themeCSS['text'] ?>; }
@@ -381,9 +383,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         const top = wr.top - cont.getBoundingClientRect().top + cont.scrollTop;
         const below = sec.lastElementChild.getBoundingClientRect().bottom - wr.bottom;   // всё, что ниже таблицы
         const pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
-        const trim = Math.min(14, pad);               // часть нижнего отступа отдаём под журнал
-        sec.style.marginBottom = (-trim) + 'px';
-        const h = cont.clientHeight - top - below - (pad - trim) - 2;
+        const h = cont.clientHeight - top - below - pad - 4;
         wrap.style.maxHeight = 'none';
         wrap.style.height = Math.max(140, Math.floor(h)) + 'px';
     }
@@ -528,6 +528,10 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     window.loadAudit = function () {
         setTimeout(fitTable, 0); if (!loadedOnce) { reload(); } else { load(); } };
-    if ($('section-audit').classList.contains('active')) window.loadAudit();
+    // Раздел может стать активным уже после выполнения этого скрипта (например, при восстановлении вкладки после загрузки страницы)
+    function autoLoad() { if ($('section-audit').classList.contains('active') && !loadedOnce) window.loadAudit(); }
+    autoLoad();
+    new MutationObserver(autoLoad).observe($('section-audit'), { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('load', autoLoad);
 })();
 </script>
