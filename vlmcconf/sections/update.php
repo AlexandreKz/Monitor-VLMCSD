@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.3.0
+// ВЕРСИЯ: 5.3.1
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -161,7 +161,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     <!-- ============================================ -->
     <!-- КОНСОЛЬ ВЫВОДА / OUTPUT CONSOLE             -->
     <!-- ============================================ -->
-    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: clamp(200px, calc(100vh - 470px), 640px); min-height: 160px; resize: vertical; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
+    <div class="update-console" id="updateConsole" style="background: #121212; color: #00ff00; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 10px 12px; border-radius: 8px; height: 260px; min-height: 160px; resize: vertical; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>;">
         <div>> <?= __('update_ready') ?></div>
     </div>
     
@@ -350,6 +350,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     function renderState(data) {
         lastData = data;
         markSelected();
+        setTimeout(fitConsole, 0);   // высота карточек могла измениться
         if (!data || !data.enabled) {
             return;
         }
@@ -370,6 +371,17 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         if (runBtn) runBtn.disabled = !(sel && sel.success && sel.available);
         setSslHelp(!!data.ssl_help);
     }
+
+    // --- Консоль занимает всё оставшееся место до низа окна (не уходит за экран) ---
+    function fitConsole() {
+        const box = $('updateConsole');
+        if (!box || box.offsetParent === null) return;   // вкладка скрыта
+        const top = box.getBoundingClientRect().top + window.scrollY;
+        const h = Math.floor(window.innerHeight - top - 24);
+        box.style.height = Math.max(160, h) + 'px';
+    }
+    window.addEventListener('resize', fitConsole);
+    window.fitUpdateConsole = fitConsole;
 
     // --- Сообщения в шапке раздела «Инструменты» ---
     function toastTitle() { return document.querySelector('#section-tools .section-title'); }
@@ -608,6 +620,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
         if (tokClr) tokClr.onclick = function () { saveGithubToken(true); };
 
         markSelected();
+        fitConsole();
         if (!lastData) loadState();
     }
 

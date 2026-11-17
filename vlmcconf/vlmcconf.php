@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.8.0
+// ВЕРСИЯ: 5.8.1
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1466,6 +1466,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
         const selected = document.getElementById('section-' + section);
         if (selected) selected.classList.add('active');
+        if (section === 'tools' && typeof window.fitUpdateConsole === 'function') {
+            setTimeout(window.fitUpdateConsole, 0);   // консоль обновления подгоняется под высоту окна
+        }
         if (section === 'audit' && typeof window.loadAudit === 'function') {
             window.loadAudit();
         }
