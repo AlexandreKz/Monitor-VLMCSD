@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.5.6
-// ДАТА: 2026-11-15
+// ВЕРСИЯ: 5.5.7
+// ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
 
@@ -437,7 +437,6 @@ return [
     'reset_btn' => 'Reset',
     'no_results' => '🔍 NOTHING FOUND',
     'version' => 'Version',
-    'footer_copyright' => '© 2025-2026 Corporate Monitoring',
     'tooltip_server_started' => 'Server started: ',
     'tooltip_cache_warning' => 'Geolocation works without caching',
     'tooltip_settings' => 'Settings',

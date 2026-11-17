@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.2.2
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 5.2.3
+// ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
@@ -1057,8 +1057,8 @@ function getFullDownloadHtml() {
     <div id="docContent" class="doc-content"></div>
     
     <footer>
-        KMS Monitor v5.0.0 — Полное руководство по развёртыванию<br>
-        © 2025-2026
+        KMS Monitor v' . VLMC_VERSION . ' — Полное руководство по развёртыванию<br>
+        ' . vlmcCopyright() . '
     </footer>
 </div>
 
