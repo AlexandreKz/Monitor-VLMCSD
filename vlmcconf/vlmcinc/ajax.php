@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.8.1
+// ВЕРСИЯ: 3.9.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -42,6 +42,7 @@ function ajaxActionPermissions() {
         // Статистика и оформление
         'get_activity'          => 0,
         'get_device_activity'   => 0,
+        'get_report'            => 0,
         'preview_theme'         => 0,
         'geo_resolve_portion'   => 0,
         'file_info'             => PERM_INFO_VIEW,
@@ -305,6 +306,26 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
+    // Отчёты по логу (вкладка «Отчёты» раздела «Статистика и отчёты»)
+    if ($_POST['ajax'] === 'get_report') {
+        require_once __DIR__ . '/reports.php';
+        $log = $GLOBALS['fullLogPath'];
+        $report = (string)($_POST['report'] ?? '');
+        $q = auditSub(trim((string)($_POST['q'] ?? '')), 200);
+        if ($report === 'lists') {
+            echo json_encode(['success' => true] + reportLists($log), JSON_UNESCAPED_UNICODE);
+        } elseif ($report === 'device_ips' && $q !== '') {
+            $r = reportDeviceIps($log, $q);
+            echo json_encode(['success' => true, 'rows' => $r['rows'], 'matched' => $r['matched']], JSON_UNESCAPED_UNICODE);
+        } elseif ($report === 'ip_devices' && filter_var($q, FILTER_VALIDATE_IP)) {
+            $r = reportIpDevices($log, $q);
+            echo json_encode(['success' => true, 'rows' => $r['rows'], 'country' => $r['country'], 'flag' => $r['flag']], JSON_UNESCAPED_UNICODE);
+        } else {
+            echo json_encode(['success' => false]);
+        }
+        exit;
+    }
+
     // Предпросмотр темы
     if ($_POST['ajax'] === 'preview_theme') {
         $theme = $_POST['theme'] ?? 'dark';

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.6.6
+// ВЕРСИЯ: 5.6.7
 // ДАТА: 2026-11-17
 // @description: Русские переводы интерфейса
 // ============================================
@@ -12,7 +12,7 @@ return [
     'menu_groups' => 'Группы',
     'menu_devices' => 'Устройства',
     'menu_security' => 'Безопасность',
-    'menu_stats' => 'Статистика',
+    'menu_stats' => 'Статистика и отчёты',
     'menu_info' => 'Информация',
     'menu_settings' => 'Настройки',
     'menu_logout' => 'Выйти',
@@ -132,7 +132,7 @@ return [
 	'security_clear_all_details' => 'Будет удалён весь лог. Это действие необратимо.',
 
     // Статистика
-    'stats_title' => 'Статистика',
+    'stats_title' => 'Статистика и отчёты',
     'stats_total_devices' => 'Всего устройств',
     'stats_total_groups' => 'Всего групп',
     'stats_total_requests' => 'Всего запросов',
@@ -151,6 +151,29 @@ return [
     'stats_overall' => 'Общая активность',
     'stats_by_device' => 'По устройству',
     'stats_select_device' => 'Выберите устройство',
+    'stats_tab_overview' => 'Статистика',
+    'stats_tab_reports' => 'Отчёты',
+    'report_title' => 'Устройства и IP-адреса',
+    'report_mode_device' => 'IP-адреса устройства',
+    'report_mode_ip' => 'Устройства на IP',
+    'report_input_device' => 'Имя устройства',
+    'report_input_ip' => 'IP-адрес',
+    'report_show' => 'Показать',
+    'report_hint' => 'Начните вводить имя или IP — подсказки берутся из лога. Клик по IP или устройству в результате открывает обратный отчёт.',
+    'report_empty_query' => 'Укажите имя устройства или IP-адрес',
+    'report_bad_ip' => 'Некорректный IP-адрес',
+    'report_not_found' => 'В логе ничего не найдено',
+    'report_error' => 'Не удалось получить отчёт',
+    'report_loading' => 'Загрузка…',
+    'report_col_device' => 'Устройство',
+    'report_col_ip' => 'IP',
+    'report_col_country' => 'Страна',
+    'report_col_count' => 'Запросов',
+    'report_col_first' => 'Первый раз',
+    'report_col_last' => 'Последний раз',
+    'report_sum_device' => 'Устройство %s: IP-адресов — %d, запросов — %d',
+    'report_sum_devices' => 'Найдено устройств: %d, IP-адресов — %d, запросов — %d',
+    'report_sum_ip' => 'IP %s: устройств — %d, запросов — %d',
     
     // Информация
     'info_title' => 'Информация о проекте',

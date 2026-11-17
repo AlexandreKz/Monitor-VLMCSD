@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.6
+// ВЕРСИЯ: 5.6.7
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -12,7 +12,7 @@ return [
     'menu_groups' => 'Groups',
     'menu_devices' => 'Devices',
     'menu_security' => 'Security',
-    'menu_stats' => 'Statistics',
+    'menu_stats' => 'Statistics and reports',
     'menu_info' => 'Information',
     'menu_settings' => 'Settings',
     'menu_logout' => 'Logout',
@@ -131,7 +131,7 @@ return [
 	'security_clear_all_details' => 'The entire log will be deleted. This action is irreversible.',
 	
     // Statistics
-    'stats_title' => 'Statistics',
+    'stats_title' => 'Statistics and reports',
     'stats_total_devices' => 'Total devices',
     'stats_total_groups' => 'Total groups',
     'stats_total_requests' => 'Total requests',
@@ -150,6 +150,29 @@ return [
     'stats_overall' => 'Overall activity',
     'stats_by_device' => 'By device',
     'stats_select_device' => 'Select device',
+    'stats_tab_overview' => 'Statistics',
+    'stats_tab_reports' => 'Reports',
+    'report_title' => 'Devices and IP addresses',
+    'report_mode_device' => 'IP addresses of a device',
+    'report_mode_ip' => 'Devices on an IP',
+    'report_input_device' => 'Device name',
+    'report_input_ip' => 'IP address',
+    'report_show' => 'Show',
+    'report_hint' => 'Start typing a name or IP: suggestions come from the log. Clicking an IP or a device in the result opens the reverse report.',
+    'report_empty_query' => 'Enter a device name or an IP address',
+    'report_bad_ip' => 'Invalid IP address',
+    'report_not_found' => 'Nothing found in the log',
+    'report_error' => 'Could not get the report',
+    'report_loading' => 'Loading…',
+    'report_col_device' => 'Device',
+    'report_col_ip' => 'IP',
+    'report_col_country' => 'Country',
+    'report_col_count' => 'Requests',
+    'report_col_first' => 'First seen',
+    'report_col_last' => 'Last seen',
+    'report_sum_device' => 'Device %s: IP addresses — %d, requests — %d',
+    'report_sum_devices' => 'Devices found: %d, IP addresses — %d, requests — %d',
+    'report_sum_ip' => 'IP %s: devices — %d, requests — %d',
     
     // Information
     'info_title' => 'Project Information',
