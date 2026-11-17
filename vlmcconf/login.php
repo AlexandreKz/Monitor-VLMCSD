@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.2.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 4.2.1
+// ДАТА: 2026-11-18
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
 require_once __DIR__ . '/vlmcinc/csrf.php';
@@ -67,7 +67,7 @@ function __($key) {
 }
 
 // Если уже авторизован
-if (isset($_SESSION['vlmc_admin']) && $_SESSION['vlmc_admin'] === true) {
+if (vlmcIsLoggedIn()) {
     if (!isset($_SESSION['must_change_password']) || $_SESSION['must_change_password'] !== true) {
         header('Location: vlmcconf.php');
         exit;

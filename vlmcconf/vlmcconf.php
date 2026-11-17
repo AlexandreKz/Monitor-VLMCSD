@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.13.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 5.14.0
+// ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -39,8 +39,8 @@ if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
     exit;
 }
 
-// Проверка времени сессии (30 минут)
-if (isset($_SESSION['vlmc_login_time']) && (time() - $_SESSION['vlmc_login_time'] > 1800)) {
+// Проверка времени сессии (таймаут бездействия задаётся в «Безопасность», по умолчанию 30 минут)
+if (vlmcSessionExpired()) {
     session_destroy();
     header('Location: login.php?expired=1');
     exit;

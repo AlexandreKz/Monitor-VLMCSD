@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.6.1
+// ВЕРСИЯ: 5.6.2
 // ДАТА: 2026-11-18
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.6.1
+ * Version: 5.6.2
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -125,7 +125,7 @@ if (!empty($config['devices'])) {
 
 // Скрытие всех IP от неавторизованных (настройка в разделе «Безопасность»).
 // Подмена делается на сервере: настоящие адреса в страницу и в ответы опроса не попадают.
-$viewerLoggedIn = isset($_SESSION['vlmc_admin']) && $_SESSION['vlmc_admin'] === true;
+$viewerLoggedIn = vlmcIsLoggedIn();
 $hideIps = !empty($config['privacy']['hide_ips']) && !$viewerLoggedIn;
 
 // ============================================
@@ -172,7 +172,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_device') {
         vlmcSessionStart();
     }
     
-    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+    if (!vlmcIsLoggedIn()) {
         echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
         exit;
     }
@@ -234,7 +234,7 @@ if (isset($_POST['ajax']) && $_POST['ajax'] === 'add_whitelist_ip') {
         vlmcSessionStart();
     }
     
-    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+    if (!vlmcIsLoggedIn()) {
         echo json_encode(['success' => false, 'message' => __('access_denied')]);
         exit;
     }

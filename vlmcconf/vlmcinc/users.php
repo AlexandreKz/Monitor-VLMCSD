@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/users.php
-// ВЕРСИЯ: 4.3.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 4.3.1
+// ДАТА: 2026-11-18
 // @description: Управление пользователями + автоматическая миграция (один раз)
 // ============================================
 
@@ -406,7 +406,7 @@ function changeUserPasswordAsAdmin($userId, $newPassword) {
  * @return bool
  */
 function check_permission($permission) {
-    if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+    if (!vlmcIsLoggedIn()) {
         return false;
     }
     $user_permissions = $_SESSION['vlmc_permissions'] ?? 0;

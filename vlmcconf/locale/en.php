@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.9.1
+// ВЕРСИЯ: 5.9.2
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1100,5 +1100,11 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'privacy_saved_on' => 'IP address hiding enabled',
     'privacy_saved_off' => 'IP address hiding disabled',
     'audit_act_save_privacy_settings' => 'IP hiding from unauthorized visitors',
+    'session_timeout_title' => 'Login timeout',
+    'session_timeout_unit' => 'min of inactivity',
+    'session_timeout_hint' => 'After this time without activity in the panel you are signed out and must log in again. From 5 to 1440 minutes (24 hours), default 30. Applies immediately; signed-in users continue with the new value.',
+    'session_timeout_saved' => 'Login timeout saved',
+    'session_timeout_bad' => 'Enter a whole number of minutes from 5 to 1440',
+    'audit_act_save_session_settings' => 'Login timeout',
 ];
 ?>

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/csrf.php
-// ВЕРСИЯ: 1.1.0
-// ДАТА: 2026-11-01
+// ВЕРСИЯ: 1.2.0
+// ДАТА: 2026-11-18
 // @description: Защита от CSRF (токен в сессии) и безопасные cookie сессии (HttpOnly, SameSite)
 // ============================================
 
@@ -20,6 +20,7 @@ function vlmcSessionStart() {
     if (session_status() !== PHP_SESSION_NONE) {
         return true;
     }
+    vlmcSessionConfigure();
     $https = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
         || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443')
         || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
@@ -33,6 +34,61 @@ function vlmcSessionStart() {
         'samesite' => 'Lax'
     ]);
     return session_start();
+}
+
+/** Таймаут бездействия входа в минутах (настройка «Безопасность»): 5..1440, по умолчанию 30. */
+function vlmcSessionTimeoutMinutes() {
+    static $minutes = null;
+    if ($minutes !== null) {
+        return $minutes;
+    }
+    $minutes = 30;
+    require_once __DIR__ . '/paths.php';
+    $file = vlmcConfigFile();
+    if (is_readable($file)) {
+        $cfg = json_decode((string)@file_get_contents($file), true);
+        $v = is_array($cfg) ? ($cfg['security']['session_timeout_min'] ?? null) : null;
+        if (is_int($v) || (is_string($v) && ctype_digit($v))) {
+            $minutes = max(5, min(1440, (int)$v));
+        }
+    }
+    return $minutes;
+}
+
+/**
+ * Параметры хранения сессий. Файлы сессий кладём в папку данных (sessions/): системная очистка
+ * PHP/Ubuntu (session.gc_maxlifetime = 24 мин) их не трогает, а срок жизни задаётся настройкой.
+ * Для старого расположения данных (внутри веб-папки) остаются настройки PHP по умолчанию.
+ */
+function vlmcSessionConfigure() {
+    require_once __DIR__ . '/paths.php';
+    $timeout = vlmcSessionTimeoutMinutes() * 60;
+    @ini_set('session.gc_maxlifetime', (string)max($timeout, 1440));
+    $info = vlmcDataInfo();
+    if (!empty($info['legacy'])) {
+        return;
+    }
+    $dir = vlmcDataFile('sessions');
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    if (is_dir($dir) && is_writable($dir)) {
+        session_save_path($dir);
+        // в Ubuntu очистка отключена в php.ini (её делает системный таймер) — включаем свою для этой папки
+        @ini_set('session.gc_probability', '1');
+        @ini_set('session.gc_divisor', '100');
+    }
+}
+
+/** Истёк ли вход по бездействию (время последнего действия — в $_SESSION['vlmc_login_time']). */
+function vlmcSessionExpired() {
+    return isset($_SESSION['vlmc_login_time'])
+        && (time() - (int)$_SESSION['vlmc_login_time']) > vlmcSessionTimeoutMinutes() * 60;
+}
+
+/** Пользователь вошёл и вход не истёк. */
+function vlmcIsLoggedIn() {
+    return (($_SESSION['vlmc_admin'] ?? false) === true) && !vlmcSessionExpired();
 }
 
 /** Вызывать при успешном входе: новый id сессии и новый CSRF-токен (защита от подмены сессии). */

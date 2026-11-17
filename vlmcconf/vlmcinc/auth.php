@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/auth.php
-// ВЕРСИЯ: 2.0.3
-// ДАТА: 2026-11-14
+// ВЕРСИЯ: 2.0.4
+// ДАТА: 2026-11-18
 // @description: Функции авторизации (локальная + AD)
 // ============================================
 
@@ -18,7 +18,7 @@ function checkAuth() {
         exit;
     }
     
-    if (isset($_SESSION['vlmc_login_time']) && (time() - $_SESSION['vlmc_login_time'] > 1800)) {
+    if (vlmcSessionExpired()) {
         session_destroy();
         header('Location: login.php?expired=1');
         exit;

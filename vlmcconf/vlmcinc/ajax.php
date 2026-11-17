@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.14.1
+// ВЕРСИЯ: 3.15.0
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -75,6 +75,7 @@ function ajaxActionPermissions() {
         'get_audit'             => PERM_LOGS_VIEW,
         'export_audit'          => PERM_LOGS_VIEW,
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
+        'save_session_settings' => PERM_ADMIN_FULL,   // таймаут входа: только администратор
         'save_privacy_settings' => PERM_ADMIN_FULL,   // скрытие всех IP от неавторизованных: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
@@ -118,7 +119,7 @@ function ajaxAuthorizeOrDie($action) {
 
     $deny = function () use ($action) {
         // Отказ вошедшему пользователю фиксируется в журнале
-        if (($_SESSION['vlmc_admin'] ?? false) === true) {
+        if (vlmcIsLoggedIn()) {
             auditLog('access_denied', 'action=' . (is_string($action) ? auditSub($action, 60) : ''), 'denied');
         }
         $message = function_exists('__') ? __('access_denied') : 'Access denied';
@@ -131,7 +132,7 @@ function ajaxAuthorizeOrDie($action) {
     };
 
     // Неизвестное действие или нет входа
-    if ($need === null || ($_SESSION['vlmc_admin'] ?? false) !== true) {
+    if ($need === null || !vlmcIsLoggedIn()) {
         $deny();
     }
     if ($need === 0) {
@@ -594,7 +595,7 @@ if (isset($_POST['ajax'])) {
     if ($_POST['ajax'] === 'add_device') {
         header('Content-Type: application/json');
         
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => __('error_no_permission_to_add')]);
             exit;
         }
@@ -648,7 +649,7 @@ if (isset($_POST['ajax'])) {
     
     // Получить список белых IP
     if ($_POST['ajax'] === 'get_whitelist_ips') {
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => __('access_denied')]);
             exit;
         }
@@ -660,7 +661,7 @@ if (isset($_POST['ajax'])) {
     
     // Добавить IP в белый список
     if ($_POST['ajax'] === 'add_whitelist_ip') {
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => __('access_denied')]);
             exit;
         }
@@ -709,7 +710,7 @@ if (isset($_POST['ajax'])) {
     
     // Удалить IP из белого списка
     if ($_POST['ajax'] === 'remove_whitelist_ip') {
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => __('access_denied')]);
             exit;
         }
@@ -783,7 +784,7 @@ if (isset($_POST['ajax'])) {
     // Определение стран для новых IP порциями (вызывается со страницы статистики, не блокирует рендер)
     if ($_POST['ajax'] === 'geo_resolve_portion') {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => 'Access denied']);
             exit;
         }
@@ -797,7 +798,7 @@ if (isset($_POST['ajax'])) {
     // Принудительное обновление кэша геолокации (порциями — формат ответа ожидает sections/tools.php)
     if ($_POST['ajax'] === 'refresh_geo_cache') {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => 'Access denied']);
             exit;
         }
@@ -997,7 +998,7 @@ if (isset($_POST['ajax'])) {
     if (isset($_POST['action']) && $_POST['action'] === 'reset_config') {
         header('Content-Type: application/json');
         
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['success' => false, 'message' => __('access_denied')]);
             exit;
         }
@@ -1044,7 +1045,7 @@ if (isset($_POST['ajax'])) {
             vlmcSessionStart();
         }
         
-        if (!isset($_SESSION['vlmc_admin']) || $_SESSION['vlmc_admin'] !== true) {
+        if (!vlmcIsLoggedIn()) {
             echo json_encode(['has_permission' => false]);
             exit;
         }
@@ -1483,6 +1484,25 @@ if ($_POST['ajax'] === 'save_audit_settings') {
         auditPrune($days); // новый срок применяется сразу
     }
     echo json_encode(['success' => $saved, 'message' => __($saved ? 'audit_retention_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($_POST['ajax'] === 'save_session_settings') {
+    $minutes = (string)($_POST['session_timeout_min'] ?? '');
+    if (!ctype_digit($minutes) || (int)$minutes < 5 || (int)$minutes > 1440) {
+        echo json_encode(['success' => false, 'message' => __('session_timeout_bad')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $configFile = vlmcConfigFile();
+    config_lock($configFile);
+    $config = config_read($configFile)['config'];
+    if (!is_array($config)) {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $config['security']['session_timeout_min'] = (int)$minutes;
+    $saved = save_config($configFile, $config);
+    echo json_encode(['success' => $saved, 'minutes' => (int)$minutes, 'message' => __($saved ? 'session_timeout_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

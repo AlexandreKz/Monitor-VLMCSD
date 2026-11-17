@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.3.1
+// ВЕРСИЯ: 5.4.0
 // ДАТА: 2026-11-18
-// @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных (только администратор)
+// @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -18,6 +18,7 @@ $canEditUsers = hasPermission($userPerms, PERM_USERS_EDIT);
 $canManageWhitelist = hasPermission($userPerms, PERM_IP_WHITELIST);
 $isFullAdmin = hasPermission($userPerms, PERM_ADMIN_FULL);
 $hideIps = !empty($config['privacy']['hide_ips']);
+$sessionTimeoutMin = max(5, min(1440, (int)($config['security']['session_timeout_min'] ?? 30)));
 
 // Получаем список белых IP из конфига
 $whitelistIps = $config['whitelist_ips'] ?? [];
@@ -126,6 +127,18 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 				</label>
 				<p class="privacy-hint"><?= __('privacy_hide_ips_hint') ?></p>
 				<div id="privacyMessage" class="privacy-message" style="display: none;"></div>
+			</div>
+
+			<!-- Таймаут входа (только администратор) -->
+			<div class="settings-card privacy-card">
+				<div class="settings-card-title">⏱️ <?= __('session_timeout_title') ?></div>
+				<div class="session-row">
+					<input type="number" id="sessionTimeoutMin" class="form-control" min="5" max="1440" step="1" value="<?= (int)$sessionTimeoutMin ?>">
+					<span><?= __('session_timeout_unit') ?></span>
+					<button type="button" class="btn btn-primary" onclick="saveSessionSettings()">💾 <?= __('save') ?></button>
+				</div>
+				<p class="privacy-hint"><?= __('session_timeout_hint') ?></p>
+				<div id="sessionMessage" class="privacy-message" style="display: none;"></div>
 			</div>
 			<?php endif; ?>
 		</div>
@@ -291,6 +304,10 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 }
 .security-whitelist-column > .settings-card:first-child { flex: 1 1 auto; height: auto; }
 .security-whitelist-column > .privacy-card { flex: 0 0 auto; height: auto; }
+.session-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 13px; }
+.session-row input { width: 80px; flex: 0 0 auto; }
+.session-row span { white-space: nowrap; }
+.session-row .btn { white-space: nowrap; }
 .privacy-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 500; }
 .privacy-switch input { width: 16px; height: 16px; accent-color: <?= $themeCSS['primary'] ?>; cursor: pointer; }
 .privacy-hint { margin: 8px 0 0; font-size: 11px; color: <?= $themeCSS['muted'] ?>; line-height: 1.4; }
@@ -972,6 +989,25 @@ function savePrivacySettings(box) {
             box.disabled = false;
             setTimeout(() => { msg.style.display = 'none'; }, 6000);
         });
+}
+
+// Таймаут входа по бездействию (только администратор)
+function saveSessionSettings() {
+    const input = document.getElementById('sessionTimeoutMin');
+    const msg = document.getElementById('sessionMessage');
+    const fd = new FormData();
+    fd.append('ajax', 'save_session_settings');
+    fd.append('session_timeout_min', String(input.value).trim());
+    const show = (ok, text) => {
+        msg.textContent = (ok ? '✅ ' : '❌ ') + text;
+        msg.className = 'privacy-message ' + (ok ? 'ok' : 'err');
+        msg.style.display = 'inline-block';
+        setTimeout(() => { msg.style.display = 'none'; }, 6000);
+    };
+    fetch('', { method: 'POST', body: fd })
+        .then(response => response.json())
+        .then(data => show(!!data.success, data.message || ''))
+        .catch(() => show(false, '<?= __('msg_save_error') ?>'));
 }
 
 // ============================================
