@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.4.0
+// ВЕРСИЯ: 5.4.1
 // ДАТА: 2026-11-17
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -388,9 +388,18 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     function fitConsole() {
         const box = $('updateConsole');
         if (!box || box.offsetParent === null) return;   // вкладка скрыта
-        const top = box.getBoundingClientRect().top + window.scrollY;
-        const h = Math.floor(window.innerHeight - top - 24);
-        box.style.height = Math.max(160, h) + 'px';
+        // Прокручивается не окно, а область .settings-content (под ней ещё подвал страницы), поэтому
+        // считаем по ней: высота видимой области минус положение консоли внутри неё и нижний отступ
+        const cont = box.closest('.settings-content');
+        let h;
+        if (cont) {
+            const top = box.getBoundingClientRect().top - cont.getBoundingClientRect().top + cont.scrollTop;
+            const pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
+            h = cont.clientHeight - top - pad - 4;
+        } else {
+            h = window.innerHeight - (box.getBoundingClientRect().top + window.scrollY) - 24;
+        }
+        box.style.height = Math.max(160, Math.floor(h)) + 'px';
     }
     window.addEventListener('resize', fitConsole);
     window.fitUpdateConsole = fitConsole;
