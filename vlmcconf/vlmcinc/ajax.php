@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.9.1
+// ВЕРСИЯ: 3.9.2
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -334,6 +334,12 @@ if (isset($_POST['ajax'])) {
             $res['rows'] = reportNewDevices($log, $days);
         } elseif ($report === 'products') {
             $res['rows'] = reportProducts($log);
+        } elseif ($report === 'countries') {
+            $res['countries'] = reportCountries($log);
+        } elseif ($report === 'by_country') {
+            $r = reportByCountry($log, $q);
+            $res['rows'] = $r['rows'];
+            $res['summary'] = $r['summary'];
         } else {
             $res = ['success' => false];
         }

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.8
+// ВЕРСИЯ: 5.6.9
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -200,6 +200,14 @@ return [
     'report_sum_rows' => 'Found: %d',
     'report_sum_rows_limit' => 'Found: %d, showing the first %d',
     'report_pick' => 'Select',
+    'report_type_country' => 'By country',
+    'report_desc_country' => 'IP addresses of the selected country and the devices that connected from them. The country comes from the geolocation cache.',
+    'report_label_country' => 'Country',
+    'report_country_all' => 'All countries',
+    'report_country_unknown' => 'Unknown',
+    'report_col_device_list' => 'Devices',
+    'report_sum_country' => '%s: IP addresses — %d, devices — %d, requests — %d',
+    'report_geo_hint' => 'The country of some IPs is not determined yet: it is resolved in the background on the “Statistics” tab. Such addresses are grouped under “Unknown”.',
     
     // Information
     'info_title' => 'Project Information',

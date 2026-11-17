@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.1.0
+// ВЕРСИЯ: 3.2.0
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -223,6 +223,10 @@ $totalGroups = count($groupStats);
                 <div class="rep-field" id="repDaysWrap" style="display: none;">
                     <label id="repDaysLabel"></label>
                     <div class="rep-dd" id="repDays"></div>
+                </div>
+                <div class="rep-field" id="repCountryWrap" style="display: none;">
+                    <label><?= __('report_label_country') ?></label>
+                    <div class="rep-dd" id="repCountry"></div>
                 </div>
                 <div class="rep-field rep-field-btn">
                     <label>&nbsp;</label>
@@ -704,7 +708,7 @@ function updateStatChart(data) {
 <script>
 (function () {
     const T = {
-<?php foreach (['report_label_type', 'report_label_days_inactive', 'report_label_days_new', 'report_days_n', 'report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_col_ips', 'report_col_devices', 'report_col_days_ago', 'report_col_last_ip', 'report_col_ip_list', 'report_col_product', 'report_sum_device', 'report_sum_devices', 'report_sum_ip', 'report_sum_rows', 'report_sum_rows_limit', 'report_mode_device', 'report_mode_ip', 'report_type_multi_ip', 'report_type_shared_ip', 'report_type_top_devices', 'report_type_inactive', 'report_type_new', 'report_type_products', 'report_desc_device_ips', 'report_desc_ip_devices', 'report_desc_multi_ip', 'report_desc_shared_ip', 'report_desc_top_devices', 'report_desc_inactive', 'report_desc_new', 'report_desc_products'] as $k): ?>
+<?php foreach (['report_label_type', 'report_label_days_inactive', 'report_label_days_new', 'report_days_n', 'report_input_device', 'report_input_ip', 'report_empty_query', 'report_bad_ip', 'report_not_found', 'report_error', 'report_loading', 'report_col_device', 'report_col_ip', 'report_col_country', 'report_col_count', 'report_col_first', 'report_col_last', 'report_col_ips', 'report_col_devices', 'report_col_days_ago', 'report_col_last_ip', 'report_col_ip_list', 'report_col_product', 'report_sum_device', 'report_sum_devices', 'report_sum_ip', 'report_sum_rows', 'report_sum_rows_limit', 'report_mode_device', 'report_mode_ip', 'report_type_multi_ip', 'report_type_shared_ip', 'report_type_top_devices', 'report_type_inactive', 'report_type_new', 'report_type_products', 'report_desc_device_ips', 'report_desc_ip_devices', 'report_desc_multi_ip', 'report_desc_shared_ip', 'report_desc_top_devices', 'report_desc_inactive', 'report_desc_new', 'report_desc_country', 'report_label_country', 'report_country_all', 'report_country_unknown', 'report_col_device_list', 'report_sum_country', 'report_geo_hint', 'report_type_country', 'report_desc_products'] as $k): ?>
         <?= $k ?>: <?= json_encode(__($k), JSON_UNESCAPED_UNICODE) ?>,
 <?php endforeach; ?>
     };
@@ -742,6 +746,7 @@ function updateStatChart(data) {
         daysAgo:  { k: 'days_ago', l: T.report_col_days_ago, t: 'num' },
         lastIp:   { k: 'last_ip',  l: T.report_col_last_ip,  t: 'ip' },
         ipList:   { k: 'ip_list',  l: T.report_col_ip_list,  t: 'muted' },
+        devList:  { k: 'devices',  l: T.report_col_device_list, t: 'devlist' },
         product:  { k: 'product',  l: T.report_col_product,  t: 'text' }
     };
     const REPORTS = [
@@ -758,12 +763,16 @@ function updateStatChart(data) {
         { id: 'new_devices', name: T.report_type_new,          desc: T.report_desc_new,         param: 'days', daysLabel: T.report_label_days_new, days: [7, 14, 30, 90], defDays: 30,
           cols: [C.device, C.first, C.last, C.count, C.ips] },
         { id: 'products',    name: T.report_type_products,     desc: T.report_desc_products,    param: '',
-          cols: [C.product, C.devices, C.count] }
+          cols: [C.product, C.devices, C.count] },
+        { id: 'by_country',  name: T.report_type_country,      desc: T.report_desc_country,     param: 'country',
+          cols: [C.country, C.ip, C.devList, C.count, C.last] }
     ];
     const byId = {};
     REPORTS.forEach(function (r) { byId[r.id] = r; });
     let cur = REPORTS[0];
     let days = 30;
+    let country = '';
+    let countryDd = null;
     const suggest = { device: [], ip: [] };
     let listsLoaded = false;
 
@@ -864,6 +873,7 @@ function updateStatChart(data) {
         const textual = cur.param === 'device' || cur.param === 'ip';
         $('repQueryWrap').style.display = textual ? '' : 'none';
         $('repDaysWrap').style.display = cur.param === 'days' ? '' : 'none';
+        $('repCountryWrap').style.display = cur.param === 'country' ? '' : 'none';
         if (textual) {
             $('repQueryLabel').textContent = cur.param === 'device' ? T.report_input_device : T.report_input_ip;
             input.placeholder = cur.param === 'device' ? T.report_input_device : T.report_input_ip;
@@ -877,7 +887,23 @@ function updateStatChart(data) {
         }
         comboClose();
         clearResult();
+        if (cur.param === 'country') { loadCountries(); return; }
         if (!textual) run();
+    }
+
+    function loadCountries() {
+        const rep = cur;
+        post({ report: 'countries' }).then(function (d) {
+            if (rep !== cur || !d.success) return;
+            const opts = [{ value: '', label: T.report_country_all }];
+            (d.countries || []).forEach(function (c) {
+                const name = c.country === '' ? T.report_country_unknown : ((c.flag ? c.flag + ' ' : '') + c.country);
+                opts.push({ value: c.country === '' ? '__unknown__' : c.country, label: name + ' · ' + c.ips + ' IP · ' + c.count });
+            });
+            country = '';
+            countryDd = makeDropdown($('repCountry'), opts, country, function (v) { country = v; run(); });
+            run();
+        }).catch(function () { showMessage(T.report_error); });
     }
 
     function clearResult() {
@@ -909,6 +935,15 @@ function updateStatChart(data) {
             } else td.textContent = '—';
         } else if (col.t === 'country') {
             td = el('td', '', v ? ((row.flag ? row.flag + ' ' : '') + v) : '—');
+        } else if (col.t === 'devlist') {
+            td = el('td');
+            (v || []).forEach(function (name, i) {
+                if (i) td.appendChild(document.createTextNode(', '));
+                const a = el('span', 'report-link', name);
+                a.onclick = function () { openDrill('device_ips', name); };
+                td.appendChild(a);
+            });
+            if (row.devices_more) td.appendChild(el('span', 'muted', ' +' + row.devices_more));
         } else if (col.t === 'num') {
             td = el('td', 'num', v === null || v === undefined ? '—' : String(v));
         } else if (col.t === 'time') {
@@ -956,6 +991,10 @@ function updateStatChart(data) {
         } else if (cur.id === 'ip_devices') {
             sum.textContent = fmt(T.report_sum_ip, [(d.flag ? d.flag + ' ' : '') + q + (d.country ? ' (' + d.country + ')' : ''), rows.length, requests]);
             cols = [C.device, C.count, C.first, C.last];
+        } else if (cur.id === 'by_country') {
+            const sm = d.summary || {};
+            const label = country === '' ? T.report_country_all : (country === '__unknown__' ? T.report_country_unknown : country);
+            sum.textContent = fmt(T.report_sum_country, [label, sm.ips || 0, sm.devices || 0, sm.requests || 0]);
         } else {
             sum.textContent = d.total ? fmt(T.report_sum_rows_limit, [d.total, rows.length]) : fmt(T.report_sum_rows, [rows.length]);
         }
@@ -974,11 +1013,16 @@ function updateStatChart(data) {
             params.q = q;
         }
         if (rep.param === 'days') params.days = days;
+        if (rep.param === 'country') params.q = country;
         showMessage(T.report_loading);
         post(params).then(function (d) {
             if (rep !== cur) return;   // отчёт уже переключили
             if (!d.success) { showMessage(rep.param === 'ip' ? T.report_bad_ip : T.report_error); return; }
             render(d, params.q);
+            if (rep.id === 'by_country' && d.rows && d.rows.some(function (x) { return !x.country; }) && country === '') {
+                const h = el('div', 'report-hint', T.report_geo_hint);
+                $('reportResult').appendChild(h);
+            }
         }).catch(function () { showMessage(T.report_error); });
     }
 

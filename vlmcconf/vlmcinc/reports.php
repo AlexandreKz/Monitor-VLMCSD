@@ -1,10 +1,10 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/reports.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.2.0
 // ДАТА: 2026-11-17
 // @description: Отчёты по логу: IP устройства, устройства на IP, устройства с несколькими IP, IP с несколькими
-//               устройствами, топ устройств, давно не появлявшиеся, новые устройства, продукты.
+//               устройствами, топ устройств, давно не появлявшиеся, новые устройства, продукты, по стране.
 //               Один потоковый проход по логу, результат в кэше агрегатов (log_cache.php).
 // ============================================
 
@@ -285,4 +285,71 @@ function reportProducts($logFile) {
     }
     usort($rows, function ($a, $b) { return ($b['devices'] <=> $a['devices']) ?: ($b['count'] <=> $a['count']); });
     return $rows;
+}
+
+/** Метка группы «страна не определена» (страна берётся только из кэша геолокации). */
+define('REPORT_COUNTRY_UNKNOWN', '__unknown__');
+
+/** Страны из лога: страна (пусто = не определена), флаг, число IP и запросов. */
+function reportCountries($logFile) {
+    $byIp = [];
+    foreach (reportPairs($logFile) as $dev => $ips) {
+        foreach ($ips as $ip => $p) {
+            $byIp[(string)$ip] = ($byIp[(string)$ip] ?? 0) + $p[0];
+        }
+    }
+    $groups = [];
+    foreach ($byIp as $ip => $cnt) {
+        $c = reportCountry($ip);
+        $key = $c['country'];
+        if (!isset($groups[$key])) $groups[$key] = ['country' => $key, 'flag' => $c['flag'], 'ips' => 0, 'count' => 0];
+        $groups[$key]['ips']++;
+        $groups[$key]['count'] += $cnt;
+    }
+    $rows = array_values($groups);
+    usort($rows, function ($a, $b) {
+        if (($a['country'] === '') !== ($b['country'] === '')) return $a['country'] === '' ? 1 : -1;   // «не определена» в конец
+        return $b['count'] <=> $a['count'];
+    });
+    return $rows;
+}
+
+/**
+ * Отчёт «По стране»: IP выбранной страны и устройства, обращавшиеся с каждого IP.
+ * $country: '' — все страны, REPORT_COUNTRY_UNKNOWN — страна не определена, иначе название страны.
+ */
+function reportByCountry($logFile, $country) {
+    $ipData = [];
+    foreach (reportPairs($logFile) as $dev => $ips) {
+        foreach ($ips as $ip => $p) {
+            $ip = (string)$ip;
+            if (!isset($ipData[$ip])) $ipData[$ip] = ['devices' => [], 'count' => 0, 'last' => ''];
+            $ipData[$ip]['devices'][(string)$dev] = $p[0];
+            $ipData[$ip]['count'] += $p[0];
+            if ($p[2] > $ipData[$ip]['last']) $ipData[$ip]['last'] = $p[2];
+        }
+    }
+    $rows = [];
+    $allDevices = [];
+    $requests = 0;
+    foreach ($ipData as $ip => $d) {
+        $c = reportCountry($ip);
+        if ($country === REPORT_COUNTRY_UNKNOWN) {
+            if ($c['country'] !== '') continue;
+        } elseif ($country !== '' && $c['country'] !== $country) {
+            continue;
+        }
+        arsort($d['devices']);
+        $names = array_map('strval', array_keys($d['devices']));
+        foreach ($names as $n) $allDevices[$n] = 1;
+        $requests += $d['count'];
+        $rows[] = ['country' => $c['country'], 'flag' => $c['flag'], 'ip' => $ip,
+                   'devices' => array_slice($names, 0, 6), 'devices_more' => max(0, count($names) - 6),
+                   'count' => $d['count'], 'last' => $d['last']];
+    }
+    usort($rows, function ($a, $b) {
+        if (($a['country'] === '') !== ($b['country'] === '')) return $a['country'] === '' ? 1 : -1;
+        return strcmp($a['country'], $b['country']) ?: ($b['count'] <=> $a['count']);
+    });
+    return ['rows' => $rows, 'summary' => ['ips' => count($rows), 'devices' => count($allDevices), 'requests' => $requests]];
 }
