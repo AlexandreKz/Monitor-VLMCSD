@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.8.0
+// ВЕРСИЯ: 5.8.1
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -1059,5 +1059,12 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_ev_service_stopped' => 'KMS service stopped',
     'notify_ev_log_stale' => 'Log not updated for a long time',
     'notify_ev_log_big' => 'Log is too big',
+    'notify_f_webhook' => 'Incoming webhook',
+    'notify_f_webhook_hint' => 'Bitrix24 → Developer resources → Other → Incoming webhook (with the “Messenger/chat” permission). URL like https://portal/rest/1/code/',
+    'notify_f_dialog' => 'Recipient',
+    'notify_f_dialog_hint' => 'User ID (number) or chat: chat + number, e.g. chat123.',
+    'notify_f_schedule' => 'Frequency and quiet hours',
+    'notify_err_webhook' => 'Invalid Bitrix24 webhook URL (https://portal/rest/ID/code/)',
+    'notify_err_dialog' => 'Recipient: user ID or chatN',
 ];
 ?>

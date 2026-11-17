@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.0.0
+// ВЕРСИЯ: 3.1.0
 // ДАТА: 2026-11-17
-// @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
+// @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
 
 if (basename($_SERVER['PHP_SELF'] ?? '') === 'notify.php') {
@@ -94,8 +94,9 @@ function notifyDefaultRules() {
 function notifyLoad() {
     $f = notifyFile();
     $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null;
-    $d = ['channels' => [], 'rules' => null, 'seq' => 0];
-    if (is_array($j)) {
+    $d = ['ver' => 3, 'channels' => [], 'rules' => null, 'seq' => 0];
+    if (is_array($j) && (int)($j['ver'] ?? 0) >= 3) {
+        // файл старой модели (без метки ver) не читаем: правила-шаблоны создаются заново
         $d['channels'] = array_values(array_filter((array)($j['channels'] ?? []), 'is_array'));
         $d['rules'] = isset($j['rules']) && is_array($j['rules']) ? array_values(array_filter($j['rules'], 'is_array')) : null;
         $d['seq'] = (int)($j['seq'] ?? 0);
@@ -153,6 +154,9 @@ function notifyChannelPublic(array $c) {
         $e = $c['email'] ?? [];
         $out['email'] = ['host' => $e['host'] ?? '', 'port' => (int)($e['port'] ?? 587), 'secure' => $e['secure'] ?? 'tls', 'user' => $e['user'] ?? '',
             'from' => $e['from'] ?? '', 'to' => $e['to'] ?? '', 'has_pass' => ($e['pass'] ?? '') !== ''];
+    } elseif ($c['type'] === 'bitrix24') {
+        $b = $c['bitrix24'] ?? [];
+        $out['bitrix24'] = ['dialog' => $b['dialog'] ?? '', 'has_hook' => ($b['hook'] ?? '') !== '', 'host' => parse_url(notifyDecrypt($b['hook'] ?? ''), PHP_URL_HOST) ?: ''];
     } else {
         $t = $c['telegram'] ?? [];
         $out['telegram'] = ['chat' => $t['chat'] ?? '', 'has_token' => ($t['token'] ?? '') !== ''];
@@ -187,7 +191,7 @@ function notifyChannelBuild(array $in, $old) {
     $name = trim((string)($in['name'] ?? ''));
     if ($name === '' || mb_strlen($name) > 60) { return [null, 'notify_err_name']; }
     $type = (string)($in['type'] ?? ($c['type'] ?? ''));
-    if (!in_array($type, ['email', 'telegram'], true)) { return [null, 'notify_err_type']; }
+    if (!in_array($type, ['email', 'telegram', 'bitrix24'], true)) { return [null, 'notify_err_type']; }
     if (!empty($c['type']) && $c['type'] !== $type) { return [null, 'notify_err_type']; }
     $data = json_decode((string)($in['data'] ?? ''), true);
     $data = is_array($data) ? $data : [];
@@ -210,7 +214,19 @@ function notifyChannelBuild(array $in, $old) {
         foreach ($to as $a) { if (!filter_var($a, FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_to']; } }
         $e['to'] = implode(', ', $to);
         $c['email'] = $e;
-        unset($c['telegram']);
+        unset($c['telegram'], $c['bitrix24']);
+    } elseif ($type === 'bitrix24') {
+        $b = $c['bitrix24'] ?? ['hook' => ''];
+        if (($data['hook'] ?? '') !== '') {
+            $h = trim((string)$data['hook']);
+            if (!preg_match('~^https://[A-Za-z0-9.\-]+(:\d+)?/rest/\d+/[A-Za-z0-9]+/?$~', $h)) { return [null, 'notify_err_webhook']; }
+            $b['hook'] = notifyEncrypt(rtrim($h, '/') . '/');
+        }
+        $b['dialog'] = trim((string)($data['dialog'] ?? ''));
+        if (($b['hook'] ?? '') === '') { return [null, 'notify_err_webhook']; }
+        if (!preg_match('/^(chat)?\d{1,12}$/', $b['dialog'])) { return [null, 'notify_err_dialog']; }
+        $c['bitrix24'] = $b;
+        unset($c['email'], $c['telegram']);
     } else {
         $t = $c['telegram'] ?? ['token' => ''];
         if (($data['token'] ?? '') !== '') {
@@ -221,7 +237,7 @@ function notifyChannelBuild(array $in, $old) {
         if (($t['token'] ?? '') === '') { return [null, 'notify_err_token']; }
         if (!preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $t['chat'])) { return [null, 'notify_err_chat']; }
         $c['telegram'] = $t;
-        unset($c['email']);
+        unset($c['email'], $c['bitrix24']);
     }
     return [$c, ''];
 }
@@ -430,8 +446,23 @@ function notifyRuleMatches(array $rule, $event, array $ctx) {
     return true;
 }
 
+/** Битрикс24: входящий вебхук, метод im.message.add; DIALOG_ID — число (пользователь) или chatN (чат). */
+function notifySendBitrix(array $c, $text) {
+    $hook = notifyDecrypt($c['hook'] ?? '');
+    if ($hook === '') { return [false, 'webhook']; }
+    $url = $hook . 'im.message.add.json?' . http_build_query(['DIALOG_ID' => $c['dialog'], 'MESSAGE' => mb_substr($text, 0, 1800), 'SYSTEM' => 'N']);
+    $r = vlmcHttpRequest($url, ['timeout' => 10, 'connect_timeout' => 5]);
+    $j = json_decode((string)$r['body'], true);
+    if ($r['ok'] && is_array($j) && !empty($j['result'])) { return [true, '']; }
+    $why = is_array($j) && !empty($j['error_description']) ? (string)$j['error_description'] : ($r['error'] ?: ('HTTP ' . $r['status']));
+    return [false, notifyClean($why, 160)];
+}
+
 /** Отправка одним каналом. @return array [bool ok, string error] */
 function notifySendVia(array $c, $subject, $body) {
+    if ($c['type'] === 'bitrix24') {
+        return notifySendBitrix($c['bitrix24'], $subject . "\n\n" . $body);
+    }
     if ($c['type'] === 'telegram') {
         return notifySendTelegram($c['telegram'], $subject . "\n\n" . $body);
     }

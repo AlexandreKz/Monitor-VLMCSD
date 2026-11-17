@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.0.0
+// ВЕРСИЯ: 3.1.0
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -31,7 +31,7 @@ $ntfKeys = ['rule_new', 'channel_new', 'rules_empty', 'channels_empty', 'col_nam
     'rule_title_new', 'rule_title_edit', 'ch_title_new', 'ch_title_edit', 'f_name', 'f_events', 'f_channels', 'f_channels_none', 'f_filter', 'f_filter_groups',
     'f_filter_devices', 'f_filter_hint', 'f_params', 'f_throttle', 'f_throttle_hint', 'f_quiet', 'f_quiet_from', 'f_quiet_to', 'f_active', 'soon',
     'f_type', 'f_host', 'f_port', 'f_secure', 'f_secure_tls', 'f_secure_ssl', 'f_secure_none', 'f_user', 'f_pass', 'f_from', 'f_to', 'f_to_hint',
-    'f_token', 'f_chat', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
+    'f_token', 'f_chat', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
     'confirm_delete_channel', 'hist_empty', 'hist_ok', 'hist_fail', 'hist_quiet', 'sev_high', 'sev_mid', 'sev_low', 'ch_off', 'more'];
 $ntfT = [];
 foreach ($ntfKeys as $k) {
@@ -104,13 +104,19 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-mb { padding: 16px 18px; overflow-y: auto; }
 .ntf-mf { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid <?= $themeCSS['border'] ?>; flex-wrap: wrap; }
 .ntf-mf .ntf-msg { flex: 1 1 160px; min-width: 0; }
+.ntf-mod .form-control { background: <?= $themeCSS['bg'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; }
+.ntf-mb .ntf-hint { margin: 4px 0 12px; }
+.ntf-mod .form-control:focus { border-color: <?= $themeCSS['primary'] ?>; outline: none; }
+.ntf-sec { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+.ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
 .ntf-f { margin-bottom: 14px; }
+.ntf-sec .ntf-f:last-child { margin-bottom: 0; }
 .ntf-f > label.ntf-l { display: block; font-size: 12px; color: #8aa0bb; margin-bottom: 5px; }
 .ntf-gh { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #8aa0bb; }
 .ntf-evg { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; }
 .ntf-chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin: 0; }
 .ntf-chk.dis { opacity: .5; cursor: default; }
-.ntf-box { border: 1px solid <?= $themeCSS['border'] ?>; background: <?= $themeCSS['input'] ?>; border-radius: 6px; padding: 8px 10px; max-height: 150px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 12px; }
+.ntf-box { border: 1px solid <?= $themeCSS['border'] ?>; background: <?= $themeCSS['bg'] ?>; border-radius: 6px; padding: 8px 10px; max-height: 150px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 12px; }
 .ntf-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .ntf-inl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ntf-time { width: 96px; cursor: pointer; }
@@ -184,6 +190,7 @@ $ntfT['saveError'] = __('msg_save_error');
 
     function chTarget(c) {
         if (c.type === 'email') return c.email.to;
+        if (c.type === 'bitrix24') return (c.bitrix24.host ? c.bitrix24.host + ' → ' : '') + c.bitrix24.dialog;
         return c.telegram.chat;
     }
     function renderChannels() {
@@ -193,7 +200,7 @@ $ntfT['saveError'] = __('msg_save_error');
         D.channels.forEach(function (c) {
             const tr = el('tr', 'ntf-click'); tr.onclick = function () { openChannel(c); };
             tr.appendChild(el('td', '', c.name));
-            tr.appendChild(el('td', '', c.type === 'email' ? '✉️ Email' : '✈️ Telegram'));
+            tr.appendChild(el('td', '', c.type === 'email' ? '✉️ Email' : (c.type === 'bitrix24' ? '🏢 Битрикс24' : '✈️ Telegram')));
             tr.appendChild(el('td', '', chTarget(c)));
             const ts = el('td'); ts.appendChild(el('span', 'ntf-badge' + (c.enabled ? ' on' : ''), c.enabled ? T.st_on : T.st_off)); tr.appendChild(ts);
             t.appendChild(tr);
@@ -255,7 +262,7 @@ $ntfT['saveError'] = __('msg_save_error');
         body.appendChild(field(T.f_name, name));
 
         // события по группам
-        const evBox = el('div'); const evF = field(T.f_events, evBox); body.appendChild(evF);
+        const evBox = el('div', 'ntf-sec'); evBox.appendChild(el('div', 'ntf-st', T.f_events)); body.appendChild(evBox);
         const order = <?= json_encode(notifyEventGroups()) ?>;
         order.forEach(function (g) {
             const items = D.catalog.filter(function (c) { return c.group === g; });
@@ -266,7 +273,6 @@ $ntfT['saveError'] = __('msg_save_error');
                 const k = check(evName(c.id), st.events.indexOf(c.id) >= 0, c.soon);
                 if (c.soon) { k.label.appendChild(el('span', 'ntf-badge', T.soon)); }
                 else {
-                    k.label.appendChild(el('span', 'ntf-sev ' + c.sev, c.sev === 'high' ? T.sev_high : (c.sev === 'mid' ? T.sev_mid : T.sev_low)));
                     k.box.onchange = function () {
                         const i = st.events.indexOf(c.id);
                         if (k.box.checked && i < 0) st.events.push(c.id); else if (!k.box.checked && i >= 0) st.events.splice(i, 1);
@@ -282,14 +288,14 @@ $ntfT['saveError'] = __('msg_save_error');
         const chBox = el('div', 'ntf-box');
         if (!D.channels.length) { chBox.appendChild(el('span', 'ntf-hint', T.f_channels_none)); }
         D.channels.forEach(function (c) {
-            const k = check((c.type === 'email' ? '✉️ ' : '✈️ ') + c.name + (c.enabled ? '' : ' (' + T.ch_off + ')'), st.channels.indexOf(c.id) >= 0);
+            const k = check((c.type === 'email' ? '✉️ ' : (c.type === 'bitrix24' ? '🏢 ' : '✈️ ')) + c.name + (c.enabled ? '' : ' (' + T.ch_off + ')'), st.channels.indexOf(c.id) >= 0);
             k.box.onchange = function () {
                 const i = st.channels.indexOf(c.id);
                 if (k.box.checked && i < 0) st.channels.push(c.id); else if (!k.box.checked && i >= 0) st.channels.splice(i, 1);
             };
             chBox.appendChild(k.label);
         });
-        body.appendChild(field(T.f_channels, chBox));
+        const chSec = el('div', 'ntf-sec'); chSec.appendChild(el('div', 'ntf-st', T.f_channels)); chSec.appendChild(chBox); body.appendChild(chSec);
 
         // фильтр и пороги — зависят от выбранных событий
         const dynBox = el('div'); body.appendChild(dynBox);
@@ -317,7 +323,7 @@ $ntfT['saveError'] = __('msg_save_error');
                     wrap.appendChild(field(T.f_filter_devices, db));
                 }
                 wrap.appendChild(el('div', 'ntf-hint', T.f_filter_hint));
-                const f = field(T.f_filter, wrap); dynBox.appendChild(f);
+                const f = el('div', 'ntf-sec'); f.appendChild(el('div', 'ntf-st', T.f_filter)); f.appendChild(wrap); dynBox.appendChild(f);
             }
             const seen = {}; const pf = el('div', 'ntf-inl'); let any = false;
             sel.forEach(function (c) {
@@ -330,18 +336,18 @@ $ntfT['saveError'] = __('msg_save_error');
                     const w = el('div'); w.appendChild(el('label', 'ntf-l', PAR[k] || k)); w.appendChild(i); pf.appendChild(w);
                 });
             });
-            if (any) dynBox.appendChild(field(T.f_params, pf));
+            if (any) { const ps = el('div', 'ntf-sec'); ps.appendChild(el('div', 'ntf-st', T.f_params)); ps.appendChild(pf); dynBox.appendChild(ps); }
         }
         dyn();
 
         // частота, тихие часы, активность
         const thr = input('number', st.throttle, 'ntf-num ntf-w'); thr.min = 0; thr.max = 1440;
         const tw = el('div', 'ntf-inl'); tw.appendChild(thr); tw.appendChild(el('span', 'ntf-hint', T.f_throttle_hint));
-        body.appendChild(field(T.f_throttle, tw));
+        const schSec = el('div', 'ntf-sec'); schSec.appendChild(el('div', 'ntf-st', T.f_schedule)); schSec.appendChild(field(T.f_throttle, tw)); body.appendChild(schSec);
         const qk = check(T.f_quiet, st.quiet_enabled);
         const qf = timeSelect(st.quiet_from), qt = timeSelect(st.quiet_to);
         const qw = el('div', 'ntf-inl'); qw.appendChild(qk.label); qw.appendChild(el('span', '', T.f_quiet_from)); qw.appendChild(qf); qw.appendChild(el('span', '', T.f_quiet_to)); qw.appendChild(qt);
-        body.appendChild(field('', qw));
+        schSec.appendChild(field('', qw));
         const ak = check(T.f_active, st.active); body.appendChild(field('', ak.label));
 
         const msg = el('span', 'ntf-msg');
@@ -375,11 +381,11 @@ $ntfT['saveError'] = __('msg_save_error');
         const name = input('text', c.name); name.maxLength = 60;
         body.appendChild(field(T.f_name, name));
         const type = el('select', 'form-control');
-        type.appendChild(new Option('✉️ Email', 'email')); type.appendChild(new Option('✈️ Telegram', 'telegram'));
+        type.appendChild(new Option('✉️ Email', 'email')); type.appendChild(new Option('✈️ Telegram', 'telegram')); type.appendChild(new Option('🏢 Битрикс24', 'bitrix24'));
         type.value = c.type; type.disabled = !isNew;
         body.appendChild(field(T.f_type, type));
 
-        const em = el('div'), tg = el('div');
+        const em = el('div'), tg = el('div'), bx = el('div');
         const e = c.email || { host: '', port: 587, secure: 'tls', user: '', from: '', to: '', has_pass: false };
         const host = input('text', e.host), port = input('number', e.port, 'ntf-num'), sec = el('select', 'form-control');
         sec.appendChild(new Option(T.f_secure_tls, 'tls')); sec.appendChild(new Option(T.f_secure_ssl, 'ssl')); sec.appendChild(new Option(T.f_secure_none, 'none')); sec.value = e.secure || 'tls';
@@ -395,15 +401,19 @@ $ntfT['saveError'] = __('msg_save_error');
         const token = input('password', ''); token.placeholder = t.has_token ? T.secret_set : '123456:ABC…';
         const chat = input('text', t.chat); chat.placeholder = '123456789';
         tg.appendChild(field(T.f_token, token)); tg.appendChild(field(T.f_chat, chat)); tg.appendChild(el('div', 'ntf-hint', T.f_chat_hint));
-        body.appendChild(em); body.appendChild(tg);
-        function showType() { em.style.display = type.value === 'email' ? '' : 'none'; tg.style.display = type.value === 'telegram' ? '' : 'none'; }
+        const bt = c.bitrix24 || { dialog: '', has_hook: false };
+        const hook = input('password', ''); hook.placeholder = bt.has_hook ? T.secret_set : 'https://portal.bitrix24.ru/rest/1/xxxxxxxxxxxxxxxx/';
+        const dialog = input('text', bt.dialog); dialog.placeholder = '1  /  chat123';
+        bx.appendChild(field(T.f_webhook, hook)); bx.appendChild(el('div', 'ntf-hint', T.f_webhook_hint)); bx.appendChild(field(T.f_dialog, dialog)); bx.appendChild(el('div', 'ntf-hint', T.f_dialog_hint));
+        body.appendChild(em); body.appendChild(tg); body.appendChild(bx);
+        function showType() { em.style.display = type.value === 'email' ? '' : 'none'; tg.style.display = type.value === 'telegram' ? '' : 'none'; bx.style.display = type.value === 'bitrix24' ? '' : 'none'; }
         type.onchange = showType; showType();
         const en = check(T.f_ch_enabled, c.enabled); const enw = el('div', '', ''); enw.style.marginTop = '14px'; enw.appendChild(en.label); body.appendChild(enw);
 
         function form() {
             const data = type.value === 'email'
                 ? { host: host.value, port: port.value, secure: sec.value, user: user.value, pass: pass.value, from: from.value, to: to.value, enabled: en.box.checked }
-                : { token: token.value, chat: chat.value, enabled: en.box.checked };
+                : (type.value === 'bitrix24' ? { hook: hook.value, dialog: dialog.value, enabled: en.box.checked } : { token: token.value, chat: chat.value, enabled: en.box.checked });
             return { id: isNew ? '' : ch.id, name: name.value, type: type.value, data: JSON.stringify(data) };
         }
         const msg = el('span', 'ntf-msg');
