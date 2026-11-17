@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.7.0
+// ВЕРСИЯ: 5.7.1
 // ДАТА: 2026-11-17
 // @description: Панель управления настройками монитора
 // ============================================
@@ -379,7 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Сохранение темы
         if ($_POST['action'] === 'save_theme' && isset($_POST['theme'])) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $config['theme'] = $_POST['theme'];
             $config['last_modified'] = date('Y-m-d H:i:s');
             save_config($configFile, $config);
@@ -389,7 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Сохранение языка
         if ($_POST['action'] === 'save_language' && isset($_POST['language'])) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $config['language'] = $_POST['language'];
             $translations = loadTranslations($config['language']);
             $config['last_modified'] = date('Y-m-d H:i:s');
@@ -400,7 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Сохранение пути к логу
         if ($_POST['action'] === 'save_log_path' && isset($_POST['logPath'])) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $config['logPath'] = $_POST['logPath'];
             $config['last_modified'] = date('Y-m-d H:i:s');
             save_config($configFile, $config);
@@ -410,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
 		// Добавление группы
 		if ($_POST['action'] === 'add_group' && isset($_POST['groupName']) && isset($_POST['groupColor']) && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
 			$groupName = trim($_POST['groupName']);
 			$groupColor = trim($_POST['groupColor']);
 			$groupIcon = trim($_POST['groupIcon'] ?? '📁');
@@ -449,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Удаление группы
         if ($_POST['action'] === 'delete_group' && isset($_POST['groupName']) && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $groupName = $_POST['groupName'];
             
             if (!isset($defaultGroupColors[$groupName]) && isset($config['groupColors'][$groupName])) {
@@ -470,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Сохранение цветов групп
 		if ($_POST['action'] === 'save_group_colors' && hasPermission($currentUserPermissions, PERM_GROUPS_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
 			foreach ($config['groupColors'] as $group => $oldData) {
 				// Получаем текущие значения
 				$oldColor = is_array($oldData) ? $oldData['color'] : $oldData;
@@ -505,7 +505,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Добавление устройства
         if ($_POST['action'] === 'add_device' && isset($_POST['deviceName']) && isset($_POST['deviceGroup']) && hasPermission($currentUserPermissions, PERM_DEVICES_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $deviceName = trim($_POST['deviceName']);
             $deviceGroup = $_POST['deviceGroup'];
             $deviceComment = trim($_POST['deviceComment'] ?? '');
@@ -546,7 +546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Удаление устройства
         if ($_POST['action'] === 'delete_device' && isset($_POST['deviceName']) && isset($_POST['deviceGroup']) && hasPermission($currentUserPermissions, PERM_DEVICES_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $deviceName = $_POST['deviceName'];
             $deviceGroup = $_POST['deviceGroup'];
             
@@ -571,7 +571,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Редактирование устройства
         if ($_POST['action'] === 'edit_device' && isset($_POST['oldName']) && isset($_POST['newName']) && hasPermission($currentUserPermissions, PERM_DEVICES_EDIT)) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $oldName = $_POST['oldName'];
             $oldGroup = $_POST['oldGroup'];
             $newName = $_POST['newName'];
@@ -607,7 +607,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         // Сброс настроек
         if ($_POST['action'] === 'reset_config' && $isAdmin) {
-            auditLog($_POST['action'], auditCleanParams($_POST));
+            auditTrack($_POST['action'], auditCleanParams($_POST));
             $config = $defaultConfig;
             $config['config_version'] = CONFIG_VERSION;
             $config['config_date'] = CONFIG_DATE;

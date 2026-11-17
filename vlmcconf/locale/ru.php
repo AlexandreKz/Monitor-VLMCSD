@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.6.0
+// ВЕРСИЯ: 5.6.1
 // ДАТА: 2026-11-17
 // @description: Русские переводы интерфейса
 // ============================================
@@ -563,7 +563,6 @@ return [
     'audit_empty' => 'Записей нет',
     'audit_page' => 'Страница %d из %d',
     'audit_load_error' => 'Не удалось загрузить журнал',
-    'audit_hint' => 'Журнал хранится в папке данных панели (audit.log: ротация по 2 МБ, 5 файлов). Пароли и токены в него не записываются.',
     'audit_act_login' => '🔑 Вход',
     'audit_act_login_failed' => '🚫 Неудачная попытка входа',
     'audit_act_login_locked' => '⏳ Вход заблокирован (лимит попыток)',
@@ -599,6 +598,33 @@ return [
     'audit_act_add_whitelist_ip' => '✅ IP добавлен в белый список',
     'audit_act_remove_whitelist_ip' => '❌ IP удалён из белого списка',
     'audit_act_access_denied' => '⛔ Отказ в доступе',
+    'audit_hint' => 'Пароли и токены в журнал не записываются. Для изменений показаны значения «было → стало» (секретные поля — только факт изменения).',
+    'audit_stats' => 'Записей: %d · Размер: %s · Хранение: %d дн.',
+    'audit_days_short' => 'дн.',
+    'audit_clear' => 'Очистить журнал',
+    'audit_clear_confirm' => 'Очистить весь журнал действий? Это действие необратимо; факт очистки будет записан в журнал.',
+    'audit_cleared' => 'Журнал очищен',
+    'audit_retention_title' => 'Срок хранения записей',
+    'audit_retention_days' => '%d дней',
+    'audit_retention_custom' => 'Свой срок…',
+    'audit_retention_saved' => 'Срок хранения сохранён',
+    'audit_retention_bad' => 'Срок хранения: целое число от 1 до 365 дней',
+    'audit_retention_hint' => 'Записи старше срока удаляются автоматически (раз в сутки и при смене срока). Изменять срок и очищать журнал может только администратор.',
+    'audit_sum_total' => 'Действий',
+    'audit_sum_period' => 'Период активности',
+    'audit_sum_ips' => 'IP-адреса',
+    'audit_sum_top' => 'Чаще всего',
+    'audit_filter_by_user' => 'Показать действия этого пользователя',
+    'audit_chart_title' => 'Активность',
+    'audit_chart_hours' => 'По часам',
+    'audit_chart_days' => 'По дням (до 60)',
+    'audit_chart_count' => 'действий',
+    'audit_notify_title' => 'Уведомления журнала',
+    'audit_notify_failed_logins' => 'Серия неудачных входов',
+    'audit_notify_denied' => 'Отказы в доступе',
+    'audit_notify_user_delete' => 'Удаление пользователей',
+    'audit_act_save_audit_settings' => '🗓️ Срок хранения журнала',
+    'audit_act_clear_audit' => '🗑️ Очистка журнала',
     'update_channel_saved' => 'Выбранный канал сохранён',
     'update_token_label' => 'Токен GitHub (необязательно)',
     'update_token_placeholder' => 'ghp_… или github_pat_…',

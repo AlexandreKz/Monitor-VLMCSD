@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.7.0
+// ВЕРСИЯ: 3.8.0
 // ДАТА: 2026-11-17
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -70,6 +70,8 @@ function ajaxActionPermissions() {
         // Журнал действий
         'get_audit'             => PERM_LOGS_VIEW,
         'export_audit'          => PERM_LOGS_VIEW,
+        'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
+        'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
         // Пользователи
         'get_users'             => [PERM_USERS_VIEW, PERM_USERS_EDIT],
@@ -1212,6 +1214,34 @@ if (isset($_POST['ajax'])) {
 // ============================================
 // AJAX: Журнал действий (просмотр с фильтрами и экспорт CSV)
 // ============================================
+if ($_POST['ajax'] === 'save_audit_settings') {
+    $days = (int)($_POST['retention_days'] ?? 0);
+    if ($days < 1 || $days > AUDIT_MAX_DAYS) {
+        echo json_encode(['success' => false, 'message' => __('audit_retention_bad')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $configFile = vlmcConfigFile();
+    config_lock($configFile);
+    $config = config_read($configFile)['config'];
+    if (!is_array($config)) {
+        echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $config['audit']['retention_days'] = $days;
+    $saved = save_config($configFile, $config);
+    if ($saved) {
+        auditPrune($days); // новый срок применяется сразу
+    }
+    echo json_encode(['success' => $saved, 'message' => __($saved ? 'audit_retention_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($_POST['ajax'] === 'clear_audit') {
+    $ok = auditClear();
+    echo json_encode(['success' => $ok, 'message' => __($ok ? 'audit_cleared' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if (in_array($_POST['ajax'], ['get_audit', 'export_audit'], true)) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
@@ -1230,7 +1260,7 @@ if (in_array($_POST['ajax'], ['get_audit', 'export_audit'], true)) {
         exit;
     }
     $res = auditQuery($auditFilters, (int)($_POST['page'] ?? 1), (int)($_POST['per_page'] ?? 50));
-    echo json_encode(['success' => true] + $res, JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'stats' => auditStats()] + $res, JSON_UNESCAPED_UNICODE);
     exit;
 }
 

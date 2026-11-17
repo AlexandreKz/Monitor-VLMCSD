@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.6.0
+// ВЕРСИЯ: 5.6.1
 // ДАТА: 2026-11-17
 // @description: English translations
 // ============================================
@@ -561,7 +561,6 @@ return [
     'audit_empty' => 'No records',
     'audit_page' => 'Page %d of %d',
     'audit_load_error' => 'Could not load the log',
-    'audit_hint' => 'The log is stored in the panel data folder (audit.log: rotated at 2 MB, 5 files). Passwords and tokens are never written to it.',
     'audit_act_login' => '🔑 Login',
     'audit_act_login_failed' => '🚫 Failed login attempt',
     'audit_act_login_locked' => '⏳ Login blocked (attempt limit)',
@@ -597,6 +596,33 @@ return [
     'audit_act_add_whitelist_ip' => '✅ IP added to whitelist',
     'audit_act_remove_whitelist_ip' => '❌ IP removed from whitelist',
     'audit_act_access_denied' => '⛔ Access denied',
+    'audit_hint' => 'Passwords and tokens are never written to the log. Changes show "before → after" values (secret fields: only the fact of change).',
+    'audit_stats' => 'Records: %d · Size: %s · Retention: %d days',
+    'audit_days_short' => 'd',
+    'audit_clear' => 'Clear log',
+    'audit_clear_confirm' => 'Clear the whole action log? This cannot be undone; the clearing itself will be recorded.',
+    'audit_cleared' => 'Log cleared',
+    'audit_retention_title' => 'Retention period',
+    'audit_retention_days' => '%d days',
+    'audit_retention_custom' => 'Custom…',
+    'audit_retention_saved' => 'Retention period saved',
+    'audit_retention_bad' => 'Retention: a whole number from 1 to 365 days',
+    'audit_retention_hint' => 'Records older than the period are removed automatically (daily and when the period changes). Only an administrator can change the period or clear the log.',
+    'audit_sum_total' => 'Actions',
+    'audit_sum_period' => 'Activity period',
+    'audit_sum_ips' => 'IP addresses',
+    'audit_sum_top' => 'Most frequent',
+    'audit_filter_by_user' => 'Show this user\'s actions',
+    'audit_chart_title' => 'Activity',
+    'audit_chart_hours' => 'By hour',
+    'audit_chart_days' => 'By day (up to 60)',
+    'audit_chart_count' => 'actions',
+    'audit_notify_title' => 'Log notifications',
+    'audit_notify_failed_logins' => 'Series of failed logins',
+    'audit_notify_denied' => 'Access denials',
+    'audit_notify_user_delete' => 'User deletion',
+    'audit_act_save_audit_settings' => '🗓️ Log retention',
+    'audit_act_clear_audit' => '🗑️ Log cleared',
     'update_channel_saved' => 'Selected channel saved',
     'update_token_label' => 'GitHub token (optional)',
     'update_token_placeholder' => 'ghp_… or github_pat_…',

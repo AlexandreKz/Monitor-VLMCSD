@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.2.3
+// ВЕРСИЯ: 5.2.4
 // ДАТА: 2026-11-17
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -385,6 +385,19 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p><strong>Как идёт установка:</strong> файлы скачиваются во временную папку и сверяются с репозиторием по SHA, затем делается резервная копия заменяемых файлов (в <code>backups/update_…</code> папки данных) и файлы заменяются. Если что-то пошло не так, выполняется откат. Папки <code>pic/</code> и <code>screen/</code>, настройки и данные панели не обновляются, файлы, которых нет в репозитории, не удаляются.</p>
         <div class="note">🚧 Автоматическая установка, расписание и уведомления пока в разработке.</div>
         <div class="note">⚠️ Если вы вносили в файлы панели собственные правки, ранний доступ предложит заменить их версией из репозитория: сначала загрузите свои правки в репозиторий.</div>
+    </div>
+    
+    <!-- Журнал действий -->
+    <div class="section-card">
+        <div class="section-title"><span>📜</span> Журнал действий</div>
+        <p>Раздел <strong>«Журнал действий»</strong> показывает, кто, что и когда делал в панели: входы и выходы, неудачные попытки входа, изменения пользователей, групп, устройств и настроек, очистку лога и кэшей, обновления, отказы в доступе. Для изменений показываются значения «было → стало» (пароли и токены не записываются). Раздел доступен пользователям с правом «Логи: просмотр».</p>
+        <ul>
+            <li><strong>Фильтры:</strong> пользователь, действие, результат, период; <strong>поиск</strong> по пользователю, IP, действию и описанию.</li>
+            <li>Клик по имени пользователя показывает его историю и сводку (число действий, период активности, IP-адреса).</li>
+            <li>Диаграмма активности по часам и дням; экспорт найденных записей в CSV.</li>
+            <li><strong>Срок хранения:</strong> 30, 90, 180 дней или свой срок (1–365). Старые записи удаляются автоматически. Срок и очистка журнала доступны только администратору.</li>
+        </ul>
+        <p>Журнал хранится в папке данных панели (файл <code>audit.log</code>, права 0600).</p>
     </div>
     
     <!-- Структура проекта -->
@@ -791,6 +804,19 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p><strong>How installation works:</strong> files are downloaded to a temporary folder and verified against the repository by SHA, then the files being replaced are backed up (to <code>backups/update_…</code> in the data folder) and replaced. If anything goes wrong, the changes are rolled back. The <code>pic/</code> and <code>screen/</code> folders, settings and panel data are not updated; files that are not in the repository are not deleted.</p>
         <div class="note">🚧 Automatic installation, schedule and notifications are still in development.</div>
         <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
+    </div>
+    
+    <!-- Action log -->
+    <div class="section-card">
+        <div class="section-title"><span>📜</span> Action log</div>
+        <p>The <strong>"Action log"</strong> section shows who did what and when in the panel: logins and logouts, failed login attempts, changes to users, groups, devices and settings, log and cache cleanup, updates, access denials. Changes show "before → after" values (passwords and tokens are never recorded). The section is available to users with the "Logs: view" permission.</p>
+        <ul>
+            <li><strong>Filters:</strong> user, action, result, period; <strong>search</strong> by user, IP, action and details.</li>
+            <li>Clicking a user name shows that user's history and a summary (action count, activity period, IP addresses).</li>
+            <li>Activity chart by hour and day; export of the found records to CSV.</li>
+            <li><strong>Retention:</strong> 30, 90, 180 days or a custom period (1-365). Old records are removed automatically. Only an administrator can change the period or clear the log.</li>
+        </ul>
+        <p>The log is stored in the panel data folder (<code>audit.log</code>, permissions 0600).</p>
     </div>
     
     <!-- Project structure -->
