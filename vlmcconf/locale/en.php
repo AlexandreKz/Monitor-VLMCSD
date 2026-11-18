@@ -1733,5 +1733,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'st_load_error' => 'Could not get the status',
     'audit_act_panel_access_denied' => 'Panel access denied (IP)',
     'panel_denied_log' => 'Panel access denied: address %1$s, page %2$s, browser: %3$s',
+    'fw_wip_sub' => 'This section is temporarily unavailable while it is being reworked',
 ];
 ?>

@@ -234,8 +234,14 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
         </div>
     </div>
 
-    <!-- ===== Вкладка Firewall ===== -->
-    <div class="sec-tab-content" data-tab="firewall">
+    <!-- ===== Вкладка Firewall (заглушка: в разработке) ===== -->
+<style>
+.fw-wip-wrap { position: relative; }
+.fw-wip { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-start; justify-content: center; padding-top: 90px; background: color-mix(in srgb, <?= $themeCSS['card'] ?> 82%, transparent); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); cursor: not-allowed; }
+.fw-wip-box { text-align: center; font-size: 18px; font-weight: 600; color: <?= $themeCSS['text'] ?>; padding: 16px 24px; border: 1px dashed <?= $themeCSS['border'] ?>; border-radius: 10px; background: <?= $themeCSS['card'] ?>; }
+</style>
+    <div class="sec-tab-content fw-wip-wrap" data-tab="firewall">
+        <div class="fw-wip"><div class="fw-wip-box">🚧 <?= __('int_ms_wip') ?><div class="ix-sub"><?= __('fw_wip_sub') ?></div></div></div>
         <?php if ($isFullAdmin): ?>
         <div class="sec-grid">
             <div class="sec-col" style="flex: 0.42;">

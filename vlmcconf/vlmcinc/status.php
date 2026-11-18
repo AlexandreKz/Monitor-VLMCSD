@@ -168,8 +168,9 @@ function statusCollect() {
 
     require_once __DIR__ . '/firewall.php';
     $fs = fwSettings($cfg);
-    if ($fs['backend'] === 'none') {
-        $rows[] = stRow($G['sec'], '🧱', 'st_c_fw', 'off', __('st_fw_off'));
+    // Firewall в разработке: проверки отключены, пока функция не доработана
+    if (true) {
+        $rows[] = stRow($G['sec'], '🧱', 'st_c_fw', 'off', __('int_ms_wip'));
     } else {
         $fst = fwStatus($fs);
         $list = fwList();
