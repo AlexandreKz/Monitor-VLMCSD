@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.7
+// ВЕРСИЯ: 6.7.8
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -22,7 +22,7 @@ vlmcSectionUi($themeCSS);
         <div class="sec-tabs">
             <button class="sec-tab-btn active" data-for="keys" onclick="secTab('section-api','keys',this)">🔑 <?= __('api_tab_keys') ?></button>
             <button class="sec-tab-btn" data-for="settings" onclick="secTab('section-api','settings',this)">⚙️ <?= __('api_tab_settings') ?></button>
-            <button class="sec-tab-btn" data-for="docs" onclick="secTab('section-api','docs',this); apiDocsLoad();">📖 <?= __('api_tab_docs') ?></button>
+            <button class="sec-tab-btn" data-for="docs" onclick="secTab('section-api','docs',this); apiDocsLoad(); apiFit();">📖 <?= __('api_tab_docs') ?></button>
         </div>
     </div>
 
@@ -160,7 +160,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
             </div>
             <div id="apiDocsMethods" class="api-chips"></div>
             <div id="apiDocsChips" class="api-chips"></div>
-            <div id="apiDocs"><div class="sec-empty"><?= __('api_docs_loading') ?></div></div>
+            <div class="sec-scroll sec-tall" id="apiDocsScroll"><div id="apiDocs"><div class="sec-empty"><?= __('api_docs_loading') ?></div></div></div>
             <div class="sec-empty" id="apiDocsNone" style="display: none;"><?= __('api_docs_none') ?></div>
         </div>
     </div>
@@ -390,6 +390,12 @@ function apiDocsChips(spec) { // кнопки-фильтры: тип запро�
     document.getElementById('apiDocsChips').innerHTML = chip('t', '', <?= json_encode(__('api_docs_all')) ?>, eps.length, apiDocsTag === '') +
         Object.keys(apiScopeNames).filter(t => byTag[t]).map(t => chip('t', t, apiScopeNames[t] || t, byTag[t], apiDocsTag === t)).join('');
 }
+function apiFit() {
+    const el = document.getElementById('apiDocsScroll');
+    if (!el || !el.offsetParent) return;
+    el.style.maxHeight = Math.max(200, window.innerHeight - el.getBoundingClientRect().top - 40) + 'px';
+}
+window.addEventListener('resize', apiFit);
 function apiDocsClearSearch() { document.getElementById('apiDocsSearch').value = ''; apiDocsFilter(); document.getElementById('apiDocsSearch').focus(); }
 function apiDocsReset() { // сбрасывает и поиск, и оба набора фильтров
     document.getElementById('apiDocsSearch').value = '';
@@ -450,6 +456,7 @@ function apiDocsLoad() {
                 '<h4><?= __('api_docs_response') ?></h4><div class="api-codebox"><button type="button" class="sec-btn sm api-copy" title="<?= htmlspecialchars(__('copy')) ?>" onclick="apiCopyBtn(this)">📋</button><div class="sec-code">' + secEsc(ex) + '</div></div></div></div>';
         });
         document.getElementById('apiDocs').innerHTML = html;
+        apiFit();
         apiDocsChips(spec);
         apiDocsFilter();
     }).catch(() => { document.getElementById('apiDocs').innerHTML = '<div class="sec-empty">' + secEsc(<?= json_encode(__('api_docs_error')) ?>) + '</div>'; });
