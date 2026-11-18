@@ -22,7 +22,7 @@ vlmcSectionUi($themeCSS);
         <div class="sec-tabs">
             <button class="sec-tab-btn active" data-for="ad" onclick="secTab('section-integrations','ad',this); ldFit();">🏢 <?= __('ldap_tab_ad') ?></button>
             <button class="sec-tab-btn" data-for="cloud" onclick="secTab('section-integrations','cloud',this)">☁️ <?= __('int_tab_cloud') ?></button>
-            <button class="sec-tab-btn" data-for="webhook" onclick="secTab('section-integrations','webhook',this)">🔔 <?= __('int_tab_webhook') ?></button>
+            <button class="sec-tab-btn" data-for="webhook" onclick="secTab('section-integrations','webhook',this)">🔗 <?= __('int_tab_webhook') ?></button>
         </div>
     </div>
 
@@ -217,7 +217,7 @@ $permOptions = [
     <!-- ===== Webhook ===== -->
     <div class="sec-tab-content" data-tab="webhook">
         <div class="settings-card">
-            <div class="settings-card-title">🔔 <?= __('int_wh_title') ?>
+            <div class="settings-card-title">🔗 <?= __('int_wh_title') ?>
                 <span id="whMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
             <div class="sec-note"><?= __('int_wh_intro') ?></div>
             <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="whEdit('')">➕ <?= __('int_wh_add') ?></button></div><?php endif; ?>
@@ -284,7 +284,7 @@ $permOptions = [
 </style>
 <div id="whOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('whOverlay')">
     <div class="ld-modal">
-        <h3>🔔 <?= __('int_wh_edit') ?></h3>
+        <h3>🔗 <?= __('int_wh_edit') ?></h3>
         <div class="ix-grid">
             <div><label><?= __('wh_field_name') ?></label><input type="text" id="whName" class="form-control" maxlength="60"></div>
             <div><label><?= __('wh_field_format') ?></label><select id="whFormat" class="form-control">
