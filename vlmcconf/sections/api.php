@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.0.3
+// ВЕРСИЯ: 6.1.0
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -45,40 +45,49 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
     <!-- ===== Ключи ===== -->
     <div class="sec-tab-content active" data-tab="keys">
         <div class="settings-card">
-            <div class="settings-card-title">🔑 <?= __('api_keys_title') ?> <span class="sec-badge" id="apiKeyCount"><?= count($apiKeys) ?></span></div>
-            <div class="sec-note warn" id="apiDisabledNote" style="<?= $apiSet['enabled'] ? 'display: none;' : '' ?>"><?= __('api_disabled_note') ?></div>
+            <div class="settings-card-title sec-th">🔑 <?= __('api_keys_title') ?>
+                <span id="apiState" class="sec-badge <?= $apiSet['enabled'] ? 'ok' : 'err' ?>" style="margin-left: auto; text-transform: none; letter-spacing: 0;"><?= __($apiSet['enabled'] ? 'api_state_on' : 'api_state_off') ?></span></div>
             <div class="sec-row">
                 <span><?= __('api_base_url') ?>:</span>
                 <span class="sec-code" style="margin: 0; flex: 1 1 300px;" id="apiBaseUrl"></span>
                 <button type="button" class="sec-btn sm" onclick="secCopy(document.getElementById('apiBaseUrl').textContent)">📋 <?= __('copy') ?></button>
             </div>
             <?php if ($apiCanEdit): ?>
-            <div id="apiCreateBox" style="display: none; margin: 10px 0; padding: 12px; border: 1px dashed <?= $themeCSS['border'] ?>; border-radius: 8px;">
-                <div class="sec-row"><label for="apiKeyName"><?= __('api_key_name') ?></label>
-                    <input type="text" id="apiKeyName" class="form-control" maxlength="60" placeholder="Zabbix, Grafana…" autocomplete="off"></div>
-                <div class="sec-row"><label><?= __('api_key_scopes') ?></label>
-                    <span style="display: flex; gap: 14px; flex-wrap: wrap;">
-                        <?php foreach (apiScopes() as $sc): ?>
-                        <label class="sec-switch" style="margin: 0; font-weight: 400;"><input type="checkbox" class="apiScope" value="<?= $sc ?>" <?= $sc === 'security' ? '' : 'checked' ?>> <?= __('api_scope_' . $sc) ?></label>
-                        <?php endforeach; ?>
-                    </span></div>
-                <div class="sec-row"><label for="apiKeyIps"><?= __('api_key_ips') ?></label>
-                    <input type="text" id="apiKeyIps" class="form-control" placeholder="203.0.113.5, 10.0.0.0/24" autocomplete="off"></div>
-                <div class="sec-row"><label for="apiKeyExpires"><?= __('api_key_expires') ?></label>
-                    <input type="date" id="apiKeyExpires" class="form-control sec-narrow" style="width: 160px; flex: 0 0 160px;"></div>
-                <div class="sec-row" style="margin-bottom: 0;">
-                    <button type="button" class="sec-btn primary" onclick="apiCreateKey()">➕ <?= __('api_key_create') ?></button>
-                    <button type="button" class="sec-btn" onclick="document.getElementById('apiCreateBox').style.display='none'"><?= __('cancel') ?></button>
-                </div>
-            </div>
-            <div id="apiNewKeyBox" class="sec-note" style="display: none;">
-                <b><?= __('api_key_created_title') ?></b>
-                <div class="sec-code" id="apiNewKey" style="margin: 8px 0;"></div>
-                <button type="button" class="sec-btn sm" onclick="secCopy(document.getElementById('apiNewKey').textContent)">📋 <?= __('copy') ?></button>
-                <span class="sec-hint"><?= __('api_key_created_hint') ?></span>
-            </div>
             <div class="sec-row" style="margin-top: 8px;">
-                <button type="button" class="sec-btn primary" onclick="document.getElementById('apiCreateBox').style.display='block'">➕ <?= __('api_key_new') ?></button>
+                <button type="button" class="sec-btn primary" onclick="apiNewOpen()">➕ <?= __('api_key_new') ?></button>
+            </div>
+            <div id="apiOverlay" class="api-ov" onclick="if (event.target === this && !apiResultShown) apiClose()">
+                <div class="api-modal">
+                    <div id="apiFormPane">
+                        <h3>🔑 <?= __('api_key_new') ?></h3>
+                        <div class="sec-row"><label for="apiKeyName"><?= __('api_key_name') ?></label>
+                            <input type="text" id="apiKeyName" class="form-control" maxlength="60" placeholder="Zabbix, Grafana…" autocomplete="off"></div>
+                        <div class="sec-row"><label><?= __('api_key_scopes') ?></label>
+                            <span style="display: flex; gap: 14px; flex-wrap: wrap;">
+                                <?php foreach (apiScopes() as $sc): ?>
+                                <label class="sec-switch" style="margin: 0; font-weight: 400;"><input type="checkbox" class="apiScope" value="<?= $sc ?>" <?= $sc === 'security' ? '' : 'checked' ?>> <?= __('api_scope_' . $sc) ?></label>
+                                <?php endforeach; ?>
+                            </span></div>
+                        <div class="sec-row"><label for="apiKeyIps"><?= __('api_key_ips') ?></label>
+                            <input type="text" id="apiKeyIps" class="form-control" placeholder="203.0.113.5, 10.0.0.0/24" autocomplete="off"></div>
+                        <div class="sec-row"><label for="apiKeyExpires"><?= __('api_key_expires') ?></label>
+                            <input type="date" id="apiKeyExpires" class="form-control sec-narrow" style="width: 160px; flex: 0 0 160px;"></div>
+                        <div class="api-foot">
+                            <span id="apiModalMsg" class="sec-msg" style="margin-right: auto;"></span>
+                            <button type="button" class="sec-btn" onclick="apiClose()"><?= __('cancel') ?></button>
+                            <button type="button" class="sec-btn primary" onclick="apiCreateKey()">➕ <?= __('api_key_create') ?></button>
+                        </div>
+                    </div>
+                    <div id="apiResultPane" style="display: none;">
+                        <h3>✅ <?= __('api_key_created_title') ?></h3>
+                        <div class="sec-code" id="apiNewKey" style="margin: 8px 0;"></div>
+                        <p class="sec-hint"><?= __('api_key_created_hint') ?></p>
+                        <div class="api-foot">
+                            <button type="button" class="sec-btn" onclick="secCopy(document.getElementById('apiNewKey').textContent)">📋 <?= __('copy') ?></button>
+                            <button type="button" class="sec-btn primary" onclick="apiClose()"><?= __('close') ?></button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <?php endif; ?>
             <div id="apiKeysMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
@@ -144,6 +153,11 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 </div>
 
 <style>
+.api-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 10000; }
+.api-ov.open { display: flex; }
+.api-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: auto; padding: 16px 18px; }
+.api-modal h3 { margin: 0 0 12px; font-size: 15px; }
+.api-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
 .api-ep-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; background: <?= $themeCSS['card'] ?>; }
 .api-ep-head:hover { background: <?= $themeCSS['hover'] ?>; }
@@ -166,7 +180,6 @@ const apiBase = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'ap
 
 function apiRenderKeys() {
     const body = document.getElementById('apiKeyRows');
-    document.getElementById('apiKeyCount').textContent = apiKeys.length;
     if (!apiKeys.length) { body.innerHTML = '<tr><td colspan="8" class="sec-empty">' + secEsc(apiStr.none) + '</td></tr>'; return; }
     const today = new Date().toISOString().slice(0, 10);
     body.innerHTML = apiKeys.map(k => {
@@ -184,25 +197,43 @@ function apiRenderKeys() {
             '<td><span class="sec-badge ' + state[0] + '">' + secEsc(state[1]) + '</span></td><td>' + acts + '</td></tr>';
     }).join('');
 }
+const apiStateStr = { on: <?= json_encode(__('api_state_on')) ?>, off: <?= json_encode(__('api_state_off')) ?> };
+function apiSetState(on) {
+    const b = document.getElementById('apiState');
+    b.className = 'sec-badge ' + (on ? 'ok' : 'err');
+    b.textContent = on ? apiStateStr.on : apiStateStr.off;
+}
+let apiResultShown = false;
+function apiNewOpen() {
+    apiResultShown = false;
+    document.getElementById('apiKeyName').value = '';
+    document.getElementById('apiKeyIps').value = '';
+    document.getElementById('apiKeyExpires').value = '';
+    document.querySelectorAll('.apiScope').forEach(c => { c.checked = c.value !== 'security'; });
+    secMsg('apiModalMsg', true, '');
+    document.getElementById('apiFormPane').style.display = '';
+    document.getElementById('apiResultPane').style.display = 'none';
+    document.getElementById('apiOverlay').classList.add('open');
+    document.getElementById('apiKeyName').focus();
+}
+function apiClose() { // закрытие стирает показанный ключ
+    apiResultShown = false;
+    document.getElementById('apiNewKey').textContent = '';
+    document.getElementById('apiOverlay').classList.remove('open');
+}
 function apiCreateKey() {
     const scopes = Array.from(document.querySelectorAll('.apiScope:checked')).map(c => c.value).join(',');
     secPost({ ajax: 'api_key_create', name: document.getElementById('apiKeyName').value, scopes: scopes,
               allowed_ips: document.getElementById('apiKeyIps').value, expires: document.getElementById('apiKeyExpires').value })
         .then(d => {
-            secMsg('apiKeysMsg', !!d.success, d.message || '');
-            if (d.success) {
-                document.getElementById('apiNewKey').textContent = d.key;
-                document.getElementById('apiNewKeyBox').style.display = 'block';
-                document.getElementById('apiCreateBox').style.display = 'none';
-                document.getElementById('apiKeyName').value = '';
-                apiReloadKeysSoft();
-            }
+            if (!d.success) { secMsg('apiModalMsg', false, d.message || ''); return; }
+            apiResultShown = true;
+            document.getElementById('apiNewKey').textContent = d.key;
+            document.getElementById('apiFormPane').style.display = 'none';
+            document.getElementById('apiResultPane').style.display = '';
+            apiReloadKeysSoft();
         })
-        .catch(() => secMsg('apiKeysMsg', false, <?= json_encode(__('msg_save_error')) ?>));
-}
-function apiHideNewKey() { // удалили ключ — показанное значение нового ключа больше не нужно
-    document.getElementById('apiNewKey').textContent = '';
-    document.getElementById('apiNewKeyBox').style.display = 'none';
+        .catch(() => secMsg('apiModalMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function apiReloadKeysSoft() { // обновляем таблицу ключей, не трогая показанный новый ключ
     secPost({ ajax: 'api_keys_list' }).then(d => { if (d.success) { apiKeys.length = 0; d.keys.forEach(k => apiKeys.push(k)); } apiRenderKeys(); });
@@ -217,7 +248,7 @@ function apiDelete(id) {
     if (!confirm(apiStr.del)) return;
     secPost({ ajax: 'api_key_delete', id: id }).then(d => {
         secMsg('apiKeysMsg', !!d.success, d.message || '');
-        if (d.success) { const i = apiKeys.findIndex(x => x.id === id); if (i >= 0) apiKeys.splice(i, 1); apiRenderKeys(); apiHideNewKey(); }
+        if (d.success) { const i = apiKeys.findIndex(x => x.id === id); if (i >= 0) apiKeys.splice(i, 1); apiRenderKeys(); }
     });
 }
 function apiSaveSettings() {
@@ -225,7 +256,7 @@ function apiSaveSettings() {
               rate_limit: document.getElementById('apiRate').value, cors_origins: document.getElementById('apiCors').value })
         .then(d => {
             secMsg('apiSetMsg', !!d.success, d.message || '');
-            if (d.success) document.getElementById('apiDisabledNote').style.display = document.getElementById('apiEnabled').checked ? 'none' : '';   // предупреждение на вкладке «Ключи»
+            if (d.success) apiSetState(document.getElementById('apiEnabled').checked);   // статус в шапке вкладки «Ключи»
         })
         .catch(() => secMsg('apiSetMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
