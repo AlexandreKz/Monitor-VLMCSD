@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.4.1
+// ВЕРСИЯ: 3.4.3
 // ДАТА: 2026-11-17
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
@@ -398,7 +398,7 @@ $totalGroups = count($groupStats);
 }
 
 .form-control {
-    background: <?= $themeCSS['card'] ?>;
+    background: <?= $themeCSS['field'] ?>;
     border: 1px solid <?= $themeCSS['inputBorder'] ?>;
     border-radius: 4px;
     color: <?= $themeCSS['text'] ?>;
@@ -426,7 +426,7 @@ $totalGroups = count($groupStats);
 .rep-field-btn .btn { padding: 0 18px; height: 34px; font-size: 13px; }
 .rep-dd, .rep-combo { position: relative; }
 .rep-block { display: flex; flex-direction: column; box-sizing: border-box; }
-.rep-dd-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 260px; width: 100%; box-sizing: border-box; height: 34px; padding: 0 12px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 13px; font-family: inherit; cursor: pointer; text-align: left; }
+.rep-dd-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 260px; width: 100%; box-sizing: border-box; height: 34px; padding: 0 12px; background: <?= $themeCSS['field'] ?>; border: 1px solid <?= $themeCSS['inputBorder'] ?>; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 13px; font-family: inherit; cursor: pointer; text-align: left; }
 .rep-dd.sm .rep-dd-btn { min-width: 110px; }
 .rep-dd-btn:hover, .rep-dd.open .rep-dd-btn { border-color: <?= $themeCSS['primary'] ?>; }
 .rep-dd-btn .arrow { font-size: 10px; opacity: 0.7; transition: transform 0.15s; }

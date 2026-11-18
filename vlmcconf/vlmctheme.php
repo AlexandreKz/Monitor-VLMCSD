@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmctheme.php
-// ВЕРСИЯ: 1.6.2
+// ВЕРСИЯ: 1.7.0
 // ДАТА: 2026-11-17
 // @description: Библиотека тем для KMS Monitor (добавлены Summer и Autumn)
 // ============================================
@@ -486,6 +486,8 @@ function getThemeCSS($theme) {
     $c['okText'] = $txt($c['success']);
     $c['warnText'] = $txt($c['warning']);
     $c['dangerText'] = $txt($c['danger']);
+    // фон полей ввода/выбора: заметно отличается от фона карточек и окон (темнее в тёмных темах, чуть серее в светлой)
+    $c['field'] = $dark ? themeMix($c['card'], '#000000', 0.4) : themeMix($c['card'], '#64748b', 0.1);
     $c['muted'] = $muted;
     $c['accentText'] = $accent;
     $c['onPrimary'] = $on($c['primary'], 3.0);

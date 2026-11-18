@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/groups.php
-// ВЕРСИЯ: 3.6.1
+// ВЕРСИЯ: 3.6.2
 // ДАТА: 2026-11-17
 // @description: Секция "Группы" с модальным окном (редактирование имени, иконки, цвета, удаление)
 // ============================================
@@ -386,7 +386,7 @@ $fullEmojiList = get_emoji_list();
 .form-control {
     width: 100%;
     padding: 6px 10px;
-    background: <?= $themeCSS['input'] ?>;
+    background: <?= $themeCSS['field'] ?>;
     border: 1px solid <?= $themeCSS['border'] ?>;
     border-radius: 4px;
     color: <?= $themeCSS['text'] ?>;

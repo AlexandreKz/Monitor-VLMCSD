@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.15.0
+// ВЕРСИЯ: 5.16.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -880,11 +880,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         .form-control {
             width: 100%;
             padding: 8px 12px;
-            background: <?= $themeCSS['card'] ?>;
+            background: <?= $themeCSS['field'] ?>;
             border: 1px solid <?= $themeCSS['inputBorder'] ?>;
             border-radius: 6px;
             color: <?= $themeCSS['text'] ?>;
             font-size: 13px;
+        }
+        /* единый фон полей ввода/выбора во всех разделах и окнах (классы с собственным фоном его переопределяют) */
+        :where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=button]):not([type=submit]):not([type=reset]):not([type=image]), select, textarea) {
+            background-color: <?= $themeCSS['field'] ?>;
         }
         .form-control:focus {
             outline: none;

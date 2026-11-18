@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.4.0
+// ВЕРСИЯ: 3.4.1
 // ДАТА: 2026-11-17
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -143,7 +143,7 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-mb { padding: 16px 18px; overflow-y: auto; }
 .ntf-mf { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid <?= $themeCSS['border'] ?>; flex-wrap: wrap; }
 .ntf-mf .ntf-msg { flex: 1 1 160px; min-width: 0; }
-.ntf-mod .form-control { background: <?= $themeCSS['bg'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; }
+.ntf-mod .form-control { background: <?= $themeCSS['field'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; }
 .ntf-mb .ntf-hint { margin: 4px 0 12px; }
 .ntf-mod .form-control:focus { border-color: <?= $themeCSS['primary'] ?>; outline: none; }
 .ntf-sec { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }

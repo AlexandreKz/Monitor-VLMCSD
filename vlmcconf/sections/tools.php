@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.3.3
+// ВЕРСИЯ: 3.3.4
 // ДАТА: 2026-11-17
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
@@ -281,7 +281,7 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 /* ===== Стилизация календаря под тему ===== */
 input[type="date"] {
-    background: <?= $themeCSS['card'] ?>;
+    background: <?= $themeCSS['field'] ?>;
     border: 1px solid <?= $themeCSS['inputBorder'] ?>;
     border-radius: 6px;
     color: <?= $themeCSS['text'] ?>;

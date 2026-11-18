@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.4.1
+// ВЕРСИЯ: 5.4.2
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -530,7 +530,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 .password-wrapper input {
     width: 100%;
     padding: 8px 35px 8px 12px;
-    background: <?= $themeCSS['input'] ?>;
+    background: <?= $themeCSS['field'] ?>;
     border: 1px solid <?= $themeCSS['inputBorder'] ?>;
     border-radius: 6px;
     color: <?= $themeCSS['text'] ?>;
