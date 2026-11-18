@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.14.0
+// ВЕРСИЯ: 5.15.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -344,8 +344,9 @@ $GLOBALS['themeCSS'] = $themeCSS;
 require_once __DIR__ . '/vlmcinc/ajax.php';
 
 $activeSection = $_GET['section'] ?? 'general';
-// Разделы «Интеграции» и «API» пока недоступны (в разработке): открытие по ссылке или из запомненной вкладки ведёт в «Общие»
-if (in_array($activeSection, ['integrations', 'api'], true)) {
+// Раздел «API» пока недоступен (в разработке); «Интеграции» — только с правом просмотра
+$integrationsAllowed = hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW);
+if ($activeSection === 'api' || ($activeSection === 'integrations' && !$integrationsAllowed)) {
     $activeSection = 'general';
 }
 // «Уведомления» открываются только с правом «Уведомления: изменение» (у остальных пункт меню серый)
@@ -1639,7 +1640,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         const urlSection = new URLSearchParams(window.location.search).get('section');
         let sectionToActivate = urlSection || getActiveSection();
-        if (sectionToActivate === 'integrations' || sectionToActivate === 'api') sectionToActivate = 'general';   // разделы в разработке
+        if (sectionToActivate === 'api') sectionToActivate = 'general';   // раздел в разработке
+        if (sectionToActivate === 'integrations' && !<?= $integrationsAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // нет права на интеграции
         if (sectionToActivate === 'notifications' && !<?= $notifyAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // нет права на уведомления
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
         const target = document.getElementById('section-' + sectionToActivate);
@@ -1801,8 +1803,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     <!-- ============================================ -->
     
     <!-- Интеграции - только если есть права на просмотр -->
-    <?php if (hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW)): ?>
-    <div class="menu-item menu-item-disabled" title="<?= htmlspecialchars(__('section_under_development')) ?>">
+    <?php if ($integrationsAllowed): ?>
+    <div class="menu-item <?= $activeSection === 'integrations' ? 'active' : '' ?>" onclick="showSection('integrations', this)">
         <span class="menu-item-icon">🔌</span>
         <span><?= __('integrations') ?></span>
     </div>

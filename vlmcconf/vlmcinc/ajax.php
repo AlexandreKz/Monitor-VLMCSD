@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.15.0
+// ВЕРСИЯ: 3.16.0
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -70,6 +70,13 @@ function ajaxActionPermissions() {
         'perform_update'        => $toolsEdit,
         'save_update_settings'  => $toolsEdit,
         'save_github_token'     => $toolsEdit,
+
+        // Интеграции: Active Directory / LDAP (п. 26)
+        'ldap_save_settings'    => PERM_INTEGRATIONS_EDIT,
+        'ldap_test'             => PERM_INTEGRATIONS_EDIT,
+        'ldap_search'           => PERM_INTEGRATIONS_EDIT,
+        'ldap_import'           => PERM_INTEGRATIONS_EDIT,
+        'ldap_sync'             => PERM_INTEGRATIONS_EDIT,
 
         // Журнал действий
         'get_audit'             => PERM_LOGS_VIEW,
@@ -1505,6 +1512,9 @@ if ($_POST['ajax'] === 'save_session_settings') {
     echo json_encode(['success' => $saved, 'minutes' => (int)$minutes, 'message' => __($saved ? 'session_timeout_saved' : 'msg_save_error')], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// Интеграции (AD/LDAP): отдельный файл обработчиков
+require __DIR__ . '/ajax_extra.php';
 
 if ($_POST['ajax'] === 'save_privacy_settings') {
     $hide = (($_POST['hide_ips'] ?? '0') === '1');

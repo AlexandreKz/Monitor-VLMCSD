@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.2.1
+// ВЕРСИЯ: 4.3.0
 // ДАТА: 2026-11-18
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
@@ -197,7 +197,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         // Если ни локальная, ни AD-аутентификация не прошли
         $error = __('invalid_login');
         loginLimiterFail($username);
-        auditLog('login_failed', '', 'error', $username);
+        // Если вход через AD был включён, причина отказа попадает в журнал (пароль и данные AD не пишутся)
+        $adReason = (string)($GLOBALS['vlmc_ldap_reason'] ?? '');
+        auditLog('login_failed', ($adReason !== '' && $adReason !== 'disabled') ? 'AD: ' . $adReason : '', 'error', $username);
     }
 }
 
