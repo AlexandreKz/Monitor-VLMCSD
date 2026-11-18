@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.3
+// ВЕРСИЯ: 6.0.4
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -281,11 +281,10 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                 <div class="settings-card" id="fwSetupCard">
                     <div class="settings-card-title">🔧 <?= __('fw_setup_title') ?></div>
                     <p class="sec-hint" style="margin-top:0;"><?= __('fw_setup_text') ?></p>
-                    <div class="sec-code" id="fwSetupCode">sudo install -m 750 -o root -g root <?= htmlspecialchars($fwHelperSrc) ?> <?= htmlspecialchars($fwHelperDst) ?>
+                    <div class="sec-code pw-cmd" id="fwSetupCode" title="<?= htmlspecialchars(__('panel_wl_click_copy')) ?>" onclick="pwCopyCmd(this)">sudo install -m 750 -o root -g root <?= htmlspecialchars($fwHelperSrc) ?> <?= htmlspecialchars($fwHelperDst) ?>
 
 echo '<?= htmlspecialchars($webUser) ?> ALL=(root) NOPASSWD: <?= htmlspecialchars($fwHelperDst) ?>' | sudo tee /etc/sudoers.d/vlmc-firewall
 sudo chmod 440 /etc/sudoers.d/vlmc-firewall</div>
-                    <button type="button" class="sec-btn sm" onclick="fwCopySetup(this)">📋 <?= __('copy') ?></button>
                     <p class="sec-hint"><?= __('fw_setup_note') ?></p>
                 </div>
                 <?php else: ?>
@@ -450,10 +449,6 @@ function fwUnblock(ip) {
 function fwApply(all) {
     secPost({ ajax: 'fw_apply', all: all ? '1' : '0' }).then(d => { secMsg('fwMsg', !!d.success, d.message || ''); fwReload(); });
 }
-function fwCopySetup(btn) {
-    secCopy(document.getElementById('fwSetupCode').textContent, function () { const t = btn.textContent; btn.textContent = '✅'; setTimeout(() => { btn.textContent = t; }, 1500); });
-}
-
 if (document.getElementById('pwRows')) { pwRender(); } if (document.getElementById('fwRows')) { fwRender(); }
 document.addEventListener('DOMContentLoaded', function () {
     secTabRestore('section-security', 'users');
