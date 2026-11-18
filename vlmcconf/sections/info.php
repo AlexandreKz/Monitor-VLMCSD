@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.11.2
+// ВЕРСИЯ: 1.11.3
 // ДАТА: 2026-11-18
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -127,7 +127,6 @@ if (!$canViewInfo) {
         <div class="info-scroll">
         <div class="info-data-card">
             <div class="info-data-head">
-                <span id="stSums" style="display: contents;"></span>
                 <span class="info-hint info-hint-top" id="stTime"></span>
                 <button type="button" class="info-tab" id="stRefresh" style="padding: 4px 14px; font-size: 12px;">🔄 <?= __('st_refresh') ?></button>
             </div>
@@ -169,11 +168,10 @@ if (!$canViewInfo) {
 .info-data-name { white-space: nowrap; font-weight: 600; }
 .info-data-absent td { opacity: 0.6; }
 .info-data-badge { font-size: 10px; font-weight: 400; padding: 1px 8px; border-radius: 10px; background: <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; margin-left: 6px; }
-.st-sum { font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 12px; border: 1px solid <?= $themeCSS['border'] ?>; }
-.st-sum.ok, .st-badge.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
-.st-sum.warn, .st-badge.warn { color: <?= $themeCSS['warnText'] ?>; border-color: <?= $themeCSS['warnText'] ?>; }
-.st-sum.err, .st-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
-.st-sum.off, .st-badge.off { color: <?= $themeCSS['muted'] ?>; }
+.st-badge.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
+.st-badge.warn { color: <?= $themeCSS['warnText'] ?>; border-color: <?= $themeCSS['warnText'] ?>; }
+.st-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
+.st-badge.off { color: <?= $themeCSS['muted'] ?>; }
 .st-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; border: 1px solid <?= $themeCSS['border'] ?>; white-space: nowrap; }
 .st-table { font-size: 11.5px; }
 .st-table th { padding: 5px 10px; font-size: 11px; }
@@ -415,14 +413,10 @@ if (!$canViewInfo) {
 // Вкладка «Статус»: данные запрашиваются при открытии вкладки и по кнопке (проверки только читают состояние)
 (function () {
     var T = { ok: <?= json_encode(__('st_state_ok')) ?>, warn: <?= json_encode(__('st_state_warn')) ?>, err: <?= json_encode(__('st_state_err')) ?>, off: <?= json_encode(__('st_state_off')) ?> };
-    var S = { ok: <?= json_encode(__('st_sum_ok')) ?>, warn: <?= json_encode(__('st_sum_warn')) ?>, err: <?= json_encode(__('st_sum_err')) ?>, off: <?= json_encode(__('st_sum_off')) ?> };
     var ICON = { ok: '✅', warn: '⚠️', err: '❌', off: '○' };
     var busy = false;
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
     function render(d) {
-        var sums = '';
-        ['ok', 'warn', 'err', 'off'].forEach(function (k) { sums += '<span class="st-sum ' + k + '">' + ICON[k] + ' ' + esc(S[k]) + ': ' + d.counts[k] + '</span>'; });
-        document.getElementById('stSums').innerHTML = sums;
         document.getElementById('stTime').textContent = <?= json_encode(__('st_checked_at')) ?> + ': ' + d.time;
         var html = '', group = '';
         d.rows.forEach(function (r) {
