@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.1
+// ВЕРСИЯ: 6.0.2
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -219,10 +219,15 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                     <?php if ($pwEmergency): ?>
                     <div class="sec-note warn"><?= __('panel_wl_emergency_active') ?></div>
                     <?php endif; ?>
-                    <p class="sec-hint" style="margin-top:0;"><?= __('panel_wl_emergency_text') ?></p>
-                    <div class="sec-hint" style="margin: 8px 0 2px;"><?= __('panel_wl_emergency_file') ?></div>
-                    <div class="sec-code" style="margin-top: 0;"><?= htmlspecialchars($pwOffFile) ?></div>
-                    <?php if (!$fwIsWin): ?><div class="sec-code">touch <?= htmlspecialchars($pwOffFile) ?></div><?php endif; ?>
+                    <?php
+                    $pwFileName = basename($pwOffFile);
+                    $pwCmdMake = $fwIsWin ? 'type nul > "' . $pwOffFile . '"' : 'touch ' . $pwOffFile;
+                    $pwCmdDel = $fwIsWin ? 'del "' . $pwOffFile . '"' : 'rm ' . $pwOffFile;
+                    ?>
+                    <p class="sec-hint" style="margin-top:0;"><?= sprintf(htmlspecialchars(__('panel_wl_emergency_text')), '<b>' . htmlspecialchars($pwFileName) . '</b>') ?></p>
+                    <div class="sec-code pw-cmd" title="<?= htmlspecialchars(__('panel_wl_click_copy')) ?>" onclick="pwCopyCmd(this)"><?= htmlspecialchars($pwCmdMake) ?></div>
+                    <p class="sec-hint"><?= htmlspecialchars(__('panel_wl_emergency_text2')) ?></p>
+                    <div class="sec-code pw-cmd" title="<?= htmlspecialchars(__('panel_wl_click_copy')) ?>" onclick="pwCopyCmd(this)"><?= htmlspecialchars($pwCmdDel) ?></div>
                     <p class="sec-hint"><?= __('panel_wl_scope_note') ?></p>
                 </div>
                 <?php endif; ?>
@@ -389,6 +394,14 @@ function pwSave() {
         .catch(() => secMsg('pwMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 if (document.getElementById('pwEnabled')) { document.getElementById('pwEnabled').addEventListener('change', pwState); }
+
+// Команда аварийного отключения: по нажатию копируется в буфер
+function pwCopyCmd(el) {
+    secCopy(el.textContent, function () {
+        const t = el.textContent; el.textContent = '✅ ' + <?= json_encode(__('panel_wl_copied')) ?>;
+        setTimeout(() => { el.textContent = t; }, 1200);
+    });
+}
 
 // ===== Блокировка IP (п. 30) =====
 let fwRows = <?= json_encode($fwBlocked, JSON_UNESCAPED_UNICODE) ?>;
@@ -592,6 +605,8 @@ document.addEventListener('DOMContentLoaded', function () { secTabRestore('secti
 </div>
 
 <style>
+.pw-cmd { cursor: pointer; }
+.pw-cmd:hover { border-color: <?= $themeCSS['primary'] ?>; }
 .security-two-columns {
     display: flex;
     gap: 20px;

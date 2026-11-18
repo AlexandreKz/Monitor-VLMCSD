@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.4
+// ВЕРСИЯ: 5.15.5
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1131,7 +1131,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'panel_wl_state_loop' => 'you are on the server itself',
     'panel_wl_emergency_title' => 'Emergency switch-off',
     'panel_wl_emergency_active' => 'The file exists: the restriction is not applied now. Delete the file to turn it back on.',
-    'panel_wl_emergency_text' => 'If you accidentally locked yourself out of the panel, you can lift the restriction on the server itself: log in to the server and create an empty file with this name (example command below). The restriction stops working at once. Then open the panel, fix the address list and delete the file.',
+    'panel_wl_emergency_text' => 'If you accidentally locked yourself out of the panel, you can lift the restriction on the server itself: log in to the server and create an empty file named %s or copy the command into a terminal:',
     'panel_wl_scope_note' => 'The address is taken from the connection (REMOTE_ADDR). Behind a reverse proxy (nginx, Cloudflare) all visitors appear with the proxy address, so set the restriction on the proxy itself in that case.',
     'panel_wl_msg_bad_list' => 'Invalid address list',
     'panel_wl_msg_bad_entry' => 'Invalid address or network: %s',
@@ -1532,6 +1532,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'sec_tab_access' => 'Access & IP',
     'sec_tab_firewall' => 'Firewall',
     'access_admin_only' => 'This block is available to the full administrator only.',
-    'panel_wl_emergency_file' => 'File to create:',
+    'panel_wl_emergency_text2' => 'The restriction stops working at once. Then open the panel, fix the address list and delete the file manually or with this terminal command:',
+    'panel_wl_click_copy' => 'Click to copy',
+    'panel_wl_copied' => 'copied',
 ];
 ?>
