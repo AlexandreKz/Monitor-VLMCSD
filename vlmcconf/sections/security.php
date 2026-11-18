@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.0
+// ВЕРСИЯ: 6.0.1
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -220,7 +220,9 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                     <div class="sec-note warn"><?= __('panel_wl_emergency_active') ?></div>
                     <?php endif; ?>
                     <p class="sec-hint" style="margin-top:0;"><?= __('panel_wl_emergency_text') ?></p>
-                    <div class="sec-code"><?= htmlspecialchars($pwOffFile) ?></div>
+                    <div class="sec-hint" style="margin: 8px 0 2px;"><?= __('panel_wl_emergency_file') ?></div>
+                    <div class="sec-code" style="margin-top: 0;"><?= htmlspecialchars($pwOffFile) ?></div>
+                    <?php if (!$fwIsWin): ?><div class="sec-code">touch <?= htmlspecialchars($pwOffFile) ?></div><?php endif; ?>
                     <p class="sec-hint"><?= __('panel_wl_scope_note') ?></p>
                 </div>
                 <?php endif; ?>
