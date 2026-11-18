@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.2.1
+// ВЕРСИЯ: 1.3.0
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -627,4 +627,66 @@ function ldapSyncAll($config = null) {
         return ['success' => true, 'created' => 0, 'updated' => 0, 'skipped' => [], 'failed' => 0, 'code' => 'nothing'];
     }
     return ldapImportUsers($names, $config);
+}
+
+// ===== Статус подключения (Активен / Не подключен), автопроверка раз в 12 часов =====
+const LDAP_STATUS_HOURS = 12;
+
+function ldapStatusFile() {
+    return vlmcDataFile('ldap_status.json');
+}
+
+/** Последний сохранённый результат проверки: ['ok'=>bool,'time'=>int,'text'=>string] или null. */
+function ldapStatusRead() {
+    $r = config_read(ldapStatusFile());
+    $d = ($r['status'] === 'ok' && is_array($r['config'])) ? $r['config'] : [];
+    return isset($d['time']) ? ['ok' => !empty($d['ok']), 'time' => (int)$d['time'], 'text' => (string)($d['text'] ?? '')] : null;
+}
+
+function ldapStatusStore($ok, $text) {
+    $file = ldapStatusFile();
+    config_lock($file);
+    save_config($file, ['ok' => (bool)$ok, 'time' => time(), 'text' => mb_substr((string)$text, 0, 300)]);
+}
+
+function ldapStatusReset() {
+    $f = ldapStatusFile();
+    if (is_file($f)) {
+        @unlink($f);
+    }
+}
+
+/** Состояние для показа: off (интеграция выключена), unknown (ещё не проверялась), active, down. */
+function ldapStatusView($config = null) {
+    $s = ldapSettings($config);
+    $st = ldapStatusRead();
+    if (empty($s['enabled'])) {
+        return ['state' => 'off', 'time' => $st ? date('Y-m-d H:i', $st['time']) : '', 'text' => ''];
+    }
+    if (!$st) {
+        return ['state' => 'unknown', 'time' => '', 'text' => ''];
+    }
+    return ['state' => $st['ok'] ? 'active' : 'down', 'time' => date('Y-m-d H:i', $st['time']), 'text' => $st['text']];
+}
+
+/** Пора ли проверять: интеграция включена и последняя проверка старше 12 часов (или её не было). */
+function ldapStatusDue($config = null) {
+    $s = ldapSettings($config);
+    if (empty($s['enabled'])) {
+        return false;
+    }
+    $st = ldapStatusRead();
+    return !$st || (time() - $st['time']) >= LDAP_STATUS_HOURS * 3600;
+}
+
+/** Проверка связи с сохранением результата. В журнал синхронизации пишется только смена состояния. */
+function ldapStatusCheck($config = null) {
+    $prev = ldapStatusRead();
+    $r = ldapTest($config);
+    $text = $r['success'] ? '' : (function_exists('__') ? __('ldap_err_' . ($r['code'] ?? 'connect')) : '');
+    ldapStatusStore($r['success'], $text);
+    if (!$prev || $prev['ok'] !== (bool)$r['success']) {
+        ldapLog('check', $r['success'], $r['success'] ? __('ldap_status_log_up') : sprintf(__('ldap_status_log_down'), $text));
+    }
+    return $r;
 }

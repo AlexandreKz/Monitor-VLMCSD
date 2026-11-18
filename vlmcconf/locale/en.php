@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.7
+// ВЕРСИЯ: 5.15.8
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1587,5 +1587,12 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'audit_act_ms_test' => 'Multi-server: check',
     'int_ms_wip' => 'Under development',
     'int_ms_wip_sub' => 'This section will appear in one of the next versions',
+    'ldap_status_active' => 'Active',
+    'ldap_status_down' => 'Not connected',
+    'ldap_status_off' => 'Disabled',
+    'ldap_status_unknown' => 'Not checked yet',
+    'ldap_status_checked' => 'Checked',
+    'ldap_status_log_up' => 'Auto-check: server reachable, status “Active”',
+    'ldap_status_log_down' => 'Auto-check: no connection, status “Not connected” (%s)',
 ];
 ?>

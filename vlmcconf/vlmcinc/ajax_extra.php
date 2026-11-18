@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.4.1
+// ВЕРСИЯ: 1.4.2
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -68,7 +68,7 @@ $xAction = (string)($_POST['ajax'] ?? '');
 // ============================================
 // П. 26: Active Directory / LDAP
 // ============================================
-if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_search', 'ldap_import', 'ldap_sync'], true)) {
+if (in_array($xAction, ['ldap_status', 'ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_search', 'ldap_import', 'ldap_sync'], true)) {
     require_once __DIR__ . '/ldap.php';
 
     if ($xAction === 'ldap_save_settings') {
@@ -144,7 +144,18 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
             }
             $config['integrations']['ad'] = $ad;
         });
+        if ($saved) {
+            ldapStatusReset(); // настройки изменились: прежний результат проверки уже не актуален
+        }
         xjson(['success' => $saved, 'message' => __($saved ? 'ldap_msg_saved' : 'msg_save_error')]);
+    }
+
+    // Статус для плашки; при устаревшем результате (12 ч) выполняется проверка
+    if ($xAction === 'ldap_status') {
+        if (ldapStatusDue()) {
+            ldapStatusCheck();
+        }
+        xjson(['success' => true, 'status' => ldapStatusView()]);
     }
 
     if ($xAction === 'ldap_test') {
@@ -164,6 +175,7 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
             : sprintf(__('ldap_log_test_fail'), __('ldap_err_' . $r['code']), $r['server'] ?? '', $r['tried'] ? implode(', ', $r['tried']) : $anon)
               . (!empty($r['detail']) ? ' · ' . sprintf(__('ldap_log_reason'), mb_substr($r['detail'], 0, 200)) : '');
         ldapLog('test', $r['success'], $logText);
+        ldapStatusStore($r['success'], $r['success'] ? '' : __('ldap_err_' . $r['code']));
         xjson(['success' => $r['success'], 'message' => $msg]);
     }
 

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.6
+// ВЕРСИЯ: 6.4.7
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -63,7 +63,7 @@ $permOptions = [
         <div class="sec-grid">
             <div class="sec-col" style="flex: 0.55;">
                 <div class="settings-card">
-                    <div class="settings-card-title">🔗 <?= __('ldap_conn_title') ?></div>
+                    <div class="settings-card-title sec-th">🔗 <?= __('ldap_conn_title') ?> <span id="ldStatus" class="sec-badge" style="margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
                     <label class="sec-switch">
                         <input type="checkbox" id="ldEnabled" <?= $ld['enabled'] ? 'checked' : '' ?> <?= $ldDis ?>>
                         <span><?= __('ldap_enable') ?></span>
@@ -494,12 +494,23 @@ function ldSave() {
         .then(d => secMsg('ldMsg', !!d.success, d.message || ''))
         .catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
+// Статус подключения: «Активен» / «Не подключен»; устаревший (12 ч) результат сервер перепроверяет сам
+function ldStatusShow(st) {
+    const el = document.getElementById('ldStatus');
+    if (!el || !st) { return; }
+    const map = { active: ['ok', <?= json_encode('● ' . __('ldap_status_active')) ?>], down: ['err', <?= json_encode('● ' . __('ldap_status_down')) ?>], off: ['', <?= json_encode('○ ' . __('ldap_status_off')) ?>], unknown: ['', <?= json_encode('○ ' . __('ldap_status_unknown')) ?>] };
+    const m = map[st.state] || map.unknown;
+    el.className = 'sec-badge' + (m[0] ? ' ' + m[0] : '');
+    el.textContent = m[1];
+    el.title = (st.time ? <?= json_encode(__('ldap_status_checked')) ?> + ' ' + st.time : '') + (st.text ? ' — ' + st.text : '');
+}
+function ldStatusLoad() { secPost({ ajax: 'ldap_status' }).then(d => { if (d.success) { ldStatusShow(d.status); } }).catch(() => {}); }
 function ldTest() {
     secMsg('ldMsg', true, <?= json_encode(__('ldap_testing')) ?>);
     // проверяется то, что сейчас в форме: сначала сохраняем поля, затем проверяем связь
     secPost(Object.assign({ ajax: 'ldap_save_settings' }, ldCollect())).then(function (sv) {
         if (!sv.success) { secMsg('ldMsg', false, sv.message || ''); return null; }
-        return secPost({ ajax: 'ldap_test' }).then(d => secMsg('ldMsg', !!d.success, d.message || ''));
+        return secPost({ ajax: 'ldap_test' }).then(d => { secMsg('ldMsg', !!d.success, d.message || ''); ldStatusLoad(); });
     }).catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function ldFirstSearch() { if (!ldFound) { ldFound = true; ldSearch(); } }
@@ -701,5 +712,5 @@ function msDelete(id) {
     if (!s || !confirm(<?= json_encode(__('ms_confirm_delete')) ?>.replace('%s', s.name))) { return; }
     secPost({ ajax: 'ms_delete', id: id }).then(function (d) { secMsg('msMsg', d.success, d.message); msLoad(); });
 }
-document.addEventListener('DOMContentLoaded', function () { whLoad(); clLoad(); msLoad(); });
+document.addEventListener('DOMContentLoaded', function () { whLoad(); clLoad(); msLoad(); ldStatusLoad(); });
 </script>
