@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.18.0
+// ВЕРСИЯ: 5.19.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1679,30 +1679,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
 <body>
     <div class="container">
         <?php
-        // Устаревшую автопроверку обновлений выполняет фоновый запрос после загрузки страницы
-        // (результат показывает сообщение в шапке раздела «Инструменты», см. sections/update.php)
-        $updBgCheck = false;
-        if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
-            $updBgUpdater = new Updater();
-            $updBgSettings = $updBgUpdater->getSettings();
-            $updBgCheck = $updBgSettings['auto_check'] && $updBgUpdater->isStale($updBgUpdater->loadState(), $updBgSettings['interval']);
-        }
+        // Фоновые задачи (проверка обновлений, статус LDAP, очистка журнала…) выполняет один фоновый запрос после загрузки страницы:
+        // сервер сам запускает только просроченные задачи (vlmcinc/scheduler.php). Консольный запуск — cron.php
+        $schedCanUpdate = hasPermission($currentUserPermissions, PERM_TOOLS_EDIT);
         ?>
         <div class="header">
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                 <h1>⚙️ KMS MONITOR • <?= __('menu_settings') ?></h1>
                 <span class="version-badge">v<?= CONFIG_VERSION ?></span>
-                <?php if ($updBgCheck): ?>
                 <script>
                 window.addEventListener('load', function () {
                     var fd = new FormData();
-                    fd.append('ajax', 'update_auto_check');
+                    fd.append('ajax', 'sched_run');
                     fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
-                        if (d && d.success && d.enabled && window.vlmcUpdateToast) window.vlmcUpdateToast(d, false);
+                        if (!d || !d.success) return null;
+                        window.dispatchEvent(new CustomEvent('vlmc-sched-done', { detail: d.ran || {} }));
+                        <?php if ($schedCanUpdate): ?>
+                        // проверка обновлений выполнена планировщиком: результат берётся из сохранённого и показывается в шапке
+                        if (d.ran && d.ran.update_check) {
+                            var f2 = new FormData();
+                            f2.append('ajax', 'update_auto_check');
+                            return fetch('', { method: 'POST', body: f2 }).then(function (r) { return r.json(); }).then(function (u) {
+                                if (u && u.success && u.enabled && window.vlmcUpdateToast) window.vlmcUpdateToast(u, false);
+                            });
+                        }
+                        <?php endif; ?>
+                        return null;
                     }).catch(function () {});
                 });
                 </script>
-                <?php endif; ?>
             </div>
             <a href="../vlmc.php" class="back-link">← <?= __('back') ?></a>
         </div>

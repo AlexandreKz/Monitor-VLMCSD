@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.4.2
+// ВЕРСИЯ: 1.4.3
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -150,11 +150,8 @@ if (in_array($xAction, ['ldap_status', 'ldap_save_settings', 'ldap_test', 'ldap_
         xjson(['success' => $saved, 'message' => __($saved ? 'ldap_msg_saved' : 'msg_save_error')]);
     }
 
-    // Статус для плашки; при устаревшем результате (12 ч) выполняется проверка
+    // Статус для плашки; проверку раз в 12 часов выполняет планировщик (vlmcinc/scheduler.php)
     if ($xAction === 'ldap_status') {
-        if (ldapStatusDue()) {
-            ldapStatusCheck();
-        }
         xjson(['success' => true, 'status' => ldapStatusView()]);
     }
 
@@ -667,4 +664,33 @@ if (in_array($xAction, ['ms_list', 'ms_save', 'ms_delete', 'ms_test'], true)) {
         auditLog('ms_test', sprintf(__($r['ok'] ? 'ms_log_test_ok' : 'ms_log_test_fail'), (string)$found['name'], $host, $r['ok'] ? ($r['version'] !== '' ? $r['version'] : '—') : $msText($r)), $r['ok'] ? 'ok' : 'error');
         xjson(['success' => $r['ok'], 'message' => $r['ok'] ? sprintf(__('ms_msg_test_ok'), $r['version'] !== '' ? $r['version'] : '—') : $msText($r)]);
     }
+}
+
+// ============================================
+// Фоновые задачи (планировщик): запуск просроченных, список для вкладки «Фоновые», запуск одной задачи вручную
+// ============================================
+if (in_array($xAction, ['sched_run', 'sched_view', 'sched_run_now'], true)) {
+    require_once __DIR__ . '/scheduler.php';
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close(); // задачи ходят в сеть: не держим сессию
+    }
+    if ($xAction === 'sched_run') {
+        $r = schedRun('web');
+        xjson(['success' => true, 'busy' => $r['busy'], 'ran' => $r['ran']]);
+    }
+    if ($xAction === 'sched_view') {
+        xjson(['success' => true] + schedView());
+    }
+    $id = (string)($_POST['task'] ?? '');
+    $tasks = schedTasks();
+    if (!isset($tasks[$id]) || empty($tasks[$id]['enabled'])) {
+        xjson(['success' => false, 'message' => __('sched_run_unavailable')]);
+    }
+    $r = schedRun('manual', $id);
+    if (!empty($r['busy'])) {
+        xjson(['success' => false, 'message' => __('sched_busy')]);
+    }
+    $res = $r['ran'][$id] ?? ['ok' => false, 'text' => ''];
+    auditLog('sched_run_now', sprintf(__('sched_log_run_now'), $tasks[$id]['label'], $res['text']), $res['ok'] ? 'ok' : 'error');
+    xjson(['success' => $res['ok'], 'message' => $res['text'], 'view' => schedView()]);
 }

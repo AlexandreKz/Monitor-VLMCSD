@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.3.4
+// ВЕРСИЯ: 3.3.5
 // ДАТА: 2026-11-18
 // @description: Секция «Журнал событий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -10,6 +10,9 @@ if (basename($_SERVER['PHP_SELF']) === 'audit.php') {
     http_response_code(403);
     exit('Access denied');
 }
+
+require_once __DIR__ . '/../vlmcinc/section_ui.php';
+vlmcSectionUi($themeCSS);
 
 $canAuditAdmin = hasPermission($currentUserPermissions, PERM_ADMIN_FULL);
 
@@ -46,9 +49,15 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 ?>
 
 <div id="section-audit" class="settings-section <?= $activeSection === 'audit' ? 'active' : '' ?>">
-    <div class="section-title">
+    <div class="section-title sec-title">
         <span>📜 <?= __('audit_title') ?></span>
+        <div class="sec-tabs">
+            <button class="sec-tab-btn active" data-for="general" onclick="secTab('section-audit','general',this); if (window.fitAuditTable) setTimeout(window.fitAuditTable, 0);">📋 <?= __('audit_tab_general') ?></button>
+            <button class="sec-tab-btn" data-for="bg" onclick="secTab('section-audit','bg',this); schedLoad();">⏱️ <?= __('audit_tab_bg') ?></button>
+        </div>
     </div>
+
+    <div class="sec-tab-content active" data-tab="general">
 
     <div class="audit-filters">
         <div class="audit-f">
@@ -149,7 +158,87 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px; margin-left: auto;">🗑️ <?= __('audit_clear') ?></button>
         <?php endif; ?>
     </div>
+    </div><!-- /tab general -->
+
+    <!-- ===== Фоновые задачи ===== -->
+    <div class="sec-tab-content" data-tab="bg">
+        <div class="settings-card">
+            <div class="settings-card-title sec-th">⏱️ <?= __('sched_title') ?>
+                <span id="schedMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
+            <div class="sec-note"><?= __('sched_intro') ?></div>
+            <div class="sec-scroll">
+                <table class="sec-table">
+                    <thead><tr><th><?= __('sched_col_task') ?></th><th><?= __('sched_col_every') ?></th><th><?= __('sched_col_last') ?></th><th><?= __('sched_col_result') ?></th><th><?= __('sched_col_next') ?></th><th></th></tr></thead>
+                    <tbody id="schedRows"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="settings-card">
+            <div class="settings-card-title sec-th">🖥️ <?= __('sched_cron_title') ?> <span id="schedCronBadge" class="sec-badge" style="margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
+            <div class="sec-note" id="schedCronText"></div>
+            <div class="sec-code" id="schedCronCmd" style="cursor: pointer;"></div>
+        </div>
+        <div class="settings-card">
+            <div class="settings-card-title sec-th">🕘 <?= __('sched_hist_title') ?></div>
+            <div class="sec-scroll sec-tall">
+                <table class="sec-table">
+                    <thead><tr><th><?= __('sched_hist_col_time') ?></th><th><?= __('sched_col_task') ?></th><th><?= __('sched_col_result') ?></th><th><?= __('sched_col_via') ?></th><th><?= __('sched_hist_col_ms') ?></th></tr></thead>
+                    <tbody id="schedHist"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+var schedStr = {
+    never: <?= json_encode(__('sched_never')) ?>, disabled: <?= json_encode(__('sched_disabled')) ?>, run: <?= json_encode(__('sched_run_btn')) ?>, running: <?= json_encode(__('sched_running')) ?>,
+    everyH: <?= json_encode(__('sched_every_h')) ?>, everyD: <?= json_encode(__('sched_every_d')) ?>, everyM: <?= json_encode(__('sched_every_m')) ?>,
+    via: { web: <?= json_encode(__('sched_via_web')) ?>, cli: <?= json_encode(__('sched_via_cli')) ?>, manual: <?= json_encode(__('sched_via_manual')) ?> },
+    histEmpty: <?= json_encode(__('sched_hist_empty')) ?>, loadError: <?= json_encode(__('sched_load_error')) ?>,
+    cronActive: <?= json_encode(__('sched_cron_active')) ?>, cronNone: <?= json_encode(__('sched_cron_none')) ?>, cronStale: <?= json_encode(__('sched_cron_stale')) ?>,
+    cronLinux: <?= json_encode(__('sched_cron_text_linux')) ?>, cronWindows: <?= json_encode(__('sched_cron_text_windows')) ?>, copied: <?= json_encode(__('sched_copied')) ?>
+};
+function schedEvery(sec) {
+    if (sec >= 86400) { return schedStr.everyD; }
+    if (sec >= 3600) { return schedStr.everyH.replace('%s', Math.round(sec / 3600)); }
+    return schedStr.everyM.replace('%s', Math.round(sec / 60));
+}
+function schedRender(d) {
+    var rows = document.getElementById('schedRows');
+    rows.innerHTML = d.tasks.map(function (t) {
+        var last = t.time ? '<span class="sec-mono">' + secEsc(t.time) + '</span> <span class="ix-sub">(' + secEsc(schedStr.via[t.via] || t.via) + ')</span>' : '<span class="ix-sub">' + secEsc(schedStr.never) + '</span>';
+        var res = t.ok === null ? '' : '<span class="sec-badge ' + (t.ok ? 'ok' : 'err') + '">' + (t.ok ? 'OK' : 'ERR') + '</span> ' + secEsc(t.text);
+        var act = (t.enabled && <?= $canAuditAdmin ? 'true' : 'false' ?>) ? '<button type="button" class="sec-btn sm" onclick="schedRunNow(\'' + t.id + '\', this)">▶ ' + secEsc(schedStr.run) + '</button>' : '';
+        return '<tr><td>' + secEsc(t.label) + '</td><td>' + (t.enabled ? secEsc(schedEvery(t.interval)) : '<span class="ix-sub">' + secEsc(schedStr.disabled) + '</span>') + '</td><td>' + last + '</td><td>' + res + '</td><td class="sec-mono">' + secEsc(t.enabled ? t.next : '') + '</td><td style="white-space: nowrap;">' + act + '</td></tr>';
+    }).join('');
+    var h = document.getElementById('schedHist');
+    h.innerHTML = d.history.length ? d.history.map(function (r) {
+        return '<tr><td class="sec-mono" style="white-space: nowrap;">' + secEsc(r.time) + '</td><td>' + secEsc(r.task) + '</td><td><span class="sec-badge ' + (r.ok ? 'ok' : 'err') + '">' + (r.ok ? 'OK' : 'ERR') + '</span> ' + secEsc(r.text) + '</td><td>' + secEsc(schedStr.via[r.via] || r.via) + '</td><td class="sec-mono">' + r.ms + '</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="sec-empty">' + secEsc(schedStr.histEmpty) + '</td></tr>';
+    var b = document.getElementById('schedCronBadge'), c = d.cron;
+    if (c.active) { b.className = 'sec-badge ok'; b.textContent = '● ' + schedStr.cronActive.replace('%s', c.time); }
+    else if (c.time) { b.className = 'sec-badge err'; b.textContent = '● ' + schedStr.cronStale.replace('%s', c.time); }
+    else { b.className = 'sec-badge'; b.textContent = '○ ' + schedStr.cronNone; }
+    document.getElementById('schedCronText').textContent = d.cron_cmd.os === 'windows' ? schedStr.cronWindows : schedStr.cronLinux;
+    var cmd = document.getElementById('schedCronCmd');
+    cmd.textContent = d.cron_cmd.cmd;
+    cmd.onclick = function () { secCopy(d.cron_cmd.cmd, function () { secMsg('schedMsg', true, schedStr.copied); }); };
+}
+function schedLoad() {
+    secPost({ ajax: 'sched_view' }).then(function (d) { if (d.success) { schedRender(d); } else { secMsg('schedMsg', false, schedStr.loadError); } })
+        .catch(function () { secMsg('schedMsg', false, schedStr.loadError); });
+}
+function schedRunNow(id, btn) {
+    btn.disabled = true; btn.textContent = '⏳ ' + schedStr.running;
+    secPost({ ajax: 'sched_run_now', task: id }).then(function (d) {
+        secMsg('schedMsg', !!d.success, d.message || '');
+        if (d.view) { schedRender(d.view); } else { schedLoad(); }
+        if (window.loadAudit) { window.loadAudit(); }
+    }).catch(function () { schedLoad(); });
+}
+window.addEventListener('vlmc-sched-done', function () { if (document.querySelector('#section-audit [data-tab="bg"].active')) { schedLoad(); } });
+</script>
 
 <style>
 .audit-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: end; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
@@ -365,7 +454,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         if (!cont) return;
         const wr = wrap.getBoundingClientRect();
         const top = wr.top - cont.getBoundingClientRect().top + cont.scrollTop;
-        const below = sec.lastElementChild.getBoundingClientRect().bottom - wr.bottom;   // всё, что ниже таблицы
+        const below = sec.querySelector('[data-tab="general"]').lastElementChild.getBoundingClientRect().bottom - wr.bottom;   // всё, что ниже таблицы
         const pad = parseFloat(getComputedStyle(cont).paddingBottom) || 0;
         const h = cont.clientHeight - top - below - pad - 4;
         wrap.style.maxHeight = 'none';

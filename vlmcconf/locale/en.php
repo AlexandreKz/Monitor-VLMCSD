@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.8
+// ВЕРСИЯ: 5.15.9
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1594,5 +1594,48 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_status_checked' => 'Checked',
     'ldap_status_log_up' => 'Auto-check: server reachable, status “Active”',
     'ldap_status_log_down' => 'Auto-check: no connection, status “Not connected” (%s)',
+    'audit_tab_general' => 'General',
+    'audit_tab_bg' => 'Background',
+    'sched_title' => 'Background tasks',
+    'sched_intro' => 'Tasks run automatically: when the panel is opened (only overdue ones) and, if an OS scheduler is set up, on schedule without opening the panel.',
+    'sched_col_task' => 'Task',
+    'sched_col_every' => 'Period',
+    'sched_col_last' => 'Last run',
+    'sched_col_result' => 'Result',
+    'sched_col_next' => 'Next',
+    'sched_col_via' => 'From',
+    'sched_disabled' => 'Disabled',
+    'sched_never' => 'never run',
+    'sched_run_btn' => 'Run now',
+    'sched_running' => 'Running…',
+    'sched_every_h' => 'every %s h',
+    'sched_every_d' => 'once a day',
+    'sched_every_m' => 'every %s min',
+    'sched_via_web' => 'panel',
+    'sched_via_cli' => 'console',
+    'sched_via_manual' => 'manual',
+    'sched_hist_title' => 'Run history',
+    'sched_hist_empty' => 'No runs yet',
+    'sched_hist_col_time' => 'Time',
+    'sched_hist_col_ms' => 'ms',
+    'sched_cron_title' => 'Run on OS schedule',
+    'sched_cron_active' => 'OS scheduler is working (last run: %s)',
+    'sched_cron_none' => 'OS scheduler is not set up — tasks run only when the panel is opened',
+    'sched_cron_stale' => 'OS scheduler has not run for a long time (last run: %s)',
+    'sched_cron_text_linux' => 'To run tasks without opening the panel, add this line to cron (sudo crontab -e -u root) — click it to copy:',
+    'sched_cron_text_windows' => 'To run tasks without opening the panel, run this in an administrator command prompt — click the command to copy:',
+    'sched_copied' => 'Copied',
+    'sched_t_update' => '🔄 Project update check',
+    'sched_t_ldap' => '🏢 LDAP connection status',
+    'sched_t_audit' => '🧹 Event log cleanup',
+    'sched_err' => 'error',
+    'sched_update_yes' => 'update available',
+    'sched_update_no' => 'up to date',
+    'sched_audit_removed' => 'records removed: %s',
+    'sched_run_unavailable' => 'Task unavailable or disabled',
+    'sched_busy' => 'Background tasks are already running, try again in a minute',
+    'sched_load_error' => 'Could not load the task list',
+    'sched_log_run_now' => 'Background task “%s” run manually: %s',
+    'audit_act_sched_run_now' => 'Background task: manual run',
 ];
 ?>

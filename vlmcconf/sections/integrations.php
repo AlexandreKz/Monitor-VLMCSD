@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.7
+// ВЕРСИЯ: 6.4.8
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -510,7 +510,7 @@ function ldTest() {
     // проверяется то, что сейчас в форме: сначала сохраняем поля, затем проверяем связь
     secPost(Object.assign({ ajax: 'ldap_save_settings' }, ldCollect())).then(function (sv) {
         if (!sv.success) { secMsg('ldMsg', false, sv.message || ''); return null; }
-        return secPost({ ajax: 'ldap_test' }).then(d => { secMsg('ldMsg', !!d.success, d.message || ''); ldStatusLoad(); });
+        return secPost({ ajax: 'ldap_test' }).then(d => { secMsg('ldMsg', !!d.success, d.message || ''); ldStatusLoad(); window.addEventListener('vlmc-sched-done', ldStatusLoad); });
     }).catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function ldFirstSearch() { if (!ldFound) { ldFound = true; ldSearch(); } }
