@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.1.2
+// ВЕРСИЯ: 3.2.0
 // ДАТА: 2026-11-17
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -477,6 +477,11 @@ function notifySendVia(array $c, $subject, $body) {
 function notifyEmit($event, $title, $text = '', array $ctx = [], ?array $only = null) {
     try {
         if (!isset(notifyCatalog()[$event]) || !empty(notifyCatalog()[$event]['soon'])) { return; }
+        if ($only === null) {
+            // Webhook-эндпоинты (Интеграции → Webhook) подписываются на события независимо от правил уведомлений
+            require_once __DIR__ . '/webhook.php';
+            whEmit($event, $title, $text, $ctx);
+        }
         $s = notifyLoad();
         $jobs = [];
         foreach ($s['rules'] as $rule) {

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.16.2
+// ВЕРСИЯ: 3.17.0
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -78,6 +78,19 @@ function ajaxActionPermissions() {
         'ldap_search'           => PERM_INTEGRATIONS_EDIT,
         'ldap_import'           => PERM_INTEGRATIONS_EDIT,
         'ldap_sync'             => PERM_INTEGRATIONS_EDIT,
+
+        // Интеграции: Webhook и Cloud Storage
+        'webhook_list'          => PERM_INTEGRATIONS_VIEW,
+        'webhook_save'          => PERM_INTEGRATIONS_EDIT,
+        'webhook_delete'        => PERM_INTEGRATIONS_EDIT,
+        'webhook_toggle'        => PERM_INTEGRATIONS_EDIT,
+        'webhook_test'          => PERM_INTEGRATIONS_EDIT,
+        'cloud_list'            => PERM_INTEGRATIONS_VIEW,
+        'cloud_save'            => PERM_INTEGRATIONS_EDIT,
+        'cloud_delete'          => PERM_INTEGRATIONS_EDIT,
+        'cloud_toggle'          => PERM_INTEGRATIONS_EDIT,
+        'cloud_test'            => PERM_INTEGRATIONS_EDIT,
+
 
         // Журнал действий
         'get_audit'             => PERM_LOGS_VIEW,

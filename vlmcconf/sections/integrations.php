@@ -1,10 +1,10 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.3.2
+// ВЕРСИЯ: 6.4.0
 // ДАТА: 2026-11-18
-// @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
-// @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
+// @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал действий
+// @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, audit log
 // ============================================
 
 if (!defined('VLMCS_CONF')) {
@@ -201,16 +201,32 @@ $permOptions = [
     <!-- ===== Cloud Storage ===== -->
     <div class="sec-tab-content" data-tab="cloud">
         <div class="settings-card">
-            <div class="settings-card-title">☁️ <?= __('int_tab_cloud') ?></div>
-            <div class="sec-note"><?= __('int_cloud_soon') ?></div>
+            <div class="settings-card-title">☁️ <?= __('int_cl_title') ?>
+                <span id="clMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
+            <div class="sec-note"><?= __('int_cl_intro') ?></div>
+            <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="clEdit('')">➕ <?= __('int_cl_add') ?></button></div><?php endif; ?>
+            <div class="sec-scroll">
+                <table class="sec-table">
+                    <thead><tr><th><?= __('cl_col_name') ?></th><th><?= __('cl_col_type') ?></th><th><?= __('cl_col_host') ?></th><th><?= __('cl_col_what') ?></th><th><?= __('cl_col_schedule') ?></th><th><?= __('cl_col_on') ?></th><th></th></tr></thead>
+                    <tbody id="clRows"><tr><td colspan="7" class="sec-empty"><?= __('int_cl_empty') ?></td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- ===== Webhook ===== -->
     <div class="sec-tab-content" data-tab="webhook">
         <div class="settings-card">
-            <div class="settings-card-title">🔔 <?= __('int_tab_webhook') ?></div>
-            <div class="sec-note"><?= __('int_webhook_soon') ?></div>
+            <div class="settings-card-title">🔔 <?= __('int_wh_title') ?>
+                <span id="whMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
+            <div class="sec-note"><?= __('int_wh_intro') ?></div>
+            <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="whEdit('')">➕ <?= __('int_wh_add') ?></button></div><?php endif; ?>
+            <div class="sec-scroll">
+                <table class="sec-table">
+                    <thead><tr><th><?= __('wh_col_name') ?></th><th><?= __('wh_col_host') ?></th><th><?= __('wh_col_format') ?></th><th><?= __('wh_col_events') ?></th><th><?= __('wh_col_last') ?></th><th><?= __('wh_col_on') ?></th><th></th></tr></thead>
+                    <tbody id="whRows"><tr><td colspan="7" class="sec-empty"><?= __('int_wh_empty') ?></td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -252,6 +268,68 @@ $permOptions = [
         <div class="ld-foot">
             <button type="button" class="sec-btn" onclick="ldGroupsClose()"><?= __('cancel') ?></button>
             <button type="button" class="sec-btn primary" onclick="ldGroupsApply()"><?= __('ldap_groups_apply') ?></button>
+        </div>
+    </div>
+</div>
+
+<style>
+.ix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; overflow-y: auto; padding: 2px; }
+.ix-grid label { display: block; font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 3px; }
+.ix-grid .full { grid-column: 1 / -1; }
+.ix-checks { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.ix-checks label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: <?= $themeCSS['text'] ?>; margin: 0; cursor: pointer; }
+.ix-checks input, .ix-grid input[type=checkbox] { accent-color: <?= $themeCSS['primary'] ?>; }
+.ix-sub { color: <?= $themeCSS['muted'] ?>; font-size: 11px; }
+@media (max-width: 560px) { .ix-grid { grid-template-columns: 1fr; } }
+</style>
+<div id="whOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('whOverlay')">
+    <div class="ld-modal">
+        <h3>🔔 <?= __('int_wh_edit') ?></h3>
+        <div class="ix-grid">
+            <div><label><?= __('wh_field_name') ?></label><input type="text" id="whName" class="form-control" maxlength="60"></div>
+            <div><label><?= __('wh_field_format') ?></label><select id="whFormat" class="form-control">
+                <option value="json"><?= __('wh_fmt_json') ?></option><option value="slack"><?= __('wh_fmt_slack') ?></option><option value="text"><?= __('wh_fmt_text') ?></option></select></div>
+            <div class="full"><label><?= __('wh_field_url') ?></label><input type="text" id="whUrl" class="form-control" autocomplete="off" placeholder="https://"><div class="ix-sub" id="whUrlHint"></div></div>
+            <div><label><?= __('wh_field_secret') ?></label><input type="password" id="whSecret" class="form-control" autocomplete="new-password"><div class="ix-sub" id="whSecretHint"></div>
+                <label id="whSecretClearBox" style="display: none; margin-top: 4px;"><input type="checkbox" id="whSecretClear"> <?= __('wh_field_secret_clear') ?></label></div>
+            <div><label><?= __('wh_field_timeout') ?></label><input type="number" id="whTimeout" class="form-control" min="2" max="30" value="5"></div>
+            <div class="full"><label><?= __('wh_field_events') ?></label><div class="ix-checks" id="whEvents"></div></div>
+            <div class="full"><label style="display: inline-flex; gap: 6px; align-items: center; cursor: pointer;"><input type="checkbox" id="whEnabled" checked> <?= __('wh_field_enabled') ?></label></div>
+        </div>
+        <div class="ld-foot" style="margin-top: 12px;">
+            <span id="whModalMsg" class="sec-msg" style="margin-right: auto;"></span>
+            <button type="button" class="sec-btn" onclick="ixClose('whOverlay')"><?= __('cancel') ?></button>
+            <button type="button" class="sec-btn primary" onclick="whSave()"><?= __('save') ?></button>
+        </div>
+    </div>
+</div>
+<div id="clOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('clOverlay')">
+    <div class="ld-modal">
+        <h3>☁️ <?= __('int_tab_cloud') ?></h3>
+        <div class="ix-grid">
+            <div><label><?= __('cl_field_name') ?></label><input type="text" id="clName" class="form-control" maxlength="60"></div>
+            <div><label><?= __('cl_field_type') ?></label><select id="clType" class="form-control" onchange="clTypeChanged(true)">
+                <option value="sftp">SFTP</option><option value="ftp">FTP</option><option value="ftps">FTPS</option><option value="webdav">WebDAV</option><option value="s3">S3</option></select></div>
+            <div id="clHostBox"><label id="clHostLbl"><?= __('cl_field_host') ?></label><input type="text" id="clHost" class="form-control" autocomplete="off"></div>
+            <div id="clPortBox"><label><?= __('cl_field_port') ?></label><input type="number" id="clPort" class="form-control" min="1" max="65535"></div>
+            <div id="clBucketBox"><label><?= __('cl_field_bucket') ?></label><input type="text" id="clBucket" class="form-control" autocomplete="off"></div>
+            <div id="clRegionBox"><label><?= __('cl_field_region') ?></label><input type="text" id="clRegion" class="form-control" autocomplete="off" placeholder="us-east-1"></div>
+            <div><label><?= __('cl_field_user') ?></label><input type="text" id="clUser" class="form-control" autocomplete="off"></div>
+            <div><label><?= __('cl_field_pass') ?></label><input type="password" id="clPass" class="form-control" autocomplete="new-password"><div class="ix-sub" id="clPassHint"></div>
+                <label id="clPassClearBox" style="display: none; margin-top: 4px;"><input type="checkbox" id="clPassClear"> <?= __('cl_field_pass_clear') ?></label></div>
+            <div class="full"><label><?= __('cl_field_path') ?></label><input type="text" id="clPath" class="form-control" autocomplete="off" placeholder="/backups/kms"></div>
+            <div class="full"><label><?= __('cl_field_what') ?></label><div class="ix-checks" id="clWhat">
+                <?php foreach (['config', 'users', 'log', 'audit'] as $w): ?><label><input type="checkbox" value="<?= $w ?>"> <?= __('cl_what_' . $w) ?></label><?php endforeach; ?></div></div>
+            <div><label><?= __('cl_field_schedule') ?></label><select id="clSchedule" class="form-control">
+                <option value="off"><?= __('cl_sched_off') ?></option><option value="daily"><?= __('cl_sched_daily') ?></option><option value="weekly"><?= __('cl_sched_weekly') ?></option></select></div>
+            <div><label><?= __('cl_field_time') ?></label><input type="time" id="clTime" class="form-control" value="03:00"></div>
+            <div><label><?= __('cl_field_keep') ?></label><input type="number" id="clKeep" class="form-control" min="1" max="60" value="7"></div>
+            <div><label style="display: inline-flex; gap: 6px; align-items: center; cursor: pointer; margin-top: 18px;"><input type="checkbox" id="clEnabled" checked> <?= __('cl_field_enabled') ?></label></div>
+        </div>
+        <div class="ld-foot" style="margin-top: 12px;">
+            <span id="clModalMsg" class="sec-msg" style="margin-right: auto;"></span>
+            <button type="button" class="sec-btn" onclick="ixClose('clOverlay')"><?= __('cancel') ?></button>
+            <button type="button" class="sec-btn primary" onclick="clSave()"><?= __('save') ?></button>
         </div>
     </div>
 </div>
@@ -435,4 +513,113 @@ document.addEventListener('DOMContentLoaded', function () {
     if (['conn', 'users', 'log'].indexOf(sub) < 0) sub = 'conn';
     ldSub(sub);
 });
+
+// ===== Webhook =====
+var whList = [], whEventList = [], whCur = '';
+function ixClose(id) { document.getElementById(id).classList.remove('open'); }
+function ixTime(t) { return t ? t.replace('T', ' ').slice(0, 16) : ''; }
+function whLoad() {
+    secPost({ ajax: 'webhook_list' }).then(function (d) {
+        if (!d.success) { return; }
+        whList = d.hooks || []; whEventList = d.events || [];
+        var tb = document.getElementById('whRows');
+        if (!whList.length) { tb.innerHTML = '<tr><td colspan="7" class="sec-empty">' + secEsc(<?= json_encode(__('int_wh_empty')) ?>) + '</td></tr>'; return; }
+        tb.innerHTML = whList.map(function (h) {
+            var last = h.last_time ? '<span class="sec-badge ' + (h.last_ok ? 'ok' : 'err') + '">' + secEsc(h.last_ok ? 'OK' : 'ERR') + '</span> <span class="sec-mono">' + secEsc(ixTime(h.last_time)) + '</span>' + (h.last_ok ? '' : '<div class="ix-sub">' + secEsc(h.last_text) + '</div>') : '<span class="ix-sub">' + secEsc(<?= json_encode(__('wh_never')) ?>) + '</span>';
+            var act = ldCanEdit ? '<button type="button" class="sec-btn sm" onclick="whTest(\'' + h.id + '\')">🧪 ' + secEsc(<?= json_encode(__('wh_test')) ?>) + '</button> <button type="button" class="sec-btn sm" onclick="whEdit(\'' + h.id + '\')">✏️</button> <button type="button" class="sec-btn sm" onclick="whDelete(\'' + h.id + '\')">🗑️</button>' : '';
+            return '<tr><td>' + secEsc(h.name) + '</td><td class="sec-mono">' + secEsc(h.scheme + '://' + h.host) + '</td><td>' + secEsc(h.format) + '</td><td>' + secEsc(<?= json_encode(__('wh_events_n')) ?>.replace('%d', (h.events || []).length)) + '</td><td>' + last
+                + '</td><td><input type="checkbox" ' + (h.enabled ? 'checked ' : '') + (ldCanEdit ? '' : 'disabled ') + 'onchange="whToggle(\'' + h.id + '\', this.checked)"></td><td style="white-space: nowrap;">' + act + '</td></tr>';
+        }).join('');
+    });
+}
+function whEdit(id) {
+    var h = whList.filter(function (x) { return x.id === id; })[0] || { name: '', format: 'json', timeout: 5, events: [], enabled: true, host: '', has_secret: false };
+    whCur = id;
+    document.getElementById('whName').value = h.name; document.getElementById('whFormat').value = h.format;
+    document.getElementById('whUrl').value = ''; document.getElementById('whUrlHint').textContent = id ? (h.scheme + '://' + h.host + ' — ' + <?= json_encode(__('wh_field_url_keep')) ?>) : '';
+    document.getElementById('whSecret').value = ''; document.getElementById('whSecretHint').textContent = h.has_secret ? <?= json_encode(__('wh_field_secret_keep')) ?> : '';
+    document.getElementById('whSecretClearBox').style.display = h.has_secret ? '' : 'none'; document.getElementById('whSecretClear').checked = false;
+    document.getElementById('whTimeout').value = h.timeout || 5; document.getElementById('whEnabled').checked = !!h.enabled;
+    document.getElementById('whEvents').innerHTML = whEventList.map(function (e) {
+        return '<label><input type="checkbox" value="' + secEsc(e.code) + '"' + ((h.events || []).indexOf(e.code) >= 0 ? ' checked' : '') + '> ' + secEsc(e.label) + '</label>';
+    }).join('');
+    document.getElementById('whModalMsg').className = 'sec-msg';
+    document.getElementById('whOverlay').classList.add('open');
+}
+function whSave() {
+    var data = { name: document.getElementById('whName').value, format: document.getElementById('whFormat').value, url: document.getElementById('whUrl').value,
+        secret: document.getElementById('whSecret').value, clear_secret: document.getElementById('whSecretClear').checked, timeout: document.getElementById('whTimeout').value,
+        enabled: document.getElementById('whEnabled').checked,
+        events: Array.prototype.map.call(document.querySelectorAll('#whEvents input:checked'), function (i) { return i.value; }) };
+    secPost({ ajax: 'webhook_save', id: whCur, data: JSON.stringify(data) }).then(function (d) {
+        if (d.success) { ixClose('whOverlay'); secMsg('whMsg', true, d.message); whLoad(); } else { secMsg('whModalMsg', false, d.message); }
+    });
+}
+function whToggle(id, on) { secPost({ ajax: 'webhook_toggle', id: id, enabled: on ? '1' : '0' }).then(function (d) { secMsg('whMsg', d.success, d.message); whLoad(); }); }
+function whDelete(id) {
+    var h = whList.filter(function (x) { return x.id === id; })[0];
+    if (!h || !confirm(<?= json_encode(__('wh_confirm_delete')) ?>.replace('%s', h.name))) { return; }
+    secPost({ ajax: 'webhook_delete', id: id }).then(function (d) { secMsg('whMsg', d.success, d.message); whLoad(); });
+}
+function whTest(id) { secPost({ ajax: 'webhook_test', id: id }).then(function (d) { secMsg('whMsg', d.success, d.message); whLoad(); }); }
+
+// ===== Cloud Storage =====
+var clList = [], clCur = '';
+var clPorts = { sftp: 22, ftp: 21, ftps: 21, webdav: '', s3: '' };
+var clWhatStr = { config: <?= json_encode(__('cl_what_config')) ?>, users: <?= json_encode(__('cl_what_users')) ?>, log: <?= json_encode(__('cl_what_log')) ?>, audit: <?= json_encode(__('cl_what_audit')) ?> };
+var clSchedStr = { off: <?= json_encode(__('cl_sched_off')) ?>, daily: <?= json_encode(__('cl_sched_daily')) ?>, weekly: <?= json_encode(__('cl_sched_weekly')) ?> };
+function clLoad() {
+    secPost({ ajax: 'cloud_list' }).then(function (d) {
+        if (!d.success) { return; }
+        clList = d.targets || [];
+        var tb = document.getElementById('clRows');
+        if (!clList.length) { tb.innerHTML = '<tr><td colspan="7" class="sec-empty">' + secEsc(<?= json_encode(__('int_cl_empty')) ?>) + '</td></tr>'; return; }
+        tb.innerHTML = clList.map(function (t) {
+            var act = ldCanEdit ? '<button type="button" class="sec-btn sm" onclick="clTest(\'' + t.id + '\')">🧪 ' + secEsc(<?= json_encode(__('cl_test')) ?>) + '</button> <button type="button" class="sec-btn sm" onclick="clEdit(\'' + t.id + '\')">✏️</button> <button type="button" class="sec-btn sm" onclick="clDelete(\'' + t.id + '\')">🗑️</button>' : '';
+            var sched = clSchedStr[t.schedule] + (t.schedule !== 'off' ? ' ' + t.time : '');
+            return '<tr><td>' + secEsc(t.name) + '</td><td>' + secEsc(t.type.toUpperCase()) + '</td><td class="sec-mono">' + secEsc(t.host + (t.port ? ':' + t.port : '') + (t.bucket ? ' / ' + t.bucket : '')) + '</td><td>'
+                + secEsc((t.what || []).map(function (w) { return clWhatStr[w]; }).join(', ')) + '</td><td>' + secEsc(sched)
+                + '</td><td><input type="checkbox" ' + (t.enabled ? 'checked ' : '') + (ldCanEdit ? '' : 'disabled ') + 'onchange="clToggle(\'' + t.id + '\', this.checked)"></td><td style="white-space: nowrap;">' + act + '</td></tr>';
+        }).join('');
+    });
+}
+function clTypeChanged(resetPort) {
+    var ty = document.getElementById('clType').value, web = (ty === 'webdav' || ty === 's3');
+    document.getElementById('clHostLbl').textContent = web ? <?= json_encode(__('cl_field_url')) ?> : <?= json_encode(__('cl_field_host')) ?>;
+    document.getElementById('clPortBox').style.display = web ? 'none' : '';
+    document.getElementById('clBucketBox').style.display = ty === 's3' ? '' : 'none';
+    document.getElementById('clRegionBox').style.display = ty === 's3' ? '' : 'none';
+    if (resetPort) { document.getElementById('clPort').value = clPorts[ty]; }
+}
+function clEdit(id) {
+    var t = clList.filter(function (x) { return x.id === id; })[0] || { name: '', type: 'sftp', host: '', port: 22, user: '', has_pass: false, path: '', bucket: '', region: '', what: ['config'], schedule: 'off', time: '03:00', keep: 7, enabled: true };
+    clCur = id;
+    ['Name:name', 'Type:type', 'Host:host', 'Port:port', 'User:user', 'Path:path', 'Bucket:bucket', 'Region:region', 'Schedule:schedule', 'Time:time', 'Keep:keep'].forEach(function (p) {
+        var kv = p.split(':'); document.getElementById('cl' + kv[0]).value = t[kv[1]] == null ? '' : t[kv[1]];
+    });
+    document.getElementById('clEnabled').checked = !!t.enabled;
+    document.getElementById('clPass').value = ''; document.getElementById('clPassHint').textContent = t.has_pass ? <?= json_encode(__('cl_field_pass_keep')) ?> : '';
+    document.getElementById('clPassClearBox').style.display = t.has_pass ? '' : 'none'; document.getElementById('clPassClear').checked = false;
+    Array.prototype.forEach.call(document.querySelectorAll('#clWhat input'), function (i) { i.checked = (t.what || []).indexOf(i.value) >= 0; });
+    clTypeChanged(false);
+    document.getElementById('clModalMsg').className = 'sec-msg';
+    document.getElementById('clOverlay').classList.add('open');
+}
+function clSave() {
+    var g = function (n) { return document.getElementById('cl' + n).value; };
+    var data = { name: g('Name'), type: g('Type'), host: g('Host'), port: g('Port'), user: g('User'), pass: g('Pass'), clear_pass: document.getElementById('clPassClear').checked,
+        path: g('Path'), bucket: g('Bucket'), region: g('Region'), schedule: g('Schedule'), time: g('Time'), keep: g('Keep'), enabled: document.getElementById('clEnabled').checked,
+        what: Array.prototype.map.call(document.querySelectorAll('#clWhat input:checked'), function (i) { return i.value; }) };
+    secPost({ ajax: 'cloud_save', id: clCur, data: JSON.stringify(data) }).then(function (d) {
+        if (d.success) { ixClose('clOverlay'); secMsg('clMsg', true, d.message); clLoad(); } else { secMsg('clModalMsg', false, d.message); }
+    });
+}
+function clToggle(id, on) { secPost({ ajax: 'cloud_toggle', id: id, enabled: on ? '1' : '0' }).then(function (d) { secMsg('clMsg', d.success, d.message); clLoad(); }); }
+function clDelete(id) {
+    var t = clList.filter(function (x) { return x.id === id; })[0];
+    if (!t || !confirm(<?= json_encode(__('cl_confirm_delete')) ?>.replace('%s', t.name))) { return; }
+    secPost({ ajax: 'cloud_delete', id: id }).then(function (d) { secMsg('clMsg', d.success, d.message); clLoad(); });
+}
+function clTest(id) { secPost({ ajax: 'cloud_test', id: id }).then(function (d) { secMsg('clMsg', d.success, d.message); }); }
+document.addEventListener('DOMContentLoaded', function () { whLoad(); clLoad(); });
 </script>
