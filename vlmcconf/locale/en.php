@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.14.0
+// ВЕРСИЯ: 5.15.0
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -594,8 +594,8 @@ return [
     'update_auto_check_every' => 'Every %d h',
     'update_in_dev' => 'in development',
     'update_settings_saved' => 'Update settings saved',
-    'menu_audit' => 'Action log',
-    'audit_title' => 'Action log',
+    'menu_audit' => 'Event log',
+    'audit_title' => 'Event log',
     'audit_search_label' => 'Search',
     'audit_search' => 'User, IP, action, details…',
     'audit_all_users' => 'All users',
@@ -666,7 +666,7 @@ return [
     'audit_stats' => 'Records: %d · Size: %s · Retention: %d days',
     'audit_days_short' => 'd',
     'audit_clear' => 'Clear log',
-    'audit_clear_confirm' => 'Clear the whole action log? This cannot be undone; the clearing itself will be recorded.',
+    'audit_clear_confirm' => 'Clear the whole event log? This cannot be undone; the clearing itself will be recorded.',
     'audit_cleared' => 'Log cleared',
     'audit_retention_title' => 'Retention period',
     'audit_retention_days' => '%d days',

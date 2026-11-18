@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.16.0
+// ВЕРСИЯ: 5.17.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1759,14 +1759,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     </div>
     <?php endif; ?>
     
-    <!-- Журнал действий - только с правом просмотра логов -->
-    <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW)): ?>
-    <div class="menu-item <?= $activeSection === 'audit' ? 'active' : '' ?>" onclick="showSection('audit', this)">
-        <span class="menu-item-icon">📜</span>
-        <span><?= __('menu_audit') ?></span>
+    <!-- Инструменты - проверка прав -->
+    <?php if (hasPermission($currentUserPermissions, PERM_TOOLS_VIEW) || hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)): ?>
+    <div class="menu-item <?= $activeSection === 'tools' ? 'active' : '' ?>" onclick="showSection('tools', this)">
+        <span class="menu-item-icon">🛠️</span>
+        <span><?= __('menu_tools') ?></span>
     </div>
     <?php endif; ?>
-
+    
     <!-- Уведомления: каналы и правила — с правом «Уведомления: изменение»; без права пункт серый (как «Интеграции») -->
     <?php if ($notifyAllowed): ?>
     <div class="menu-item <?= $activeSection === 'notifications' ? 'active' : '' ?>" onclick="showSection('notifications', this)">
@@ -1780,31 +1780,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     </div>
     <?php endif; ?>
     
-    <!-- Статистика - доступна всем -->
-    <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
-        <span class="menu-item-icon">📊</span>
-        <span><?= __('menu_stats') ?></span>
-    </div>
-    
-    <!-- Инструменты - проверка прав -->
-    <?php if (hasPermission($currentUserPermissions, PERM_TOOLS_VIEW) || hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)): ?>
-    <div class="menu-item <?= $activeSection === 'tools' ? 'active' : '' ?>" onclick="showSection('tools', this)">
-        <span class="menu-item-icon">🛠️</span>
-        <span><?= __('menu_tools') ?></span>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Информация - только если есть права на просмотр -->
-    <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)): ?>
-    <div class="menu-item <?= $activeSection === 'info' ? 'active' : '' ?>" onclick="showSection('info', this)">
-        <span class="menu-item-icon">ℹ️</span>
-        <span><?= __('menu_info') ?></span>
-    </div>
-    <?php endif; ?>
-    
-    <!-- ============================================ -->
-    <!-- НОВЫЕ ПУНКТЫ МЕНЮ: ИНТЕГРАЦИИ И API -->
-    <!-- ============================================ -->
     
     <!-- Интеграции - только если есть права на просмотр -->
     <?php if ($integrationsAllowed): ?>
@@ -1821,7 +1796,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         <span><?= __('api') ?></span>
     </div>
     <?php endif; ?>
-
+    
+    <!-- Статистика - доступна всем -->
+    <div class="menu-item <?= $activeSection === 'stats' ? 'active' : '' ?>" onclick="showSection('stats', this)">
+        <span class="menu-item-icon">📊</span>
+        <span><?= __('menu_stats') ?></span>
+    </div>
+    
+    <!-- Журнал действий - только с правом просмотра логов -->
+    <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'audit' ? 'active' : '' ?>" onclick="showSection('audit', this)">
+        <span class="menu-item-icon">📜</span>
+        <span><?= __('menu_audit') ?></span>
+    </div>
+    <?php endif; ?>
+    
+    <!-- Информация - только если есть права на просмотр -->
+    <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)): ?>
+    <div class="menu-item <?= $activeSection === 'info' ? 'active' : '' ?>" onclick="showSection('info', this)">
+        <span class="menu-item-icon">ℹ️</span>
+        <span><?= __('menu_info') ?></span>
+    </div>
+    <?php endif; ?>
+    
     <!-- Документация - доступна всем (раньше пункт по ошибке был внутри проверки права на API) -->
     <div class="menu-item <?= $activeSection === 'documentation' ? 'active' : '' ?>" onclick="showSection('documentation', this)">
         <span class="menu-item-icon">📚</span>
