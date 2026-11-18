@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.10.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 1.11.0
+// ДАТА: 2026-11-18
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
 
@@ -26,6 +26,7 @@ if (!$canViewInfo) {
         <div class="info-tabs">
             <button type="button" class="info-tab active" data-p="infoStructure">📁 <?= __('info_tab_structure') ?></button>
             <button type="button" class="info-tab" data-p="infoData">🗄️ <?= __('info_tab_data') ?></button>
+            <button type="button" class="info-tab" data-p="infoStatus">🩺 <?= __('info_tab_status') ?></button>
         </div>
         <?php if ($activeSection === 'info' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
@@ -120,6 +121,25 @@ if (!$canViewInfo) {
         </div>
     </div>
 
+    <!-- Статус функций: данные приходят с сервера (vlmcinc/status.php) -->
+    <div id="infoStatus" class="info-page">
+        <div class="info-scroll">
+        <div class="info-data-card">
+            <div class="info-data-head">
+                <span id="stSums" style="display: contents;"></span>
+                <span class="info-hint info-hint-top" id="stTime"></span>
+                <button type="button" class="info-tab" id="stRefresh" style="padding: 4px 14px; font-size: 12px;">🔄 <?= __('st_refresh') ?></button>
+            </div>
+            <div class="info-data-scroll">
+            <table class="info-data-table st-table">
+                <thead><tr><th><?= __('st_col_comp') ?></th><th><?= __('st_col_state') ?></th><th><?= __('st_col_detail') ?></th><th><?= __('st_col_params') ?></th></tr></thead>
+                <tbody id="stBody"><tr><td colspan="4" class="info-hint"><?= __('st_loading') ?></td></tr></tbody>
+            </table>
+            </div>
+        </div>
+        </div>
+    </div>
+
     <div class="info-auto-note"><span>🔄 <?= __('info_auto_note') ?></span><span id="fileInfoStatus" class="file-info-status" style="display: none;"></span></div>
 </div>
 
@@ -131,7 +151,7 @@ if (!$canViewInfo) {
 .info-page { display: none; flex: 1 1 auto; min-height: 0; }
 .info-page.active { display: flex; flex-direction: column; }
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
-#infoStructure .info-scroll, #infoData .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
+#infoStructure .info-scroll, #infoData .info-scroll, #infoStatus .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
 #infoStructure .struct-card { flex: 1 1 auto; }
 .info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
 .info-auto-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
@@ -149,6 +169,14 @@ if (!$canViewInfo) {
 .info-data-name { white-space: nowrap; font-weight: 600; }
 .info-data-absent td { opacity: 0.6; }
 .info-data-badge { font-size: 10px; font-weight: 400; padding: 1px 8px; border-radius: 10px; background: <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; margin-left: 6px; }
+.st-sum { font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 12px; border: 1px solid <?= $themeCSS['border'] ?>; }
+.st-sum.ok, .st-badge.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
+.st-sum.warn, .st-badge.warn { color: <?= $themeCSS['warnText'] ?>; border-color: <?= $themeCSS['warnText'] ?>; }
+.st-sum.err, .st-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
+.st-sum.off, .st-badge.off { color: <?= $themeCSS['muted'] ?>; }
+.st-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; border: 1px solid <?= $themeCSS['border'] ?>; white-space: nowrap; }
+.st-table td { vertical-align: middle; }
+.st-group td { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['muted'] ?>; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; }
 .info-data-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .info-hint-top { margin: 0 0 0 auto; text-align: right; }
 .info-hint { margin-top: 10px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
@@ -363,6 +391,42 @@ if (!$canViewInfo) {
             });
         }).observe(infoSection, { attributes: true });
     }
+})();
+</script>
+<script>
+// Вкладка «Статус»: данные запрашиваются при открытии вкладки и по кнопке (проверки только читают состояние)
+(function () {
+    var T = { ok: <?= json_encode(__('st_state_ok')) ?>, warn: <?= json_encode(__('st_state_warn')) ?>, err: <?= json_encode(__('st_state_err')) ?>, off: <?= json_encode(__('st_state_off')) ?> };
+    var S = { ok: <?= json_encode(__('st_sum_ok')) ?>, warn: <?= json_encode(__('st_sum_warn')) ?>, err: <?= json_encode(__('st_sum_err')) ?>, off: <?= json_encode(__('st_sum_off')) ?> };
+    var ICON = { ok: '✅', warn: '⚠️', err: '❌', off: '○' };
+    var busy = false;
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+    function render(d) {
+        var sums = '';
+        ['ok', 'warn', 'err', 'off'].forEach(function (k) { sums += '<span class="st-sum ' + k + '">' + ICON[k] + ' ' + esc(S[k]) + ': ' + d.counts[k] + '</span>'; });
+        document.getElementById('stSums').innerHTML = sums;
+        document.getElementById('stTime').textContent = <?= json_encode(__('st_checked_at')) ?> + ': ' + d.time;
+        var html = '', group = '';
+        d.rows.forEach(function (r) {
+            if (r.group !== group) { group = r.group; html += '<tr class="st-group"><td colspan="4">' + esc(group) + '</td></tr>'; }
+            html += '<tr><td class="info-data-name">' + esc(r.icon) + ' ' + esc(r.label) + '</td><td><span class="st-badge ' + r.state + '">' + ICON[r.state] + ' ' + esc(T[r.state]) + '</span></td><td>' + esc(r.detail) + '</td><td class="info-data-path"><code>' + esc(r.params) + '</code></td></tr>';
+        });
+        document.getElementById('stBody').innerHTML = html;
+    }
+    function load() {
+        if (busy) { return; }
+        busy = true;
+        var btn = document.getElementById('stRefresh'); btn.disabled = true;
+        var fd = new FormData(); fd.append('ajax', 'status_get');
+        var tok = document.querySelector('input[name="csrf_token"]'); if (tok) { fd.append('csrf_token', tok.value); }
+        fetch('', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
+            if (d && d.success) { render(d); } else { document.getElementById('stBody').innerHTML = '<tr><td colspan="4" class="info-hint">' + esc(<?= json_encode(__('st_load_error')) ?>) + '</td></tr>'; }
+        }).catch(function () {
+            document.getElementById('stBody').innerHTML = '<tr><td colspan="4" class="info-hint">' + esc(<?= json_encode(__('st_load_error')) ?>) + '</td></tr>';
+        }).then(function () { busy = false; btn.disabled = false; });
+    }
+    document.getElementById('stRefresh').addEventListener('click', load);
+    document.querySelector('#section-info .info-tab[data-p="infoStatus"]').addEventListener('click', load);
 })();
 </script>
 <?php

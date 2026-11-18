@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.4.3
+// ВЕРСИЯ: 1.4.4
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -693,4 +693,15 @@ if (in_array($xAction, ['sched_run', 'sched_view', 'sched_run_now'], true)) {
     $res = $r['ran'][$id] ?? ['ok' => false, 'text' => ''];
     auditLog('sched_run_now', sprintf(__('sched_log_run_now'), $tasks[$id]['label'], $res['text']), $res['ok'] ? 'ok' : 'error');
     xjson(['success' => $res['ok'], 'message' => $res['text'], 'view' => schedView()]);
+}
+
+// ============================================
+// Информация → Статус: проверки ядра, интеграций, безопасности и обслуживания (только чтение)
+// ============================================
+if ($xAction === 'status_get') {
+    require_once __DIR__ . '/status.php';
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    xjson(['success' => true] + statusView());
 }

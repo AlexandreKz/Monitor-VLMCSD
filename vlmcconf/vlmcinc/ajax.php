@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.18.3
+// ВЕРСИЯ: 3.18.4
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -72,6 +72,8 @@ function ajaxActionPermissions() {
         'save_github_token'     => $toolsEdit,
 
         // Интеграции: Active Directory / LDAP (п. 26)
+        'status_get'            => PERM_INFO_VIEW,
+
         // Фоновые задачи (планировщик)
         'sched_run'             => 0,                 // запускает только просроченные задачи
         'sched_view'            => PERM_LOGS_VIEW,
