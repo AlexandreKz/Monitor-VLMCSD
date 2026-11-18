@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.2
+// ВЕРСИЯ: 6.7.3
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -201,7 +201,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 14px; }
 .api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 13.5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .api-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; }
-.api-search { position: relative; width: 240px; max-width: 100%; }
+.api-search { position: relative; width: 50%; min-width: 240px; max-width: 100%; }
 .api-search .form-control { width: 100%; padding-right: 28px; }
 .api-search-x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: <?= $themeCSS['muted'] ?>; cursor: pointer; font-size: 12px; line-height: 1; padding: 4px; border-radius: 50%; }
 .api-search-x:hover { color: <?= $themeCSS['text'] ?>; background: <?= $themeCSS['hover'] ?>; }
