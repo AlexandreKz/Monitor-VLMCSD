@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.2
+// ВЕРСИЯ: 6.0.3
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -84,7 +84,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                 <!-- Кнопка добавления пользователя (только если есть права на редактирование) -->
                 <?php if ($canEditUsers): ?>
                 <div style="margin-bottom: 15px;">
-                    <button class="btn btn-primary" onclick="showAddUserModal()">➕ <?= __('users_add') ?></button>
+                    <button class="sec-btn primary" onclick="showAddUserModal()">➕ <?= __('users_add') ?></button>
                 </div>
                 <?php endif; ?>
                 
@@ -110,7 +110,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 				<div class="session-row">
 					<input type="number" id="sessionTimeoutMin" class="form-control" min="5" max="1440" step="1" value="<?= (int)$sessionTimeoutMin ?>">
 					<span><?= __('session_timeout_unit') ?></span>
-					<button type="button" class="btn btn-primary" onclick="saveSessionSettings()">💾 <?= __('save') ?></button>
+					<button type="button" class="sec-btn primary" onclick="saveSessionSettings()">💾 <?= __('save') ?></button>
 				</div>
 				<p class="privacy-hint"><?= __('session_timeout_hint') ?></p>
 				<div id="sessionMessage" class="privacy-message" style="display: none;"></div>
@@ -142,7 +142,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 				<!-- Строка с кнопкой и описанием -->
 				<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
 					<?php if ($canManageWhitelist): ?>
-					<button class="btn btn-primary" style="white-space: nowrap;" onclick="showAddWhitelistIpModal()"><?= __('whitelist_add_ip') ?></button>
+					<button class="sec-btn primary" onclick="showAddWhitelistIpModal()"><?= __('whitelist_add_ip') ?></button>
 					<?php endif; ?>
 					<p style="margin: 0; flex: 1; font-size: 11px; color: <?= $themeCSS['muted'] ?>; line-height: 1.4;"><?= __('whitelist_description') ?></p>
 				</div>
@@ -162,7 +162,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 							<span><?= htmlspecialchars($ip) ?></span>
 							<span>
 								<?php if ($canManageWhitelist): ?>
-								<button class="btn-whitelist-delete" onclick="removeWhitelistIp('<?= htmlspecialchars($ip) ?>')" title="<?= __('delete') ?>">🗑️</button>
+								<button class="sec-ico danger" onclick="removeWhitelistIp('<?= htmlspecialchars($ip) ?>')" title="<?= __('delete') ?>">🗑️</button>
 								<?php else: ?>
 								<span class="lock-icon" title="<?= __('access_denied') ?>">🔒</span>
 								<?php endif; ?>
@@ -365,7 +365,7 @@ function pwRender() {
     if (!pwEntries.length) { body.innerHTML = '<tr><td colspan="3" class="sec-empty">' + secEsc(pwStrings.empty) + '</td></tr>'; }
     else body.innerHTML = pwEntries.map((e, i) =>
         '<tr><td class="mono">' + secEsc(e.ip) + '</td><td>' + secEsc(e.comment) + '</td>' +
-        '<td><div class="sec-actions"><button class="sec-btn sm" title="' + secEsc(pwStrings.remove) + '" onclick="pwRemove(' + i + ')">🗑️</button></div></td></tr>').join('');
+        '<td><div class="sec-actions"><button class="sec-ico danger" title="' + secEsc(pwStrings.remove) + '" onclick="pwRemove(' + i + ')">🗑️</button></div></td></tr>').join('');
     pwState();
 }
 function pwState() {
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () { secTabRestore('secti
                 </div>
             </form>
             
-            <button class="btn btn-primary" onclick="saveUserPermissions()" style="margin-top: 10px; display: block; margin-left: auto; margin-right: auto; width: 50%;"><?= __('permissions_save') ?></button>
+            <button class="sec-btn primary" onclick="saveUserPermissions()" style="margin: 12px auto 0;"><?= __('permissions_save') ?></button>
         </div>
     </div>
 </div>
@@ -597,8 +597,8 @@ document.addEventListener('DOMContentLoaded', function () { secTabRestore('secti
                 <input type="text" id="whitelistCommentInput" class="form-control" placeholder="<?= __('whitelist_ip_comment_placeholder') ?>" autocomplete="off">
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
-                <button class="btn btn-secondary" onclick="closeAddWhitelistIpModal()"><?= __('cancel') ?></button>
-                <button class="btn btn-primary" onclick="addWhitelistIp()"><?= __('whitelist_add_btn') ?></button>
+                <button class="sec-btn" onclick="closeAddWhitelistIpModal()"><?= __('cancel') ?></button>
+                <button class="sec-btn primary" onclick="addWhitelistIp()"><?= __('whitelist_add_btn') ?></button>
             </div>
         </div>
     </div>
@@ -1183,9 +1183,9 @@ function renderUsers(users) {
                 <span>
                     ${isCurrent ? '<span style="color: <?= $themeCSS['muted'] ?>; font-size: 10px;"><?= __('current_user') ?></span>' : `
                         <?php if ($canEditUsers): ?>
-                        <button onclick="editUser(${user.id}, '${escapeHtml(user.username)}', ${user.permissions})" style="background: none; border: none; color: #3b82f6; cursor: pointer; margin-right: 8px;" title="<?= __('edit') ?>">✎</button>
-                        <button onclick="showChangePasswordModal(${user.id}, '${escapeHtml(user.username)}')" style="background: none; border: none; color: <?= $themeCSS['warnText'] ?>; cursor: pointer; margin-right: 8px;" title="<?= __('change_password') ?>">🔑</button>
-                        <button onclick="deleteUser(${user.id})" style="background: none; border: none; color: #e74c3c; cursor: pointer;" title="<?= __('delete') ?>">✕</button>
+                        <button class="sec-ico blue" onclick="editUser(${user.id}, '${escapeHtml(user.username)}', ${user.permissions})" title="<?= __('edit') ?>">✎</button>
+                        <button class="sec-ico warn" onclick="showChangePasswordModal(${user.id}, '${escapeHtml(user.username)}')" title="<?= __('change_password') ?>">🔑</button>
+                        <button class="sec-ico danger" onclick="deleteUser(${user.id})" title="<?= __('delete') ?>">✕</button>
                         <?php endif; ?>
                     `}
                 </span>

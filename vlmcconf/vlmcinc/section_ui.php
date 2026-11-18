@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.3.1
+// ВЕРСИЯ: 1.3.2
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -63,13 +63,19 @@ function vlmcSectionUi($themeCSS) {
 .sec-sub-btn.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; border-bottom-color: <?= $themeCSS['primary'] ?>; }
 .sec-sub { display: none; }
 .sec-sub.active { display: block; animation: fadeIn 0.3s; }
-.sec-btn { display: inline-flex; align-items: center; gap: 6px; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.sec-btn { display: inline-flex; align-items: center; gap: 6px; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; box-sizing: border-box; justify-content: center; height: 26px; padding: 0 12px; font-size: 12px; line-height: 1; font-weight: 500; font-family: inherit; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
 .sec-btn:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .sec-btn.primary { background: <?= $themeCSS['primary'] ?>; border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
 .sec-btn.primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
 .sec-btn.danger { background: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['onDanger'] ?>; border-color: <?= $themeCSS['danger'] ?>; }
 .sec-btn.danger:hover { opacity: 0.9; background: <?= $themeCSS['danger'] ?>; }
-.sec-btn.sm { padding: 3px 10px; font-size: 11px; border-radius: 14px; }
+.sec-btn.sm { height: 22px; padding: 0 10px; font-size: 11px; border-radius: 14px; }
+.sec-ico { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; background: none; border: 1px solid transparent; border-radius: 6px; font-size: 13px; line-height: 1; font-family: inherit; cursor: pointer; color: <?= $themeCSS['text'] ?>; transition: all 0.2s; }
+.sec-ico:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['border'] ?>; }
+.sec-ico.blue { color: <?= $themeCSS['accentText'] ?>; }
+.sec-ico.warn { color: <?= $themeCSS['warnText'] ?>; }
+.sec-ico.danger { color: <?= $themeCSS['dangerText'] ?>; }
+.sec-ico.danger:hover { background: <?= $themeCSS['danger'] ?>20; }
 .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 .sec-code { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; position: relative; margin: 6px 0; }
 .sec-scroll { max-height: 320px; overflow-y: auto; }
