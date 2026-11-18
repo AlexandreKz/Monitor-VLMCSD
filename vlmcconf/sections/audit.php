@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.3.0
+// ВЕРСИЯ: 3.3.1
 // ДАТА: 2026-11-18
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -18,6 +18,7 @@ $auditI18n = [
     'empty'      => __('audit_empty'),
     'page'       => __('audit_page'),
     'loadError'  => __('audit_load_error'),
+    'refreshed'  => __('audit_refreshed'),
     'allUsers'   => __('audit_all_users'),
     'allActions' => __('audit_all_actions'),
     'ok'         => __('audit_result_ok'),
@@ -89,8 +90,9 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     <div class="audit-bar">
         <div class="audit-bar-left">
-            <button type="button" class="audit-ico" id="auditRefreshBtn" title="<?= htmlspecialchars(__('audit_refresh')) ?>" aria-label="<?= htmlspecialchars(__('audit_refresh')) ?>">🔄</button>
+            <button type="button" class="audit-ico" id="auditRefreshBtn" title="<?= htmlspecialchars(__('audit_refresh')) ?>" aria-label="<?= htmlspecialchars(__('audit_refresh')) ?>"><span>🔄</span></button>
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
+            <span id="auditRefreshMsg" class="audit-refresh-msg"></span>
         </div>
     </div>
 
@@ -157,6 +159,11 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
 .audit-bar { display: flex; align-items: center; margin: -2px 0 6px; padding: 0 2px; }
 .audit-ico { box-sizing: border-box; width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; font-size: 12px; line-height: 1; cursor: pointer; transition: all 0.2s; }
+.audit-refresh-msg { font-size: 12px; color: <?= $themeCSS['okText'] ?>; margin-left: 6px; }
+.audit-refresh-msg.err { color: <?= $themeCSS['dangerText'] ?>; }
+.audit-ico.busy { opacity: 0.5; pointer-events: none; }
+.audit-ico.busy span { display: inline-block; animation: auditSpin 0.8s linear infinite; }
+@keyframes auditSpin { to { transform: rotate(360deg); } }
 .audit-ico:hover { border-color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['hover'] ?>; }
 .audit-bar-left, .audit-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .audit-check { font-size: 12px; color: <?= $themeCSS['muted'] ?>; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
@@ -429,7 +436,16 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         }
     }
 
-    function load() {
+    let refreshMsgTimer = null;
+    function refreshNote(text, isErr) {
+        const m = $('auditRefreshMsg');
+        m.textContent = text;
+        m.className = 'audit-refresh-msg' + (isErr ? ' err' : '');
+        clearTimeout(refreshMsgTimer);
+        refreshMsgTimer = setTimeout(function () { m.textContent = ''; }, 5000);
+    }
+
+    function load(confirmDone) {
         const f = filters();
         f.ajax = 'get_audit';
         f.page = page;
@@ -438,7 +454,11 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         post(f).then(function (data) {
             if (!data.success) throw new Error('fail');
             render(data);
-        }).catch(function () { $('auditFound').textContent = I18N.loadError; });
+            if (confirmDone === true) refreshNote(I18N.refreshed, false);
+        }).catch(function () {
+            $('auditFound').textContent = I18N.loadError;
+            if (confirmDone === true) refreshNote(I18N.loadError, true);
+        }).then(function () { $('auditRefreshBtn').classList.remove('busy'); });
     }
 
     function reload() { page = 1; load(); }
@@ -484,7 +504,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     $('auditSearch').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(reload, 300); });
     ['auditUser', 'auditAction', 'auditResult', 'auditPerPage'].forEach(function (id) { $(id).addEventListener('change', reload); });
-    $('auditRefreshBtn').onclick = load;
+    $('auditRefreshBtn').onclick = function () { this.classList.add('busy'); load(true); };
     $('auditResetBtn').onclick = function () {
         ['auditSearch', 'auditUser', 'auditAction', 'auditResult'].forEach(function (id) { $(id).value = ''; });
         cal.picking = false;

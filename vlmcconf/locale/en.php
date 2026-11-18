@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.13.2
+// ВЕРСИЯ: 5.13.3
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -615,6 +615,7 @@ return [
     'audit_range_all' => 'All time',
     'audit_export' => 'Export CSV',
     'audit_refresh' => 'Refresh',
+    'audit_refreshed' => 'Log refreshed',
     'audit_auto' => 'Auto-refresh',
     'audit_per_page' => 'Rows per page',
     'audit_col_time' => 'Time',
