@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.5.1
+// ВЕРСИЯ: 6.5.2
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -99,8 +99,6 @@ $permOptions = [
                     <div class="sec-row"><label for="ldDomain"><?= __('ldap_domain') ?></label>
                         <input type="text" id="ldDomain" class="form-control" value="<?= htmlspecialchars($ld['domain']) ?>" placeholder="corp.example.com" <?= $ldDis ?>></div>
                     <p class="sec-hint"><?= __('ldap_domain_hint') ?></p>
-                    <p class="sec-hint"><?= __('ldap_service_hint') ?></p>
-                    <p class="sec-hint"><?= __('ldap_backup_hint') ?></p>
                     <div class="sec-row" style="margin: 10px 0 0;">
                         <?php if ($ldCanEdit): ?>
                         <button type="button" class="sec-btn primary" onclick="ldSave()">💾 <?= __('save') ?></button>
