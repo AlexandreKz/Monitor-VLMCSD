@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.4
+// ВЕРСИЯ: 6.4.5
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -23,6 +23,7 @@ vlmcSectionUi($themeCSS);
             <button class="sec-tab-btn active" data-for="ad" onclick="secTab('section-integrations','ad',this); ldFit();">🏢 <?= __('ldap_tab_ad') ?></button>
             <button class="sec-tab-btn" data-for="cloud" onclick="secTab('section-integrations','cloud',this)">☁️ <?= __('int_tab_cloud') ?></button>
             <button class="sec-tab-btn" data-for="webhook" onclick="secTab('section-integrations','webhook',this)">🔗 <?= __('int_tab_webhook') ?></button>
+            <button class="sec-tab-btn" data-for="multiserver" onclick="secTab('section-integrations','multiserver',this)">🛰️ <?= __('int_tab_ms') ?></button>
         </div>
     </div>
 
@@ -229,6 +230,22 @@ $permOptions = [
             </div>
         </div>
     </div>
+
+    <!-- ===== Мультисервер (набросок) ===== -->
+    <div class="sec-tab-content" data-tab="multiserver">
+        <div class="settings-card">
+            <div class="settings-card-title sec-th">🛰️ <?= __('int_ms_title') ?>
+                <span id="msMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
+            <div class="sec-note"><?= __('int_ms_intro') ?></div>
+            <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="msEdit('')">➕ <?= __('int_ms_add') ?></button></div><?php endif; ?>
+            <div class="sec-scroll">
+                <table class="sec-table">
+                    <thead><tr><th><?= __('ms_col_name') ?></th><th><?= __('ms_col_url') ?></th><th><?= __('ms_col_user') ?></th><th><?= __('ms_col_version') ?></th><th><?= __('ms_col_status') ?></th><th></th></tr></thead>
+                    <tbody id="msRows"><tr><td colspan="6" class="sec-empty"><?= __('int_ms_empty') ?></td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -303,6 +320,24 @@ $permOptions = [
         </div>
     </div>
 </div>
+<div id="msOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('msOverlay')">
+    <div class="ld-modal">
+        <h3>🛰️ <?= __('int_ms_edit') ?></h3>
+        <div class="ix-grid">
+            <div class="full"><label><?= __('ms_field_name') ?></label><input type="text" id="msName" class="form-control" maxlength="60" autocomplete="off"></div>
+            <div class="full"><label><?= __('ms_field_url') ?> *</label><input type="text" id="msUrl" class="form-control" autocomplete="off" placeholder="https://"><div class="ix-sub"><?= __('ms_field_url_hint') ?></div></div>
+            <div><label><?= __('ms_field_user') ?> *</label><input type="text" id="msUser" class="form-control" autocomplete="off"></div>
+            <div><label><?= __('ms_field_pass') ?> *</label><input type="password" id="msPass" class="form-control" autocomplete="new-password"><div class="ix-sub" id="msPassHint"></div></div>
+            <div class="full ix-sub"><?= __('ms_hint_check') ?></div>
+        </div>
+        <div class="ld-foot" style="margin-top: 12px;">
+            <span id="msModalMsg" class="sec-msg" style="margin-right: auto;"></span>
+            <button type="button" class="sec-btn" onclick="ixClose('msOverlay')"><?= __('cancel') ?></button>
+            <button type="button" class="sec-btn primary" id="msSaveBtn" onclick="msSave()"><?= __('ms_btn_save') ?></button>
+        </div>
+    </div>
+</div>
+
 <div id="clOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('clOverlay')">
     <div class="ld-modal">
         <h3>☁️ <?= __('int_tab_cloud') ?></h3>
@@ -621,5 +656,46 @@ function clDelete(id) {
     secPost({ ajax: 'cloud_delete', id: id }).then(function (d) { secMsg('clMsg', d.success, d.message); clLoad(); });
 }
 function clTest(id) { secPost({ ajax: 'cloud_test', id: id }).then(function (d) { secMsg('clMsg', d.success, d.message); }); }
-document.addEventListener('DOMContentLoaded', function () { whLoad(); clLoad(); });
+// ===== Мультисервер (набросок) =====
+var msList = [], msCur = '';
+function msLoad() {
+    secPost({ ajax: 'ms_list' }).then(function (d) {
+        if (!d.success) { return; }
+        msList = d.servers || [];
+        var tb = document.getElementById('msRows');
+        if (!msList.length) { tb.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(<?= json_encode(__('int_ms_empty')) ?>) + '</td></tr>'; return; }
+        tb.innerHTML = msList.map(function (s) {
+            var st = s.last_time ? '<span class="sec-badge ' + (s.last_ok ? 'ok' : 'err') + '" title="' + secEsc(s.last_text) + '">' + (s.last_ok ? 'OK' : 'ERR') + '</span> <span class="sec-mono">' + secEsc(s.last_time.slice(0, 16)) + '</span>' : '<span class="ix-sub">' + secEsc(<?= json_encode(__('ms_never')) ?>) + '</span>';
+            var act = ldCanEdit ? '<button type="button" class="sec-btn sm" onclick="msTest(\'' + s.id + '\', this)">🧪 ' + secEsc(<?= json_encode(__('ms_test')) ?>) + '</button> <button type="button" class="sec-ico blue" onclick="msEdit(\'' + s.id + '\')">✏️</button> <button type="button" class="sec-ico danger" onclick="msDelete(\'' + s.id + '\')">🗑️</button>' : '';
+            return '<tr><td>' + secEsc(s.name) + '</td><td class="sec-mono">' + secEsc(s.url) + '</td><td>' + secEsc(s.user) + '</td><td>' + secEsc(s.version || '—') + '</td><td>' + st + '</td><td style="white-space: nowrap;">' + act + '</td></tr>';
+        }).join('');
+    });
+}
+function msEdit(id) {
+    var s = msList.filter(function (x) { return x.id === id; })[0] || { name: '', url: '', user: '' };
+    msCur = id;
+    document.getElementById('msName').value = s.name; document.getElementById('msUrl').value = s.url; document.getElementById('msUser').value = s.user;
+    document.getElementById('msPass').value = ''; document.getElementById('msPassHint').textContent = id ? <?= json_encode(__('ms_field_pass_keep')) ?> : '';
+    document.getElementById('msModalMsg').className = 'sec-msg';
+    document.getElementById('msOverlay').classList.add('open');
+}
+function msSave() {
+    var btn = document.getElementById('msSaveBtn'), label = btn.textContent;
+    var data = { name: document.getElementById('msName').value, url: document.getElementById('msUrl').value, user: document.getElementById('msUser').value, pass: document.getElementById('msPass').value };
+    btn.disabled = true; btn.textContent = <?= json_encode(__('ms_checking')) ?>;
+    secPost({ ajax: 'ms_save', id: msCur, data: JSON.stringify(data) }).then(function (d) {
+        btn.disabled = false; btn.textContent = label;
+        if (d.success) { ixClose('msOverlay'); secMsg('msMsg', true, d.message); msLoad(); } else { secMsg('msModalMsg', false, d.message); }
+    }).catch(function () { btn.disabled = false; btn.textContent = label; secMsg('msModalMsg', false, <?= json_encode(__('msg_save_error')) ?>); });
+}
+function msTest(id, btn) {
+    btn.disabled = true;
+    secPost({ ajax: 'ms_test', id: id }).then(function (d) { secMsg('msMsg', d.success, d.message); msLoad(); }).catch(function () { btn.disabled = false; });
+}
+function msDelete(id) {
+    var s = msList.filter(function (x) { return x.id === id; })[0];
+    if (!s || !confirm(<?= json_encode(__('ms_confirm_delete')) ?>.replace('%s', s.name))) { return; }
+    secPost({ ajax: 'ms_delete', id: id }).then(function (d) { secMsg('msMsg', d.success, d.message); msLoad(); });
+}
+document.addEventListener('DOMContentLoaded', function () { whLoad(); clLoad(); msLoad(); });
 </script>

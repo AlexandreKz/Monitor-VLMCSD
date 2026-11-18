@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.4.0
+// ВЕРСИЯ: 1.4.1
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -550,5 +550,109 @@ if (in_array($xAction, ['fw_save_settings', 'fw_status', 'fw_list', 'fw_block', 
         $r = fwApplyPending(xBool($_POST['all'] ?? '0'));
         xjson(['success' => $r['success'], 'applied' => $r['applied'],
                'message' => $r['success'] ? sprintf(__('fw_msg_applied_n'), $r['applied']) : __('fw_problem_' . $r['code'])]);
+    }
+}
+
+// ============================================
+// Интеграции: Мультисервер (набросок)
+// ============================================
+if (in_array($xAction, ['ms_list', 'ms_save', 'ms_delete', 'ms_test'], true)) {
+    require_once __DIR__ . '/multiserver.php';
+
+    /** Текст результата проверки для человека: «код|подробности» → переведённое сообщение. */
+    $msText = function (array $r) {
+        $t = __($r['code']);
+        return $t . ($r['detail'] !== '' && $r['detail'] !== 'must_change_password' ? ' (' . $r['detail'] . ')' : '');
+    };
+    $msPub = function (array $s) {
+        $p = msPublic($s);
+        $parts = explode('|', $p['last_text'], 2);
+        $p['last_text'] = $p['last_text'] === '' ? '' : __($parts[0]) . (isset($parts[1]) ? ' (' . $parts[1] . ')' : '');
+        $p['host'] = (string)parse_url($p['url'], PHP_URL_HOST) . (parse_url($p['url'], PHP_URL_PORT) ? ':' . parse_url($p['url'], PHP_URL_PORT) : '');
+        return $p;
+    };
+
+    if ($xAction === 'ms_list') {
+        xjson(['success' => true, 'servers' => array_map($msPub, msLoad())]);
+    }
+
+    $id = (string)($_POST['id'] ?? '');
+
+    if ($xAction === 'ms_save') {
+        $in = json_decode((string)($_POST['data'] ?? ''), true);
+        $in = is_array($in) ? $in : [];
+        $name = mb_substr(trim((string)($in['name'] ?? '')), 0, 60);
+        $url = trim((string)($in['url'] ?? ''));
+        $user = trim((string)($in['user'] ?? ''));
+        $pass = (string)($in['pass'] ?? '');
+        $old = null;
+        foreach (msLoad() as $s) {
+            if ($id !== '' && $s['id'] === $id) { $old = $s; }
+        }
+        if ($id !== '' && $old === null) {
+            xjson(['success' => false, 'message' => __('ms_err_notfound')]);
+        }
+        if ($url === '') { xjson(['success' => false, 'message' => __('ms_err_url')]); }
+        if ($user === '') { xjson(['success' => false, 'message' => __('ms_err_user')]); }
+        if ($pass === '' && $old === null) { xjson(['success' => false, 'message' => __('ms_err_pass')]); }
+        if ($pass === '' && $old !== null) { $pass = notifyDecrypt((string)($old['pass'] ?? '')); }
+        if ($old === null && count(msLoad()) >= MS_MAX) { xjson(['success' => false, 'message' => __('ms_err_limit')]); }
+
+        // Реальная проверка: подключение к панели и вход. Без успеха сервер не сохраняется.
+        $r = msVerify($url, $user, $pass);
+        if (!$r['ok']) {
+            auditLog('ms_save', sprintf(__('ms_log_save_fail'), (string)parse_url($r['url'] !== '' ? $r['url'] : (preg_match('#^https?://#i', $url) ? $url : 'http://' . $url), PHP_URL_HOST), $msText($r)), 'error');
+            xjson(['success' => false, 'message' => $msText($r)]);
+        }
+        $newId = $old ? $old['id'] : 'ms_' . bin2hex(random_bytes(4));
+        $dup = false;
+        $saved = xConfigUpdate(function (&$config) use ($newId, $old, $name, $user, $pass, $r, &$dup) {
+            $list = isset($config['integrations']['multiservers']) && is_array($config['integrations']['multiservers']) ? $config['integrations']['multiservers'] : [];
+            foreach ($list as $s) {
+                if (is_array($s) && $s['id'] !== $newId && ($s['url'] ?? '') === $r['url'] && ($s['user'] ?? '') === $user) { $dup = true; return false; }
+            }
+            $rec = ['id' => $newId, 'name' => $name !== '' ? $name : (string)parse_url($r['url'], PHP_URL_HOST), 'url' => $r['url'], 'user' => $user,
+                    'pass' => notifyEncrypt($pass), 'version' => $r['version'], 'last_time' => date('Y-m-d H:i:s'), 'last_ok' => true, 'last_text' => ''];
+            $found = false;
+            foreach ($list as $i => $s) {
+                if (is_array($s) && $s['id'] === $newId) { $list[$i] = $rec; $found = true; }
+            }
+            if (!$found) { $list[] = $rec; }
+            $config['integrations']['multiservers'] = array_values($list);
+        });
+        if (!$saved) {
+            xjson(['success' => false, 'message' => __($dup ? 'ms_err_exists' : 'msg_save_error')]);
+        }
+        $host = (string)parse_url($r['url'], PHP_URL_HOST);
+        auditLog('ms_save', sprintf(__($old ? 'ms_log_updated' : 'ms_log_added'), $name !== '' ? $name : $host, $host, $user, $r['version'] !== '' ? $r['version'] : '—'));
+        xjson(['success' => true, 'message' => __('ms_msg_saved') . ($r['detail'] === 'must_change_password' ? ' ' . __('ms_note_change_password') : '')]);
+    }
+
+    $found = null;
+    foreach (msLoad() as $s) {
+        if ($s['id'] === $id) { $found = $s; }
+    }
+    if ($found === null) {
+        xjson(['success' => false, 'message' => __('ms_err_notfound')]);
+    }
+    $host = (string)parse_url((string)$found['url'], PHP_URL_HOST);
+
+    if ($xAction === 'ms_delete') {
+        $saved = xConfigUpdate(function (&$config) use ($id) {
+            $config['integrations']['multiservers'] = array_values(array_filter((array)$config['integrations']['multiservers'], function ($s) use ($id) {
+                return !(is_array($s) && ($s['id'] ?? '') === $id);
+            }));
+        });
+        if ($saved) {
+            auditLog('ms_delete', sprintf(__('ms_log_deleted'), (string)$found['name'], $host));
+        }
+        xjson(['success' => $saved, 'message' => __($saved ? 'ms_msg_deleted' : 'msg_save_error')]);
+    }
+
+    if ($xAction === 'ms_test') {
+        $r = msVerify((string)$found['url'], (string)$found['user'], notifyDecrypt((string)($found['pass'] ?? '')));
+        msRemember($id, $r);
+        auditLog('ms_test', sprintf(__($r['ok'] ? 'ms_log_test_ok' : 'ms_log_test_fail'), (string)$found['name'], $host, $r['ok'] ? ($r['version'] !== '' ? $r['version'] : '—') : $msText($r)), $r['ok'] ? 'ok' : 'error');
+        xjson(['success' => $r['ok'], 'message' => $r['ok'] ? sprintf(__('ms_msg_test_ok'), $r['version'] !== '' ? $r['version'] : '—') : $msText($r)]);
     }
 }
