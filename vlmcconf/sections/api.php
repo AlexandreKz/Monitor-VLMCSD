@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.1
+// ВЕРСИЯ: 6.7.2
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -434,7 +434,7 @@ function apiDocsLoad() {
     const link = document.getElementById('apiSpecLink'); link.href = apiBase + '/openapi.json';
     fetch(apiBase + '/openapi.json').then(r => r.json()).then(spec => {
         apiDocsSpec = spec;
-        let html = '<p class="sec-hint">' + secEsc(<?= json_encode(__('api_docs_intro')) ?>) + '</p>';
+        let html = '';
         apiEndpoints(spec).forEach((ep, i) => {
             const p = ep.path, op = ep.op, mth = ep.method.toUpperCase(), txt = apiEpText[p] || op.summary || '', scope = (op.tags || [])[0] || '';
             const params = (op.parameters || []).map(q => '<tr><td class="mono">' + secEsc(q.name) + '</td><td>' + secEsc(q.in) + '</td><td>' + secEsc((q.schema && q.schema.type) || '') + (q.required ? ' *' : '') + '</td><td>' + secEsc(q.description || '') + '</td></tr>').join('');
