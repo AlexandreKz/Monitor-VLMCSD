@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.1.1
+// ВЕРСИЯ: 6.2.0
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -21,8 +21,8 @@ vlmcSectionUi($themeCSS);
         <span>🔌 <?= __('integrations') ?></span>
         <div class="sec-tabs">
             <button class="sec-tab-btn active" data-for="ad" onclick="secTab('section-integrations','ad',this)">🏢 <?= __('ldap_tab_ad') ?></button>
-            <button class="sec-tab-btn" data-for="users" onclick="secTab('section-integrations','users',this); ldFirstSearch();">👥 <?= __('ldap_tab_users') ?></button>
-            <button class="sec-tab-btn" data-for="log" onclick="secTab('section-integrations','log',this)">📜 <?= __('ldap_tab_log') ?></button>
+            <button class="sec-tab-btn" data-for="cloud" onclick="secTab('section-integrations','cloud',this)">☁️ <?= __('int_tab_cloud') ?></button>
+            <button class="sec-tab-btn" data-for="webhook" onclick="secTab('section-integrations','webhook',this)">🔔 <?= __('int_tab_webhook') ?></button>
         </div>
     </div>
 
@@ -47,6 +47,12 @@ $permOptions = [
 
     <!-- ===== Active Directory / LDAP ===== -->
     <div class="sec-tab-content active" data-tab="ad">
+        <div class="sec-sub-tabs">
+            <button type="button" class="sec-sub-btn active" data-sub-for="conn" onclick="ldSub('conn', this)">🔗 <?= __('ldap_sub_conn') ?></button>
+            <button type="button" class="sec-sub-btn" data-sub-for="users" onclick="ldSub('users', this)">👥 <?= __('ldap_tab_users') ?></button>
+            <button type="button" class="sec-sub-btn" data-sub-for="log" onclick="ldSub('log', this)">📜 <?= __('ldap_tab_log') ?></button>
+        </div>
+        <div class="sec-sub active" data-sub="conn">
         <?php if (!$ldAvail): ?>
         <div class="sec-note warn">
             <b><?= __('ldap_ext_missing_title') ?></b><br><?= __('ldap_ext_missing_text') ?>
@@ -138,7 +144,7 @@ $permOptions = [
     </div>
 
     <!-- ===== Пользователи каталога ===== -->
-    <div class="sec-tab-content" data-tab="users">
+        <div class="sec-sub" data-sub="users">
         <div class="settings-card">
             <div class="settings-card-title">👥 <?= __('ldap_users_title') ?> <span class="sec-badge" id="ldUsersCount">0</span></div>
             <div class="sec-row">
@@ -159,7 +165,7 @@ $permOptions = [
     </div>
 
     <!-- ===== Журнал ===== -->
-    <div class="sec-tab-content" data-tab="log">
+        <div class="sec-sub" data-sub="log">
         <div class="settings-card">
             <div class="settings-card-title">📜 <?= __('ldap_log_title') ?></div>
             <div class="sec-scroll sec-tall">
@@ -177,6 +183,23 @@ $permOptions = [
                     </tbody>
                 </table>
             </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ===== Cloud Storage ===== -->
+    <div class="sec-tab-content" data-tab="cloud">
+        <div class="settings-card">
+            <div class="settings-card-title">☁️ <?= __('int_tab_cloud') ?></div>
+            <div class="sec-note"><?= __('int_cloud_soon') ?></div>
+        </div>
+    </div>
+
+    <!-- ===== Webhook ===== -->
+    <div class="sec-tab-content" data-tab="webhook">
+        <div class="settings-card">
+            <div class="settings-card-title">🔔 <?= __('int_tab_webhook') ?></div>
+            <div class="sec-note"><?= __('int_webhook_soon') ?></div>
         </div>
     </div>
 </div>
@@ -345,9 +368,22 @@ function ldSync() {
     if (!confirm(ldStr.confirmSync)) return;
     secPost({ ajax: 'ldap_sync' }).then(d => { secMsg('ldUsersMsg', !!d.success, d.message || ''); if (d.success) ldSearch(); });
 }
+function ldSub(name, btn) {
+    const root = document.getElementById('section-integrations');
+    root.querySelectorAll('.sec-sub-btn').forEach(b => b.classList.remove('active'));
+    root.querySelectorAll('.sec-sub').forEach(c => c.classList.remove('active'));
+    const b = btn || root.querySelector('.sec-sub-btn[data-sub-for="' + name + '"]');
+    if (b) b.classList.add('active');
+    const pane = root.querySelector('.sec-sub[data-sub="' + name + '"]');
+    if (pane) pane.classList.add('active');
+    try { sessionStorage.setItem('vlmc_sub_integrations', name); } catch (e) {}
+    if (name === 'users') ldFirstSearch();
+}
 document.addEventListener('DOMContentLoaded', function () {
     secTabRestore('section-integrations', 'ad');
-    const act = document.querySelector('#section-integrations .sec-tab-btn.active');
-    if (act && act.getAttribute('data-for') === 'users') ldFirstSearch();
+    let sub = 'conn';
+    try { sub = sessionStorage.getItem('vlmc_sub_integrations') || 'conn'; } catch (e) {}
+    if (['conn', 'users', 'log'].indexOf(sub) < 0) sub = 'conn';
+    ldSub(sub);
 });
 </script>

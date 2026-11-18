@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.11.0
+// ВЕРСИЯ: 5.12.0
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1301,6 +1301,11 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_groups_remove' => 'Remove',
     'ldap_groups_manual_tag' => 'manual',
     'ldap_required_group_hint' => 'Members of any selected group may sign in. The list is loaded from the directory using the saved connection settings; if the directory is unreachable, add a group manually (name or DN). None selected — any directory account is enough.',
+    'int_tab_cloud' => 'Cloud Storage',
+    'int_tab_webhook' => 'Webhook',
+    'ldap_sub_conn' => 'Connection and sign-in',
+    'int_cloud_soon' => 'Section under development. Planned: backups of the panel and log to external storage — SFTP, FTP, WebDAV and cloud drives; schedule and rotation.',
+    'int_webhook_soon' => 'Section under development. Planned: sending panel events (new device, suspicious IP, access denied) to an external service URL, messengers and Bitrix24; request signing with a secret, test delivery.',
     'ldap_user_filter' => 'Extra filter',
     'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
     'ldap_timeout' => 'Timeout',

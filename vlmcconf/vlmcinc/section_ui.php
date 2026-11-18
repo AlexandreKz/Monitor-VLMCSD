@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.2.0
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -56,6 +56,12 @@ function vlmcSectionUi($themeCSS) {
 .sec-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 .sec-table .btn { white-space: nowrap; }
 .sec-table td.mono { white-space: nowrap; }
+.sec-sub-tabs { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; }
+.sec-sub-btn { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 6px 14px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.65; transition: all 0.2s; }
+.sec-sub-btn:hover { opacity: 1; }
+.sec-sub-btn.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; border-bottom-color: <?= $themeCSS['primary'] ?>; }
+.sec-sub { display: none; }
+.sec-sub.active { display: block; animation: fadeIn 0.3s; }
 .sec-btn { display: inline-flex; align-items: center; gap: 6px; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
 .sec-btn:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .sec-btn.primary { background: <?= $themeCSS['primary'] ?>; border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
