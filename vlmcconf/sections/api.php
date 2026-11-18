@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.0.1
+// ВЕРСИЯ: 6.0.2
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -202,6 +202,10 @@ function apiCreateKey() {
         })
         .catch(() => secMsg('apiKeysMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
+function apiHideNewKey() { // удалили ключ — показанное значение нового ключа больше не нужно
+    document.getElementById('apiNewKey').textContent = '';
+    document.getElementById('apiNewKeyBox').style.display = 'none';
+}
 function apiReloadKeysSoft() { // обновляем таблицу ключей, не трогая показанный новый ключ
     secPost({ ajax: 'api_keys_list' }).then(d => { if (d.success) { apiKeys.length = 0; d.keys.forEach(k => apiKeys.push(k)); } apiRenderKeys(); });
 }
@@ -215,7 +219,7 @@ function apiDelete(id) {
     if (!confirm(apiStr.del)) return;
     secPost({ ajax: 'api_key_delete', id: id }).then(d => {
         secMsg('apiKeysMsg', !!d.success, d.message || '');
-        if (d.success) { const i = apiKeys.findIndex(x => x.id === id); if (i >= 0) apiKeys.splice(i, 1); apiRenderKeys(); }
+        if (d.success) { const i = apiKeys.findIndex(x => x.id === id); if (i >= 0) apiKeys.splice(i, 1); apiRenderKeys(); apiHideNewKey(); }
     });
 }
 function apiSaveSettings() {
