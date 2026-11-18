@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.6
+// ВЕРСИЯ: 6.7.7
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -198,7 +198,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-m-put, .api-m-patch { background: #d68a1f !important; color: #fff !important; }
 .api-m-delete { background: #c0392b !important; color: #fff !important; }
 .api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; min-width: 38px; text-align: center; }
-.api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 14px; font-weight: 700; }
+.api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 15px; font-weight: 800; -webkit-text-stroke: 0.5px currentColor; letter-spacing: .2px; }
 .api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 13.5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .api-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; }
 .api-search { position: relative; width: 50%; min-width: 240px; max-width: 100%; }
