@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.3.0
+// ВЕРСИЯ: 6.3.1
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -81,12 +81,12 @@ $permOptions = [
                         <label class="sec-switch" style="margin: 0; font-weight: 400;"><input type="checkbox" id="ldVerify" <?= $ld['verify_cert'] ? 'checked' : '' ?> <?= $ldDis ?>> <?= __('ldap_verify_cert') ?></label></div>
                     <div class="sec-row"><label for="ldBase"><?= __('ldap_base_dn') ?></label>
                         <input type="text" id="ldBase" class="form-control" value="<?= htmlspecialchars($ld['base_dn']) ?>" placeholder="DC=corp,DC=example,DC=com" <?= $ldDis ?>></div>
-                    <div class="sec-row"><label for="ldDomain"><?= __('ldap_domain') ?></label>
-                        <input type="text" id="ldDomain" class="form-control" value="<?= htmlspecialchars($ld['domain']) ?>" placeholder="corp.example.com" <?= $ldDis ?>></div>
                     <div class="sec-row"><label for="ldSvcUser"><?= __('ldap_service_user') ?></label>
-                        <input type="text" id="ldSvcUser" class="form-control" value="<?= htmlspecialchars($ld['service_user']) ?>" placeholder="CN=svc-kms,OU=Service,DC=corp,DC=example,DC=com" <?= $ldDis ?>></div>
-                    <div class="sec-row"><label for="ldSvcPass"><?= __('ldap_service_password') ?></label>
-                        <input type="password" id="ldSvcPass" class="form-control" value="<?= $ld['has_password'] ? '********' : '' ?>" autocomplete="new-password" <?= $ldDis ?>></div>
+                        <div style="flex: 1 1 200px; min-width: 0;"><div class="ld-bk" style="margin: 0;">
+                            <input type="text" id="ldSvcUser" class="form-control" value="<?= htmlspecialchars($ld['service_user']) ?>" placeholder="CN=svc-kms,OU=Service,DC=corp,DC=example,DC=com" <?= $ldDis ?>>
+                            <input type="password" id="ldSvcPass" class="form-control" value="<?= $ld['has_password'] ? '********' : '' ?>" placeholder="<?= htmlspecialchars(__('ldap_service_password')) ?>" autocomplete="new-password" <?= $ldDis ?>>
+                            <span style="width: 22px; flex: none;"></span>
+                        </div></div></div>
                     <div class="sec-row" style="align-items: flex-start;"><label><?= __('ldap_backup_accounts') ?></label>
                         <div style="flex: 1 1 200px; min-width: 0;">
                             <div id="ldBackups"></div>
@@ -94,6 +94,9 @@ $permOptions = [
                             <button type="button" class="sec-btn sm" id="ldBkAddBtn" onclick="ldBkAdd()">➕ <?= __('ldap_backup_add') ?></button>
                             <?php endif; ?>
                         </div></div>
+                    <div class="sec-row"><label for="ldDomain"><?= __('ldap_domain') ?></label>
+                        <input type="text" id="ldDomain" class="form-control" value="<?= htmlspecialchars($ld['domain']) ?>" placeholder="corp.example.com" <?= $ldDis ?>></div>
+                    <p class="sec-hint"><?= __('ldap_domain_hint') ?></p>
                     <p class="sec-hint"><?= __('ldap_service_hint') ?></p>
                     <p class="sec-hint"><?= __('ldap_backup_hint') ?></p>
                     <div class="sec-row" style="margin: 10px 0 0;">

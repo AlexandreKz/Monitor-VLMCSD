@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.13.0
+// ВЕРСИЯ: 5.13.1
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1271,7 +1271,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_sec_none' => 'No encryption',
     'ldap_verify_cert' => 'Verify the server certificate',
     'ldap_base_dn' => 'Base DN',
-    'ldap_domain' => 'Domain (UPN)',
+    'ldap_domain' => 'Domain (UPN), optional',
+    'ldap_domain_hint' => 'Needed only when no service account is set (a short name becomes name@domain) or the login attribute is UPN/mail and users type the name without the domain. With a service account and sAMAccountName login it can stay empty.',
     'ldap_service_user' => 'Service account',
     'ldap_service_password' => 'Password',
     'ldap_service_hint' => 'The service account only reads the directory: it looks users up and checks group membership. Without it login works only by UPN (name@domain) and the user list for import is unavailable. The password is stored encrypted.',
