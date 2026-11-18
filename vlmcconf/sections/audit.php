@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.3.2
+// ВЕРСИЯ: 3.3.3
 // ДАТА: 2026-11-18
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -89,7 +89,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     <div class="audit-bar">
         <div class="audit-bar-left">
-            <button type="button" class="audit-ico" id="auditRefreshBtn" title="<?= htmlspecialchars(__('audit_refresh')) ?>" aria-label="<?= htmlspecialchars(__('audit_refresh')) ?>"><span>🔄</span></button>
+            <button type="button" class="audit-ico" id="auditRefreshBtn" title="<?= htmlspecialchars(__('audit_refresh')) ?>" aria-label="<?= htmlspecialchars(__('audit_refresh')) ?>">🔄</button>
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
         </div>
     </div>
@@ -157,9 +157,8 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
 .audit-bar { display: flex; align-items: center; margin: -2px 0 6px; padding: 0 2px; }
 .audit-ico { box-sizing: border-box; width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; font-size: 12px; line-height: 1; cursor: pointer; transition: all 0.2s; }
-.audit-ico.busy { opacity: 0.5; pointer-events: none; }
-.audit-ico.busy span { display: inline-block; animation: auditSpin 0.8s linear infinite; }
-@keyframes auditSpin { to { transform: rotate(360deg); } }
+.audit-ico:disabled { opacity: 0.5; cursor: not-allowed; }
+.audit-ico:disabled:hover { border-color: <?= $themeCSS['border'] ?>; background: <?= $themeCSS['input'] ?>; }
 .audit-ico:hover { border-color: <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['hover'] ?>; }
 .audit-bar-left, .audit-bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .audit-check { font-size: 12px; color: <?= $themeCSS['muted'] ?>; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
@@ -444,7 +443,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             render(data);
         }).catch(function () {
             $('auditFound').textContent = I18N.loadError;
-        }).then(function () { $('auditRefreshBtn').classList.remove('busy'); });
+        }).then(function () { $('auditRefreshBtn').disabled = false; });
     }
 
     function reload() { page = 1; load(); }
@@ -490,7 +489,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 
     $('auditSearch').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(reload, 300); });
     ['auditUser', 'auditAction', 'auditResult', 'auditPerPage'].forEach(function (id) { $(id).addEventListener('change', reload); });
-    $('auditRefreshBtn').onclick = function () { this.classList.add('busy'); load(true); };
+    $('auditRefreshBtn').onclick = function () { this.disabled = true; load(true); };
     $('auditResetBtn').onclick = function () {
         ['auditSearch', 'auditUser', 'auditAction', 'auditResult'].forEach(function (id) { $(id).value = ''; });
         cal.picking = false;
