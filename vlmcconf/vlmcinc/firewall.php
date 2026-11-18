@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/firewall.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.0.1
 // ДАТА: 2026-11-18
 // @description: Блокировка IP в фаерволе из панели (п. 30): список блокировок, ufw/iptables/nftables через sudo-помощник, netsh на Windows
 // ============================================
@@ -83,7 +83,9 @@ function fwStatus($settings = null) {
         $st['ready'] = true;   // права администратора проверяются при первой блокировке
         return $st;
     }
-    if (!is_file($st['helper']) || !is_executable($st['helper'])) {
+    // Помощник установлен с правами 750 (root:root), поэтому is_executable() для веб-пользователя всегда «нет».
+    // Наличие файла проверяем is_file(), а право запуска — самим вызовом через sudo ниже.
+    if (!is_file($st['helper'])) {
         $st['problem'] = 'helper_missing';
         return $st;
     }
