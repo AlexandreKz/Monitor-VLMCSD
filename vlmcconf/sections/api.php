@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.2.0
+// ВЕРСИЯ: 6.5.0
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -109,7 +109,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
         <div class="sec-grid">
             <div class="sec-col" style="flex: 0.6;">
                 <div class="settings-card">
-                    <div class="settings-card-title">⚙️ <?= __('api_settings_title') ?></div>
+                    <div class="settings-card-title sec-th">⚙️ <?= __('api_settings_title') ?> <span id="apiSetMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
                     <label class="sec-switch">
                         <input type="checkbox" id="apiEnabled" onchange="apiToggleEnabled()" <?= $apiSet['enabled'] ? 'checked' : '' ?> <?= $apiCanEdit ? '' : 'disabled' ?>>
                         <span><?= __('api_enable') ?></span>
@@ -128,7 +128,6 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                     <?php if ($apiCanEdit): ?>
                     <div class="sec-row" style="margin: 10px 0 0;"><button type="button" class="sec-btn primary" onclick="apiSaveSettings()">💾 <?= __('save') ?></button></div>
                     <?php endif; ?>
-                    <div id="apiSetMsg" class="sec-msg"></div>
                 </div>
             </div>
             <div class="sec-col" style="flex: 0.4;">
@@ -151,7 +150,13 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                 <a class="sec-btn sm" id="apiSpecLink" href="#" target="_blank" rel="noopener">⬇️ openapi.json</a>
                 <span class="sec-hint" style="margin: 0;"><?= __('api_docs_hint') ?></span>
             </div>
+            <div class="sec-row" style="margin-top: 10px;">
+                <input type="search" id="apiDocsSearch" class="form-control" placeholder="<?= htmlspecialchars(__('api_docs_search')) ?>" autocomplete="off" oninput="apiDocsFilter()">
+                <span class="sec-hint" style="margin: 0;" id="apiDocsCount"></span>
+            </div>
+            <div id="apiDocsChips" class="api-chips"></div>
             <div id="apiDocs"><div class="sec-empty"><?= __('api_docs_loading') ?></div></div>
+            <div class="sec-empty" id="apiDocsNone" style="display: none;"><?= __('api_docs_none') ?></div>
         </div>
     </div>
 </div>
@@ -186,7 +191,10 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-ep-head:hover { background: <?= $themeCSS['hover'] ?>; }
 .api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 .api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; }
-.api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 12px; flex: 1; }
+.api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.api-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.api-chip-n { opacity: 0.7; font-size: 10px; margin-left: 2px; }
+.api-desc { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
 .api-ep-body { display: none; padding: 10px 12px; border-top: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; }
 .api-ep.open .api-ep-body { display: block; }
 .api-ep h4 { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; color: <?= $themeCSS['muted'] ?>; }
@@ -198,6 +206,14 @@ const apiCanEdit = <?= $apiCanEdit ? 'true' : 'false' ?>;
 const apiStr = { on: <?= json_encode(__('api_key_on')) ?>, off: <?= json_encode(__('api_key_off')) ?>, expired: <?= json_encode(__('api_key_expired')) ?>, never: <?= json_encode(__('api_never')) ?>,
     anyIp: <?= json_encode(__('api_any_ip')) ?>, none: <?= json_encode(__('api_keys_empty')) ?>, del: <?= json_encode(__('api_key_delete_confirm')) ?>,
     disable: <?= json_encode(__('api_key_disable')) ?>, enable: <?= json_encode(__('api_key_enable')) ?>, requests: <?= json_encode(__('api_requests')) ?> };
+const apiEpText = <?php
+$apiEpText = [];
+foreach (array_keys(apiOpenApiSpec('')['paths']) as $apiPath) {
+    $apiKey = 'api_ep_' . trim(preg_replace('/[^a-z]+/', '_', $apiPath), '_');
+    $apiEpText[$apiPath] = __($apiKey) !== $apiKey ? __($apiKey) : '';
+}
+echo json_encode($apiEpText, JSON_UNESCAPED_UNICODE);
+?>;
 const apiScopeNames = <?= json_encode(array_combine(apiScopes(), array_map(function ($s) { return __('api_scope_' . $s); }, apiScopes())), JSON_UNESCAPED_UNICODE) ?>;
 const apiBase = location.origin + location.pathname.replace(/[^\/]*$/, '') + 'api.php/v1';
 
@@ -341,6 +357,32 @@ function apiSaveSettings() {
 }
 
 // Документация из openapi.json
+let apiDocsSpec = null;
+let apiDocsTag = '';
+function apiDocsChips(spec) { // кнопки-фильтры по областям доступа (типам методов) с числом методов
+    const counts = {};
+    Object.keys(spec.paths).forEach(p => { const t = ((spec.paths[p].get.tags) || [])[0] || ''; counts[t] = (counts[t] || 0) + 1; });
+    const order = Object.keys(apiScopeNames).filter(t => counts[t]);
+    const all = Object.keys(spec.paths).length;
+    const chip = (tag, label, n) => '<button type="button" class="sec-btn sm' + (apiDocsTag === tag ? ' primary' : '') + '" onclick="apiDocsSetTag(\'' + tag + '\')">' + secEsc(label) + ' <span class="api-chip-n">' + n + '</span></button>';
+    document.getElementById('apiDocsChips').innerHTML = chip('', <?= json_encode(__('api_docs_all')) ?>, all) + order.map(t => chip(t, apiScopeNames[t] || t, counts[t])).join('');
+}
+function apiDocsSetTag(tag) {
+    apiDocsTag = apiDocsTag === tag ? '' : tag;
+    apiDocsChips(apiDocsSpec);
+    apiDocsFilter();
+}
+function apiDocsFilter() {
+    const q = (document.getElementById('apiDocsSearch').value || '').trim().toLowerCase();
+    const eps = document.querySelectorAll('#apiDocs .api-ep');
+    let shown = 0;
+    eps.forEach(e => {
+        const ok = (!q || e.getAttribute('data-s').indexOf(q) !== -1) && (!apiDocsTag || e.getAttribute('data-t') === apiDocsTag);
+        e.style.display = ok ? '' : 'none'; if (ok) shown++;
+    });
+    document.getElementById('apiDocsCount').textContent = eps.length ? ((q || apiDocsTag) ? shown + ' / ' : '') + eps.length : '';
+    document.getElementById('apiDocsNone').style.display = eps.length && !shown ? '' : 'none';
+}
 let apiDocsLoaded = false;
 function apiResolve(spec, node) {
     if (node && node.$ref) { const name = node.$ref.split('/').pop(); return spec.components.schemas[name] || {}; }
@@ -359,21 +401,25 @@ function apiDocsLoad() {
     if (apiDocsLoaded) return; apiDocsLoaded = true;
     const link = document.getElementById('apiSpecLink'); link.href = apiBase + '/openapi.json';
     fetch(apiBase + '/openapi.json').then(r => r.json()).then(spec => {
-        let html = '<p class="sec-hint">' + secEsc(spec.info.description) + '</p>';
+        apiDocsSpec = spec;
+        let html = '<p class="sec-hint">' + secEsc(<?= json_encode(__('api_docs_intro')) ?>) + '</p>';
         Object.keys(spec.paths).forEach((p, i) => {
-            const op = spec.paths[p].get;
+            const op = spec.paths[p].get, txt = apiEpText[p] || op.summary || '', scope = (op.tags || [])[0] || '';
             const params = (op.parameters || []).map(q => '<tr><td class="mono">' + secEsc(q.name) + '</td><td>' + secEsc(q.in) + '</td><td>' + secEsc((q.schema && q.schema.type) || '') + (q.required ? ' *' : '') + '</td><td>' + secEsc(q.description || '') + '</td></tr>').join('');
             const okSchema = op.responses['200'].content['application/json'].schema;
             const ex = JSON.stringify({ data: apiExample(spec, okSchema) }, null, 2);
             const curl = 'curl -H "Authorization: Bearer <?= 'kms_…' ?>" "' + apiBase + p.replace('{name}', 'DEVICE-01') + '"';
-            html += '<div class="api-ep" id="apiEp' + i + '"><div class="api-ep-head" onclick="document.getElementById(\'apiEp' + i + '\').classList.toggle(\'open\')">' +
-                '<span class="api-method">GET</span><span class="api-path">/v1' + secEsc(p) + '</span><span class="api-sum">' + secEsc(op.summary) + '</span>' +
-                '<span class="sec-badge">' + secEsc(op.description || '') + '</span></div><div class="api-ep-body">' +
+            html += '<div class="api-ep" id="apiEp' + i + '" data-t="' + secEsc(scope) + '" data-s="' + secEsc((p + ' ' + txt + ' ' + (op.summary || '') + ' ' + (apiScopeNames[scope] || '') + ' ' + scope).toLowerCase()) + '"><div class="api-ep-head" onclick="document.getElementById(\'apiEp' + i + '\').classList.toggle(\'open\')">' +
+                '<span class="api-method">GET</span><span class="api-path">/v1' + secEsc(p) + '</span><span class="api-sum">' + secEsc(txt) + '</span>' +
+                '<span class="sec-badge"><?= htmlspecialchars(__('api_docs_scope')) ?>: ' + secEsc(apiScopeNames[scope] || scope) + '</span></div><div class="api-ep-body">' +
+                '<p class="api-desc">' + secEsc(txt) + '</p>' +
                 (params ? '<h4><?= __('api_docs_params') ?></h4><table class="sec-table"><tbody>' + params + '</tbody></table>' : '') +
                 '<h4><?= __('api_docs_example') ?></h4><div class="api-codebox"><button type="button" class="sec-btn sm api-copy" title="<?= htmlspecialchars(__('copy')) ?>" onclick="apiCopyBtn(this)">📋</button><div class="sec-code">' + secEsc(curl) + '</div></div>' +
                 '<h4><?= __('api_docs_response') ?></h4><div class="api-codebox"><button type="button" class="sec-btn sm api-copy" title="<?= htmlspecialchars(__('copy')) ?>" onclick="apiCopyBtn(this)">📋</button><div class="sec-code">' + secEsc(ex) + '</div></div></div></div>';
         });
         document.getElementById('apiDocs').innerHTML = html;
+        apiDocsChips(spec);
+        apiDocsFilter();
     }).catch(() => { document.getElementById('apiDocs').innerHTML = '<div class="sec-empty">' + secEsc(<?= json_encode(__('api_docs_error')) ?>) + '</div>'; });
 }
 

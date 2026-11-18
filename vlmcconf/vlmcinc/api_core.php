@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/api_core.php
-// ВЕРСИЯ: 1.0.1
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-18
 // @description: REST API для внешних интеграций (п. 25): ключи доступа, лимит запросов, обработчики, описание OpenAPI
 // ============================================
@@ -17,7 +17,7 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'api_core.php') {
 
 /** Области доступа ключа: что ключ может читать. */
 function apiScopes() {
-    return ['status', 'devices', 'groups', 'log', 'stats', 'security'];
+    return ['status', 'devices', 'groups', 'log', 'stats', 'reports', 'security', 'audit'];
 }
 
 function apiKeysFile() {
@@ -362,6 +362,22 @@ function apiRoute($method, $path, array $key, $config) {
         }
     };
     $known = apiKnownDevices($config);
+    // Параметры запроса: строка (обрезается), число дней, ограничение числа строк
+    $apiParam = function ($name, $max = 200) { return mb_substr(trim((string)($_GET[$name] ?? '')), 0, $max); };
+    $apiDays = function ($def) { $d = isset($_GET['days']) ? (int)$_GET['days'] : $def; return max(1, min(3650, $d)); };
+    $apiCap = function (array $rows) { return array_slice($rows, 0, max(1, min(1000, (int)($_GET['limit'] ?? 500)))); };
+    // Переводы нужны только для /health (названия проверок); язык берётся из настроек панели
+    $apiLoadTranslations = function ($cfg) {
+        global $translations;
+        if (!function_exists('__')) {
+            $lang = in_array($cfg['language'] ?? '', ['ru', 'en'], true) ? $cfg['language'] : 'ru';
+            $translations = @include __DIR__ . '/../locale/' . $lang . '.php';
+            if (!is_array($translations)) {
+                $translations = [];
+            }
+            function __($key) { global $translations; return isset($translations[$key]) ? $translations[$key] : $key; }
+        }
+    };
 
     if ($method !== 'GET') {
         apiError(405, 'method_not_allowed', 'Only GET requests are supported', ['Allow' => 'GET, OPTIONS']);
@@ -486,6 +502,115 @@ function apiRoute($method, $path, array $key, $config) {
         return $out;
     }
 
+    // ----- Группа с устройствами -----
+    if (preg_match('#^/groups/([^/]+)$#', $path, $m)) {
+        $need('groups');
+        $gname = rawurldecode($m[1]);
+        if (!isset($config['devices'][$gname])) {
+            apiError(404, 'not_found', 'Group not found');
+        }
+        $summary = reportDeviceSummary($logFile);
+        $color = $config['groupColors'][$gname] ?? [];
+        $list = [];
+        foreach ((array)$config['devices'][$gname] as $d) {
+            if (!isset($d['name'])) {
+                continue;
+            }
+            $s = $summary[$d['name']] ?? null;
+            $list[] = ['name' => (string)$d['name'], 'comment' => (string)($d['comment'] ?? ''), 'added' => (string)($d['added'] ?? ''),
+                       'requests' => $s['count'] ?? 0, 'last_seen' => $s['last'] ?? null];
+        }
+        return ['name' => $gname, 'icon' => is_array($color) ? ($color['icon'] ?? '') : '', 'color' => is_array($color) ? ($color['color'] ?? '') : '', 'devices' => $list];
+    }
+
+    // ----- IP-адреса устройства -----
+    if (preg_match('#^/devices/([^/]+)/ips$#', $path, $m)) {
+        $need('devices');
+        $name = rawurldecode($m[1]);
+        $res = reportDeviceIps($logFile, $name);
+        $rows = array_values(array_filter($res['rows'], function ($r) use ($name) { return strcasecmp($r['device'], $name) === 0; }));
+        if (!$rows && !isset($known[$name])) {
+            apiError(404, 'not_found', 'Device not found');
+        }
+        return $apiCap($rows);
+    }
+
+    // ----- Отчёты -----
+    if (strpos($path, '/reports/') === 0) {
+        $need('reports');
+        switch (substr($path, 9)) {
+            case 'device-ips':
+                $dev = $apiParam('device');
+                if ($dev === '') {
+                    apiError(400, 'bad_request', 'Parameter "device" is required');
+                }
+                $res = reportDeviceIps($logFile, $dev);
+                return ['matched' => $res['matched'], 'rows' => $apiCap($res['rows'])];
+            case 'ip-devices':
+                $ip = $apiParam('ip');
+                if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+                    apiError(400, 'bad_request', 'Parameter "ip" must be an IP address');
+                }
+                $res = reportIpDevices($logFile, $ip);
+                return ['ip' => $ip, 'country' => $res['country'], 'rows' => $apiCap($res['rows'])];
+            case 'multi-ip-devices':
+                return $apiCap(reportMultiIp($logFile));
+            case 'shared-ips':
+                return $apiCap(reportSharedIps($logFile));
+            case 'top-devices':
+                return reportTopDevices($logFile);
+            case 'inactive-devices':
+                return $apiCap(reportInactive($logFile, $apiDays(30)));
+            case 'new-devices':
+                return $apiCap(reportNewDevices($logFile, $apiDays(7)));
+            case 'products':
+                return $apiCap(reportProducts($logFile));
+            case 'countries':
+                return reportCountries($logFile);
+            case 'by-country':
+                $res = reportByCountry($logFile, $apiParam('country'));
+                return ['summary' => $res['summary'], 'rows' => $apiCap($res['rows'])];
+        }
+        apiError(404, 'not_found', 'Unknown report');
+    }
+
+    // ----- Белый список IP -----
+    if ($path === '/whitelist-ips') {
+        $need('security');
+        return array_values(array_map('strval', (array)($config['whitelist_ips'] ?? [])));
+    }
+
+    // ----- Журнал событий -----
+    if ($path === '/audit') {
+        $need('audit');
+        require_once __DIR__ . '/audit.php';
+        $f = ['user' => $apiParam('user'), 'action' => $apiParam('action'), 'result' => $apiParam('result'), 'q' => $apiParam('q'),
+              'from' => $apiParam('from', 10), 'to' => $apiParam('to', 10)];
+        foreach (['from', 'to'] as $k) {
+            if ($f[$k] !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $f[$k])) {
+                apiError(400, 'bad_request', 'Parameters "from" and "to" must be YYYY-MM-DD');
+            }
+        }
+        $r = auditQuery($f, (int)($_GET['page'] ?? 1), (int)($_GET['per_page'] ?? 50));
+        $items = array_map(function ($i) {
+            return ['time' => $i['time'], 'user' => $i['user'], 'ip' => $i['ip'], 'action' => $i['action'], 'details' => $i['details'], 'result' => $i['result']];
+        }, $r['items']);
+        return ['total' => $r['total'], 'page' => $r['page'], 'pages' => $r['pages'], 'per_page' => $r['per_page'], 'items' => $items];
+    }
+
+    // ----- Состояние функций панели (вкладка «Статус») -----
+    if ($path === '/health') {
+        $need('status');
+        $apiLoadTranslations($config);
+        require_once __DIR__ . '/status.php';
+        $out = ['ok' => 0, 'warn' => 0, 'err' => 0, 'off' => 0, 'checks' => []];
+        foreach (statusCollect() as $row) {
+            $out[$row['state']]++;
+            $out['checks'][] = ['group' => $row['group'], 'name' => $row['label'], 'state' => $row['state']];
+        }
+        return $out;
+    }
+
     apiError(404, 'not_found', 'Unknown endpoint');
 }
 
@@ -500,12 +625,14 @@ function apiOpenApiSpec($serverUrl) {
     };
     $arr = function ($schema) { return ['type' => 'array', 'items' => $schema]; };
     $sec = [['bearerAuth' => []]];
+    $pathName = ['name' => 'name', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']];
+    $limitParam = ['name' => 'limit', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 500, 'maximum' => 1000], 'description' => 'Maximum number of rows'];
     return [
         'openapi' => '3.0.3',
         'info' => [
             'title' => 'KMS Monitor API',
             'version' => '1.0.0',
-            'description' => 'Read-only REST API of the KMS Monitor panel. Create a key in the panel (API section) and pass it as "Authorization: Bearer <key>" or "X-API-Key". Requests are limited per key (default 60 per minute).',
+            'description' => 'Read-only REST API of the KMS Monitor panel (devices, groups, log, statistics, reports, event journal, health). Create a key in the panel (API section) and pass it as "Authorization: Bearer <key>" or "X-API-Key". Requests are limited per key (default 60 per minute).',
         ],
         'servers' => [['url' => $serverUrl]],
         'security' => $sec,
@@ -527,6 +654,50 @@ function apiOpenApiSpec($serverUrl) {
                 'responses' => $ok('Events, newest first', $arr($ref('LogEvent')))]],
             '/stats' => ['get' => ['tags' => ['stats'], 'summary' => 'Summary statistics', 'description' => 'Scope: stats', 'responses' => $ok('Statistics', $ref('Stats'))]],
             '/unknown-devices' => ['get' => ['tags' => ['security'], 'summary' => 'Devices seen in the log but not added to the panel', 'description' => 'Scope: security', 'responses' => $ok('Unknown devices', $arr($ref('UnknownDevice')))]],
+            '/groups/{name}' => ['get' => ['tags' => ['groups'], 'summary' => 'One group with its devices', 'description' => 'Scope: groups',
+                'parameters' => [$pathName],
+                'responses' => $ok('Group', $ref('GroupDetail')) + ['404' => ['description' => 'Group not found']]]],
+            '/devices/{name}/ips' => ['get' => ['tags' => ['devices'], 'summary' => 'IP addresses a device connected from', 'description' => 'Scope: devices',
+                'parameters' => [$pathName, $limitParam],
+                'responses' => $ok('IP addresses of the device', $arr($ref('DeviceIp'))) + ['404' => ['description' => 'Device not found']]]],
+            '/reports/device-ips' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: IP addresses of a device', 'description' => 'Scope: reports',
+                'parameters' => [['name' => 'device', 'in' => 'query', 'required' => true, 'schema' => ['type' => 'string'], 'description' => 'Device name (exact, otherwise partial match)'], $limitParam],
+                'responses' => $ok('Matched devices and rows', ['type' => 'object', 'properties' => ['matched' => ['type' => 'array', 'items' => ['type' => 'string']], 'rows' => $arr($ref('DeviceIp'))]])]],
+            '/reports/ip-devices' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: devices that connected from an IP', 'description' => 'Scope: reports',
+                'parameters' => [['name' => 'ip', 'in' => 'query', 'required' => true, 'schema' => ['type' => 'string'], 'description' => 'IPv4 or IPv6 address'], $limitParam],
+                'responses' => $ok('Devices on the IP', ['type' => 'object', 'properties' => ['ip' => ['type' => 'string'], 'country' => ['type' => 'string'], 'rows' => $arr($ref('DeviceIp'))]])]],
+            '/reports/multi-ip-devices' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: devices seen from several IP addresses', 'description' => 'Scope: reports', 'parameters' => [$limitParam],
+                'responses' => $ok('Devices', $arr(['type' => 'object', 'properties' => ['device' => ['type' => 'string'], 'ips' => ['type' => 'integer'], 'count' => ['type' => 'integer'], 'last' => ['type' => 'string'], 'ip_list' => ['type' => 'string']]]))]],
+            '/reports/shared-ips' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: IP addresses used by several devices', 'description' => 'Scope: reports', 'parameters' => [$limitParam],
+                'responses' => $ok('IP addresses', $arr(['type' => 'object', 'properties' => ['ip' => ['type' => 'string'], 'country' => ['type' => 'string'], 'devices' => ['type' => 'integer'], 'count' => ['type' => 'integer'], 'last' => ['type' => 'string']]]))]],
+            '/reports/top-devices' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: 50 most active devices', 'description' => 'Scope: reports',
+                'responses' => $ok('Devices', $arr(['type' => 'object', 'properties' => ['device' => ['type' => 'string'], 'count' => ['type' => 'integer'], 'ips' => ['type' => 'integer'], 'first' => ['type' => 'string'], 'last' => ['type' => 'string']]]))]],
+            '/reports/inactive-devices' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: devices not seen for N days', 'description' => 'Scope: reports',
+                'parameters' => [['name' => 'days', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 30, 'maximum' => 3650]], $limitParam],
+                'responses' => $ok('Devices, longest absent first', $arr(['type' => 'object', 'properties' => ['device' => ['type' => 'string'], 'last' => ['type' => 'string'], 'days_ago' => ['type' => 'integer'], 'count' => ['type' => 'integer'], 'last_ip' => ['type' => 'string']]]))]],
+            '/reports/new-devices' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: devices first seen in the last N days', 'description' => 'Scope: reports',
+                'parameters' => [['name' => 'days', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 7, 'maximum' => 3650]], $limitParam],
+                'responses' => $ok('Devices, newest first', $arr(['type' => 'object', 'properties' => ['device' => ['type' => 'string'], 'first' => ['type' => 'string'], 'last' => ['type' => 'string'], 'count' => ['type' => 'integer'], 'ips' => ['type' => 'integer']]]))]],
+            '/reports/products' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: products by unique devices and requests', 'description' => 'Scope: reports', 'parameters' => [$limitParam],
+                'responses' => $ok('Products', $arr(['type' => 'object', 'properties' => ['product' => ['type' => 'string'], 'devices' => ['type' => 'integer'], 'count' => ['type' => 'integer']]]))]],
+            '/reports/countries' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: countries of IP addresses (from the geo cache)', 'description' => 'Scope: reports',
+                'responses' => $ok('Countries (empty name = not determined)', $arr(['type' => 'object', 'properties' => ['country' => ['type' => 'string'], 'flag' => ['type' => 'string'], 'ips' => ['type' => 'integer'], 'count' => ['type' => 'integer']]]))]],
+            '/reports/by-country' => ['get' => ['tags' => ['reports'], 'summary' => 'Report: IP addresses and devices of a country', 'description' => 'Scope: reports',
+                'parameters' => [['name' => 'country', 'in' => 'query', 'schema' => ['type' => 'string'], 'description' => 'Country name as in /reports/countries; empty = all, __unknown__ = not determined'], $limitParam],
+                'responses' => $ok('IP addresses with devices', ['type' => 'object', 'properties' => ['summary' => ['type' => 'object', 'properties' => ['ips' => ['type' => 'integer'], 'devices' => ['type' => 'integer'], 'requests' => ['type' => 'integer']]],
+                    'rows' => $arr(['type' => 'object', 'properties' => ['country' => ['type' => 'string'], 'ip' => ['type' => 'string'], 'devices' => ['type' => 'array', 'items' => ['type' => 'string']], 'devices_more' => ['type' => 'integer'], 'count' => ['type' => 'integer'], 'last' => ['type' => 'string']]])]])]],
+            '/whitelist-ips' => ['get' => ['tags' => ['security'], 'summary' => 'White-listed IP addresses (excluded from suspicious ones)', 'description' => 'Scope: security', 'responses' => $ok('IP addresses', $arr(['type' => 'string']))]],
+            '/audit' => ['get' => ['tags' => ['audit'], 'summary' => 'Event journal (newest first)', 'description' => 'Scope: audit',
+                'parameters' => [
+                    ['name' => 'user', 'in' => 'query', 'schema' => ['type' => 'string']], ['name' => 'action', 'in' => 'query', 'schema' => ['type' => 'string']],
+                    ['name' => 'result', 'in' => 'query', 'schema' => ['type' => 'string', 'enum' => ['ok', 'error', 'denied']]], ['name' => 'q', 'in' => 'query', 'schema' => ['type' => 'string'], 'description' => 'Text search'],
+                    ['name' => 'from', 'in' => 'query', 'schema' => ['type' => 'string'], 'description' => 'YYYY-MM-DD'], ['name' => 'to', 'in' => 'query', 'schema' => ['type' => 'string'], 'description' => 'YYYY-MM-DD'],
+                    ['name' => 'page', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 1]], ['name' => 'per_page', 'in' => 'query', 'schema' => ['type' => 'integer', 'default' => 50, 'maximum' => 500]]],
+                'responses' => $ok('Journal page', ['type' => 'object', 'properties' => ['total' => ['type' => 'integer'], 'page' => ['type' => 'integer'], 'pages' => ['type' => 'integer'], 'per_page' => ['type' => 'integer'],
+                    'items' => $arr(['type' => 'object', 'properties' => ['time' => ['type' => 'string'], 'user' => ['type' => 'string'], 'ip' => ['type' => 'string'], 'action' => ['type' => 'string'], 'details' => ['type' => 'string'], 'result' => ['type' => 'string', 'enum' => ['ok', 'error', 'denied']]]])]])]],
+            '/health' => ['get' => ['tags' => ['status'], 'summary' => 'State of panel functions (the "Status" tab): counts and a state per check', 'description' => 'Scope: status',
+                'responses' => $ok('Checks', ['type' => 'object', 'properties' => ['ok' => ['type' => 'integer'], 'warn' => ['type' => 'integer'], 'err' => ['type' => 'integer'], 'off' => ['type' => 'integer'],
+                    'checks' => $arr(['type' => 'object', 'properties' => ['group' => ['type' => 'string'], 'name' => ['type' => 'string'], 'state' => ['type' => 'string', 'enum' => ['ok', 'warn', 'err', 'off']]]])]])]],
         ],
         'components' => [
             'securitySchemes' => ['bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'description' => 'API key (kms_…)']],
@@ -548,6 +719,9 @@ function apiOpenApiSpec($serverUrl) {
                     'requests_total' => ['type' => 'integer'], 'devices_in_log' => ['type' => 'integer'], 'known_devices' => ['type' => 'integer'],
                     'unknown_devices' => ['type' => 'integer'],
                     'top_products' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['product' => ['type' => 'string'], 'devices' => ['type' => 'integer']]]]]],
+                'GroupDetail' => ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'icon' => ['type' => 'string'], 'color' => ['type' => 'string'],
+                    'devices' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['name' => ['type' => 'string'], 'comment' => ['type' => 'string'], 'added' => ['type' => 'string'], 'requests' => ['type' => 'integer'], 'last_seen' => ['type' => 'string', 'nullable' => true]]]]]],
+                'DeviceIp' => ['type' => 'object', 'properties' => ['device' => ['type' => 'string'], 'ip' => ['type' => 'string'], 'count' => ['type' => 'integer'], 'first' => ['type' => 'string'], 'last' => ['type' => 'string'], 'country' => ['type' => 'string'], 'flag' => ['type' => 'string']]],
                 'UnknownDevice' => ['type' => 'object', 'properties' => [
                     'name' => ['type' => 'string'], 'requests' => ['type' => 'integer'], 'first_seen' => ['type' => 'string'], 'last_seen' => ['type' => 'string'], 'last_ip' => ['type' => 'string']]],
             ],

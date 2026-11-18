@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.15
+// ВЕРСИЯ: 5.15.18
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1234,7 +1234,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_scope_security' => 'Security',
     'api_settings_title' => 'API settings',
     'api_enable' => 'Enable the API',
-    'api_enable_hint' => 'The API is read-only: status, devices, groups, log, statistics, unknown devices and blocks.',
+    'api_enable_hint' => 'The API is read-only: status and health, devices, groups, log, statistics, reports, unknown devices, IP white list and the event journal.',
     'api_rate_limit' => 'Rate limit',
     'api_rate_limit_unit' => 'per minute per key (0 — unlimited)',
     'api_cors' => 'Allowed origins (CORS)',
@@ -1743,5 +1743,34 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_cal_30d' => '30 days',
     'api_cal_90d' => '90 days',
     'api_cal_1y' => '1 year',
+    'api_scope_reports' => 'Reports',
+    'api_scope_audit' => 'Event journal',
+    'api_docs_search' => 'Search methods: path, description, scope',
+    'api_docs_none' => 'No methods found',
+    'api_ep_status' => 'Panel version and log state: whether the file exists, its size and update time, number of groups and known devices.',
+    'api_ep_health' => 'Result of the "Status" tab: how many checks are OK, with warnings, failed or off, and the state of each. Suitable for monitoring, e.g. from Zabbix.',
+    'api_ep_groups' => 'Device groups with icon, color and number of devices.',
+    'api_ep_groups_name' => 'One group and all its devices: comment, date added, number of requests, last seen.',
+    'api_ep_devices' => 'All known devices: group, comment, number of requests, first and last seen. Can be filtered by group (parameter group).',
+    'api_ep_devices_name' => 'One device: group, request statistics and the list of IP addresses it connected from.',
+    'api_ep_devices_name_ips' => 'IP addresses the device connected from: number of requests, first and last time, country.',
+    'api_ep_log' => 'Latest requests to the KMS server from the log, newest first: time, device, IP, product. Filters: device, since, limit.',
+    'api_ep_stats' => 'Summary: total requests, devices in the log, known and unknown, most frequent products.',
+    'api_ep_unknown_devices' => 'Devices that connect to the server but are not added to the panel: requests, first and last seen, last IP.',
+    'api_ep_whitelist_ips' => 'White list: IP addresses excluded from the suspicious list.',
+    'api_ep_audit' => 'Panel event journal: logins, settings changes, access denials. Newest first; filters by user, action, result, dates and text.',
+    'api_ep_reports_device_ips' => 'Report "Device IPs": all addresses the device connected from (parameter device).',
+    'api_ep_reports_ip_devices' => 'Report "Devices on IP": all devices that connected from the address (parameter ip).',
+    'api_ep_reports_multi_ip_devices' => 'Report: devices that connected from several IP addresses (network change, VPN, a laptop in different offices).',
+    'api_ep_reports_shared_ips' => 'Report: IP addresses used by several different devices (NAT, office, suspicious addresses).',
+    'api_ep_reports_top_devices' => 'Report: the 50 most active devices by number of requests.',
+    'api_ep_reports_inactive_devices' => 'Report: devices not seen in the log for more than N days (parameter days, default 30). Longest absent first.',
+    'api_ep_reports_new_devices' => 'Report: devices first seen in the last N days (parameter days, default 7).',
+    'api_ep_reports_products' => 'Report: products with the number of unique devices and requests for each.',
+    'api_ep_reports_countries' => 'Report: countries of IP addresses (from the geo cache), number of addresses and requests.',
+    'api_ep_reports_by_country' => 'Report "By country": IP addresses of the chosen country and the devices on each (parameter country).',
+    'api_docs_intro' => 'Read-only (GET). Create a key on the "Keys" tab and pass it in the header Authorization: Bearer <key> or X-API-Key. Each method requires the matching key scope. The request limit is set in the settings.',
+    'api_docs_scope' => 'Scope',
+    'api_docs_all' => 'All',
 ];
 ?>
