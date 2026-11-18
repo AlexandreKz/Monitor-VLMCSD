@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/panel_access.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.0.1
 // ДАТА: 2026-11-18
 // @description: Белый список IP для доступа к панели управления (п. 29): проверка адреса, CIDR, аварийное отключение
 // ============================================
@@ -14,9 +14,14 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'panel_access.php') {
     exit('Access denied');
 }
 
+/** IPv4 в IPv6-записи (::ffff:1.2.3.4, так отдают адрес некоторые связки веб-сервера) приводится к обычному IPv4. */
+function vlmcPanelUnmap($ip) {
+    return preg_match('/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i', (string)$ip, $m) ? $m[1] : (string)$ip;
+}
+
 /** Адрес клиента (панель работает без обратного прокси — берём адрес соединения). */
 function vlmcPanelClientIp() {
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $ip = vlmcPanelUnmap($_SERVER['REMOTE_ADDR'] ?? '');
     return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '';
 }
 
@@ -39,6 +44,7 @@ function vlmcPanelNormalizeEntry($s) {
 
 /** Входит ли адрес в запись списка (одиночный адрес или сеть CIDR, IPv4 и IPv6). */
 function vlmcPanelIpMatches($ip, $entry) {
+    $ip = vlmcPanelUnmap($ip);
     $ipBin = @inet_pton($ip);
     if ($ipBin === false) {
         return false;
@@ -129,6 +135,7 @@ function vlmcPanelAccessEnforce() {
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>403</title></head>'
        . '<body style="font-family:sans-serif;text-align:center;padding:60px;color:#555">'
        . '<h1>403</h1><p>Access denied: your IP address is not allowed to open the control panel.</p>'
-       . '<p>Доступ запрещён: ваш IP-адрес не входит в список разрешённых для панели управления.</p></body></html>';
+       . '<p>Доступ запрещён: ваш IP-адрес не входит в список разрешённых для панели управления.</p>'
+       . '<p style="font-size:13px;color:#888">IP, как его видит сервер / IP as seen by the server: <b>' . htmlspecialchars(vlmcPanelClientIp() ?: (string)($_SERVER['REMOTE_ADDR'] ?? '?')) . '</b></p></body></html>';
     exit;
 }
