@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.10.0
+// ВЕРСИЯ: 5.10.1
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1330,7 +1330,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_err_no_extension' => 'The PHP LDAP extension is not installed',
     'ldap_err_no_server' => 'No server specified',
     'ldap_err_incomplete' => 'Specify the server and Base DN',
-    'ldap_err_connect_failed' => 'Could not connect to the server',
+    'ldap_err_connect_failed' => 'Could not connect to the server: check the address and port, network access from the panel, and the certificate (for LDAPS by IP address the certificate usually does not match — use the server name or turn off certificate checking)',
     'ldap_err_tls_failed' => 'Could not start StartTLS',
     'ldap_err_bind_failed' => 'The server rejected the service account credentials',
     'ldap_err_search_failed' => 'Directory search failed (check the Base DN and the service account rights)',

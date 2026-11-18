@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.0.1
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -143,6 +143,10 @@ function ldapServiceBind($conn, $s, $config = null) {
         $ok = @ldap_bind($conn, $s['service_user'], ldapServicePassword($config));
     }
     if (!$ok) {
+        // -1 = «Can't contact LDAP server»: до проверки пароля дело не дошло (адрес, порт, сеть или сертификат)
+        if (function_exists('ldap_errno') && @ldap_errno($conn) === -1) {
+            return [false, 'connect_failed', ldap_error($conn)];
+        }
         return [false, 'bind_failed', ldap_error($conn)];
     }
     return [true, '', ''];
