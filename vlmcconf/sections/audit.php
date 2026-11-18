@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.1.5
-// ДАТА: 2026-11-17
-// @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения, очистка (админ), ссылка на уведомления
+// ВЕРСИЯ: 3.2.0
+// ДАТА: 2026-11-18
+// @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'audit.php') {
@@ -93,7 +93,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
         </div>
         <div class="audit-bar-right">
-            <span id="auditFound"></span>
             <?php if ($canAuditAdmin): ?>
             <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px;">🗑️ <?= __('audit_clear') ?></button>
             <?php endif; ?>
@@ -126,6 +125,7 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             <button class="btn" id="auditNext" style="padding: 5px 12px;">→</button>
         </div>
         <div class="audit-pager-right">
+            <span id="auditFound"></span>
             <select id="auditPerPage" class="form-control" style="width: 90px;" title="<?= htmlspecialchars(__('audit_per_page')) ?>">
                 <option value="25">25</option>
                 <option value="50" selected>50</option>
@@ -135,38 +135,25 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         </div>
     </div>
 
-    <!-- Срок хранения и уведомления: в одну строку -->
-    <div class="audit-row">
-    <!-- Срок хранения -->
-    <div class="audit-panel">
+    <!-- Срок хранения: компактная строка во всю ширину (уведомления журнала настраиваются в разделе «Уведомления») -->
+    <div class="audit-panel audit-ret">
         <div class="audit-panel-title">🗓️ <?= __('audit_retention_title') ?></div>
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <select id="auditRetSel" class="form-control" style="width: 190px;" <?= $canAuditAdmin ? '' : 'disabled' ?>>
-                <option value="30"><?= sprintf(__('audit_retention_days'), 30) ?></option>
-                <option value="90"><?= sprintf(__('audit_retention_days'), 90) ?></option>
-                <option value="180"><?= sprintf(__('audit_retention_days'), 180) ?></option>
-                <option value="custom"><?= __('audit_retention_custom') ?></option>
-            </select>
-            <input type="number" id="auditRetCustom" class="form-control" style="width: 110px; display: none;" min="1" max="365" step="1" placeholder="1–365" <?= $canAuditAdmin ? '' : 'disabled' ?>>
-            <?php if ($canAuditAdmin): ?>
-            <button class="btn btn-primary" id="auditRetSave" style="padding: 6px 14px; font-size: 12px;">💾 <?= __('save') ?></button>
-            <?php endif; ?>
-            <span id="auditRetMsg" style="font-size: 12px;"></span>
-        </div>
-        <div id="auditStatsLine" class="audit-hint" style="margin-top: 8px;"></div>
-        <div class="audit-hint"><?= __('audit_retention_hint') ?></div>
-    </div>
-
-    <!-- Уведомления журнала: настройка в разделе «Уведомления» (пункт 27) -->
-    <div class="audit-panel">
-        <div class="audit-panel-title">🔔 <?= __('audit_notify_title') ?></div>
-        <div class="audit-hint"><?= __('notify_open_hint') ?></div>
-        <?php if (canEditNotifications($currentUserPermissions)): ?>
-        <div style="margin-top: 8px;"><button type="button" class="audit-flat" onclick="var m=document.querySelector('.menu-item[onclick*=&quot;notifications&quot;]'); if (m) m.click();">🔔 <?= __('notify_open_settings') ?></button></div>
+        <select id="auditRetSel" class="form-control" style="width: 190px;" <?= $canAuditAdmin ? '' : 'disabled' ?>>
+            <option value="30"><?= sprintf(__('audit_retention_days'), 30) ?></option>
+            <option value="90"><?= sprintf(__('audit_retention_days'), 90) ?></option>
+            <option value="180"><?= sprintf(__('audit_retention_days'), 180) ?></option>
+            <option value="custom"><?= __('audit_retention_custom') ?></option>
+        </select>
+        <input type="number" id="auditRetCustom" class="form-control" style="width: 110px; display: none;" min="1" max="365" step="1" placeholder="1–365" <?= $canAuditAdmin ? '' : 'disabled' ?>>
+        <?php if ($canAuditAdmin): ?>
+        <button class="btn btn-primary" id="auditRetSave" style="padding: 6px 14px; font-size: 12px;">💾 <?= __('save') ?></button>
         <?php endif; ?>
+        <span id="auditRetMsg" style="font-size: 12px;"></span>
+        <div class="audit-ret-info">
+            <span id="auditStatsLine" class="audit-hint"></span>
+            <span class="audit-hint"><?= __('audit_retention_hint') ?></span>
+        </div>
     </div>
-    </div>
-
 </div>
 
 <style>
@@ -217,9 +204,10 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-cal-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
 .audit-cal-preset { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; }
 .audit-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
-.audit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: stretch; }
-.audit-row .audit-panel { margin-bottom: 0; }
-@media (max-width: 900px) { .audit-row { grid-template-columns: 1fr; } }
+.audit-ret { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 15px; margin-bottom: 0; }
+.audit-ret .audit-panel-title { margin: 0; }
+.audit-ret-info { display: flex; flex-direction: column; margin-left: auto; text-align: right; gap: 1px; }
+.audit-pager-right { display: flex; align-items: center; gap: 10px; }
 .audit-panel { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
 .audit-hint { font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
