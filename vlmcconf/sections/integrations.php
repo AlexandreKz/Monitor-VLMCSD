@@ -273,7 +273,7 @@ $permOptions = [
 .ld-bk { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
 .ld-bk input { flex: 1 1 0; min-width: 0; }
 .ld-acc { width: 22px; flex: none; text-align: center; font-size: 13px; cursor: default; }
-.ld-bk button { background: none; border: none; cursor: pointer; color: <?= $themeCSS['muted'] ?>; font-size: 14px; padding: 0 4px; }
+.ld-bk button { background: none; border: none; cursor: pointer; color: <?= $themeCSS['muted'] ?>; font-size: 14px; padding: 0; width: 22px; flex: none; text-align: center; }
 .ld-bk button:hover { color: <?= $themeCSS['dangerText'] ?>; }
 </style>
 <div id="ldGroupsOverlay" class="ld-overlay" onclick="if (event.target === this) ldGroupsClose()">

@@ -1312,7 +1312,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_backup_accounts' => 'Backup accounts',
     'ldap_backup_add' => 'Add',
     'ldap_backup_user_ph' => 'Login or DN',
-    'ldap_backup_hint' => 'Backup service accounts (up to 5) are tried in order if the main one is rejected, for example after its password was changed or the account locked. Passwords are stored encrypted. “Check connection” tests every account separately: ✅ accepted, ❌ rejected.',
+    'ldap_backup_hint' => 'Backup service accounts (up to 5) are tried in order if the main one is rejected, for example after its password was changed or the account locked. Passwords are stored encrypted.',
     'ldap_msg_backup_used' => 'The main account was rejected; the backup account was used: %s.',
     'ldap_user_filter' => 'Extra filter',
     'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
