@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.5.1
+// ВЕРСИЯ: 1.5.2
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики разделов «Интеграции» (п. 26: Active Directory / LDAP) и «API» (п. 25: ключи и настройки).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -124,8 +124,9 @@ if (in_array($xAction, ['api_keys_list', 'api_save_settings', 'api_key_create', 
     }
 
     if ($xAction === 'api_key_toggle') {
-        $ok = apiKeySetEnabled((string)($_POST['id'] ?? ''), xBool($_POST['enabled'] ?? '0'));
-        xjson(['success' => $ok, 'message' => __($ok ? 'api_msg_key_updated' : 'msg_save_error')]);
+        $want = xBool($_POST['enabled'] ?? '0');
+        $ok = apiKeySetEnabled((string)($_POST['id'] ?? ''), $want);
+        xjson(['success' => $ok, 'enabled' => $want, 'message' => __($ok ? ($want ? 'api_msg_key_on' : 'api_msg_key_off') : 'msg_save_error')]);
     }
 
     if ($xAction === 'api_key_delete') {

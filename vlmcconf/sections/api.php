@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.4
+// ВЕРСИЯ: 6.7.5
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -55,7 +55,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
             <?php if ($apiCanEdit): ?>
             <div class="sec-row" style="margin-top: 8px;">
                 <button type="button" class="sec-btn primary" onclick="apiNewOpen()">➕ <?= __('api_key_new') ?></button>
-                <span id="apiKeysMsg" class="sec-msg" style="margin: 0;"></span>
+                <span id="apiKeysMsg" class="sec-msg" style="margin: 0 0 0 auto;"></span>
             </div>
             <div id="apiOverlay" class="api-ov" onclick="if (event.target === this && !apiResultShown) apiClose()">
                 <div class="api-modal">
@@ -349,7 +349,7 @@ function apiReloadKeysSoft() { // обновляем таблицу ключей
 }
 function apiToggle(id, enable) {
     secPost({ ajax: 'api_key_toggle', id: id, enabled: enable ? '1' : '0' }).then(d => {
-        secMsg('apiKeysMsg', !!d.success, d.message || '');
+        secMsg('apiKeysMsg', !!d.success && enable, d.message || '');
         if (d.success) { const k = apiKeys.find(x => x.id === id); if (k) k.enabled = enable; apiRenderKeys(); }
     });
 }
