@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.2.0
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -93,6 +93,8 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
             $perms = $allowedPerms[0];
         }
         $password = (string)($_POST['service_password'] ?? '');
+        $backupIn = json_decode((string)($_POST['backup_accounts'] ?? '[]'), true);
+        $backupIn = is_array($backupIn) ? array_slice($backupIn, 0, LDAP_BACKUP_MAX) : [];
         $fields = [
             'enabled' => xBool($_POST['enabled'] ?? '0'),
             'auth_enabled' => xBool($_POST['auth_enabled'] ?? '0'),
@@ -112,13 +114,31 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
             'default_permissions' => $perms,
             'timeout' => max(2, min(30, (int)($_POST['timeout'] ?? 5))),
         ];
-        $saved = xConfigUpdate(function (&$config) use ($fields, $password) {
+        $saved = xConfigUpdate(function (&$config) use ($fields, $password, $backupIn) {
             $ad = isset($config['integrations']['ad']) && is_array($config['integrations']['ad']) ? $config['integrations']['ad'] : [];
             $ad = $fields + $ad;
             $ad = array_merge($ad, $fields);
             if ($password !== '' && $password !== '********') {
                 $ad['service_password'] = notifyEncrypt($password);
             }
+            // резервные записи: пароль-заглушка оставляет прежний пароль той же записи
+            $old = [];
+            foreach ((array)($ad['backup_accounts'] ?? []) as $ob) {
+                if (is_array($ob) && isset($ob['user'])) {
+                    $old[mb_strtolower(trim((string)$ob['user']))] = (string)($ob['password'] ?? '');
+                }
+            }
+            $backups = [];
+            foreach ($backupIn as $b) {
+                $bu = mb_substr(trim((string)($b['user'] ?? '')), 0, 300);
+                if ($bu === '') {
+                    continue;
+                }
+                $bp = (string)($b['password'] ?? '');
+                $enc = ($bp === '' || $bp === '********') ? ($old[mb_strtolower($bu)] ?? '') : notifyEncrypt($bp);
+                $backups[] = ['user' => $bu, 'password' => $enc];
+            }
+            $ad['backup_accounts'] = $backups;
             if (empty($fields['service_user'])) {
                 $ad['service_password'] = '';
             }
@@ -130,6 +150,9 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
     if ($xAction === 'ldap_test') {
         $r = ldapTest();
         $msg = $r['success'] ? sprintf(__('ldap_msg_test_ok'), (int)($r['users'] ?? 0)) : __('ldap_err_' . $r['code']);
+        if ($r['success'] && !empty($r['backup_used'])) {
+            $msg .= ' — ' . sprintf(__('ldap_msg_backup_used'), $r['backup_used']);
+        }
         if (!$r['success'] && !empty($r['detail'])) {
             $msg .= ' (' . mb_substr($r['detail'], 0, 120) . ')';
         }

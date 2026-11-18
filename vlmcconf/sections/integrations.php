@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.2.0
+// ВЕРСИЯ: 6.3.0
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -20,7 +20,7 @@ vlmcSectionUi($themeCSS);
     <div class="section-title sec-title">
         <span>🔌 <?= __('integrations') ?></span>
         <div class="sec-tabs">
-            <button class="sec-tab-btn active" data-for="ad" onclick="secTab('section-integrations','ad',this)">🏢 <?= __('ldap_tab_ad') ?></button>
+            <button class="sec-tab-btn active" data-for="ad" onclick="secTab('section-integrations','ad',this); ldFit();">🏢 <?= __('ldap_tab_ad') ?></button>
             <button class="sec-tab-btn" data-for="cloud" onclick="secTab('section-integrations','cloud',this)">☁️ <?= __('int_tab_cloud') ?></button>
             <button class="sec-tab-btn" data-for="webhook" onclick="secTab('section-integrations','webhook',this)">🔔 <?= __('int_tab_webhook') ?></button>
         </div>
@@ -87,11 +87,19 @@ $permOptions = [
                         <input type="text" id="ldSvcUser" class="form-control" value="<?= htmlspecialchars($ld['service_user']) ?>" placeholder="CN=svc-kms,OU=Service,DC=corp,DC=example,DC=com" <?= $ldDis ?>></div>
                     <div class="sec-row"><label for="ldSvcPass"><?= __('ldap_service_password') ?></label>
                         <input type="password" id="ldSvcPass" class="form-control" value="<?= $ld['has_password'] ? '********' : '' ?>" autocomplete="new-password" <?= $ldDis ?>></div>
+                    <div class="sec-row" style="align-items: flex-start;"><label><?= __('ldap_backup_accounts') ?></label>
+                        <div style="flex: 1 1 200px; min-width: 0;">
+                            <div id="ldBackups"></div>
+                            <?php if ($ldCanEdit): ?>
+                            <button type="button" class="sec-btn sm" id="ldBkAddBtn" onclick="ldBkAdd()">➕ <?= __('ldap_backup_add') ?></button>
+                            <?php endif; ?>
+                        </div></div>
                     <p class="sec-hint"><?= __('ldap_service_hint') ?></p>
+                    <p class="sec-hint"><?= __('ldap_backup_hint') ?></p>
                     <div class="sec-row" style="margin: 10px 0 0;">
                         <?php if ($ldCanEdit): ?>
-                        <button type="button" class="btn btn-primary" onclick="ldSave()">💾 <?= __('save') ?></button>
-                        <button type="button" class="btn" onclick="ldTest()">🔌 <?= __('ldap_test') ?></button>
+                        <button type="button" class="sec-btn primary" onclick="ldSave()">💾 <?= __('save') ?></button>
+                        <button type="button" class="sec-btn" onclick="ldTest()">🔌 <?= __('ldap_test') ?></button>
                         <?php endif; ?>
                     </div>
                     <div id="ldMsg" class="sec-msg"></div>
@@ -221,6 +229,10 @@ $permOptions = [
 .ld-item input { margin-top: 3px; accent-color: <?= $themeCSS['primary'] ?>; }
 .ld-item small { display: block; color: <?= $themeCSS['muted'] ?>; font-size: 11px; }
 .ld-foot { display: flex; gap: 8px; justify-content: flex-end; }
+.ld-bk { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.ld-bk input { flex: 1 1 0; min-width: 0; }
+.ld-bk button { background: none; border: none; cursor: pointer; color: <?= $themeCSS['muted'] ?>; font-size: 14px; padding: 0 4px; }
+.ld-bk button:hover { color: <?= $themeCSS['dangerText'] ?>; }
 </style>
 <div id="ldGroupsOverlay" class="ld-overlay" onclick="if (event.target === this) ldGroupsClose()">
     <div class="ld-modal">
@@ -246,6 +258,38 @@ const ldCanEdit = <?= $ldCanEdit ? 'true' : 'false' ?>;
 const ldStr = { new: <?= json_encode(__('ldap_state_new')) ?>, imported: <?= json_encode(__('ldap_state_imported')) ?>, conflict: <?= json_encode(__('ldap_state_conflict')) ?>,
     empty: <?= json_encode(__('ldap_users_none')) ?>, confirmSync: <?= json_encode(__('ldap_sync_confirm')) ?>, none: <?= json_encode(__('ldap_nothing_selected')) ?>, searching: <?= json_encode(__('ldap_searching')) ?> };
 let ldFound = false;
+
+// ---- Резервные служебные записи
+const LD_BK_MAX = <?= (int)LDAP_BACKUP_MAX ?>;
+let ldBackups = <?= json_encode(array_map(function ($b) { return ['user' => $b['user'], 'password' => $b['has_password'] ? '********' : '']; }, $ld['backup_accounts']), JSON_UNESCAPED_UNICODE) ?>;
+const ldBkStr = { user: <?= json_encode(__('ldap_backup_user_ph')) ?>, pass: <?= json_encode(__('ldap_service_password')) ?>, remove: <?= json_encode(__('ldap_groups_remove')) ?> };
+function ldBkRender() {
+    const box = document.getElementById('ldBackups');
+    box.innerHTML = ldBackups.map((b, i) => '<div class="ld-bk"><input type="text" class="form-control" placeholder="' + secEsc(ldBkStr.user) + '" value="' + secEsc(b.user) + '" ' + (ldCanEdit ? '' : 'disabled') + ' oninput="ldBackups[' + i + '].user = this.value">' +
+        '<input type="password" class="form-control" autocomplete="new-password" placeholder="' + secEsc(ldBkStr.pass) + '" value="' + secEsc(b.password) + '" ' + (ldCanEdit ? '' : 'disabled') + ' oninput="ldBackups[' + i + '].password = this.value">' +
+        (ldCanEdit ? '<button type="button" title="' + secEsc(ldBkStr.remove) + '" onclick="ldBkDel(' + i + ')">✕</button>' : '') + '</div>').join('');
+    const add = document.getElementById('ldBkAddBtn');
+    if (add) add.style.display = ldBackups.length >= LD_BK_MAX ? 'none' : '';
+}
+function ldBkAdd() {
+    if (ldBackups.length >= LD_BK_MAX) return;
+    ldBackups.push({ user: '', password: '' });
+    ldBkRender();
+    const rows = document.querySelectorAll('#ldBackups .ld-bk input[type=text]');
+    if (rows.length) rows[rows.length - 1].focus();
+}
+function ldBkDel(i) { ldBackups.splice(i, 1); ldBkRender(); }
+
+// ---- Высота списков: по высоте окна, без второй прокрутки страницы
+function ldFit() {
+    document.querySelectorAll('#section-integrations .sec-tall').forEach(function (el) {
+        if (!el.offsetParent) return;
+        const top = el.getBoundingClientRect().top;
+        el.style.maxHeight = Math.max(200, window.innerHeight - top - 110) + 'px';
+    });
+}
+window.addEventListener('resize', ldFit);
+document.addEventListener('DOMContentLoaded', ldBkRender);
 
 // ---- Обязательные группы: выбор из каталога
 let ldGroups = <?= json_encode(array_values($ld['required_groups']), JSON_UNESCAPED_UNICODE) ?>;
@@ -322,7 +366,7 @@ function ldCollect() {
     const v = id => document.getElementById(id).value;
     const c = id => document.getElementById(id).checked ? '1' : '0';
     return { enabled: c('ldEnabled'), auth_enabled: c('ldAuth'), auto_create: c('ldAutoCreate'), server: v('ldServer'), port: v('ldPort'), security: v('ldSecurity'),
-        verify_cert: c('ldVerify'), base_dn: v('ldBase'), domain: v('ldDomain'), service_user: v('ldSvcUser'), service_password: v('ldSvcPass'),
+        verify_cert: c('ldVerify'), base_dn: v('ldBase'), domain: v('ldDomain'), service_user: v('ldSvcUser'), service_password: v('ldSvcPass'), backup_accounts: JSON.stringify(ldBackups.filter(b => String(b.user).trim() !== '')),
         login_attr: v('ldAttr'), user_filter: v('ldFilter'), required_groups: JSON.stringify(ldGroups), default_permissions: v('ldPerms'), timeout: v('ldTimeout') };
 }
 function ldSave() {
@@ -349,6 +393,7 @@ function ldSearch() {
         if (seq !== ldSearchSeq) return;   // пришёл ответ на устаревший запрос
         if (!d.success) { body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(d.message || '') + '</td></tr>'; document.getElementById('ldUsersCount').textContent = 0; return; }
         document.getElementById('ldUsersCount').textContent = d.users.length;
+        setTimeout(ldFit, 0);
         if (!d.users.length) { body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(ldStr.empty) + '</td></tr>'; return; }
         body.innerHTML = d.users.map(u => {
             const st = u.state === 'new' ? ['', ldStr.new] : (u.state === 'imported' ? ['ok', ldStr.imported] : ['err', ldStr.conflict]);
@@ -378,6 +423,7 @@ function ldSub(name, btn) {
     if (pane) pane.classList.add('active');
     try { sessionStorage.setItem('vlmc_sub_integrations', name); } catch (e) {}
     if (name === 'users') ldFirstSearch();
+    ldFit();
 }
 document.addEventListener('DOMContentLoaded', function () {
     secTabRestore('section-integrations', 'ad');

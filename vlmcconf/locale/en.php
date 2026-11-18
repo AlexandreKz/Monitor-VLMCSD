@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.12.0
+// ВЕРСИЯ: 5.13.0
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1306,6 +1306,11 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_sub_conn' => 'Connection and sign-in',
     'int_cloud_soon' => 'Section under development. Planned: backups of the panel and log to external storage — SFTP, FTP, WebDAV and cloud drives; schedule and rotation.',
     'int_webhook_soon' => 'Section under development. Planned: sending panel events (new device, suspicious IP, access denied) to an external service URL, messengers and Bitrix24; request signing with a secret, test delivery.',
+    'ldap_backup_accounts' => 'Backup accounts',
+    'ldap_backup_add' => 'Add',
+    'ldap_backup_user_ph' => 'Login or DN',
+    'ldap_backup_hint' => 'Backup service accounts (up to 5) are tried in order if the main one is rejected, for example after its password was changed or the account locked. Passwords are stored encrypted.',
+    'ldap_msg_backup_used' => 'The main account was rejected; the backup account was used: %s.',
     'ldap_user_filter' => 'Extra filter',
     'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
     'ldap_timeout' => 'Timeout',

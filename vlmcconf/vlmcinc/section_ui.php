@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.2.0
+// ВЕРСИЯ: 1.2.1
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -70,7 +70,7 @@ function vlmcSectionUi($themeCSS) {
 .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 .sec-code { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; position: relative; margin: 6px 0; }
 .sec-scroll { max-height: 320px; overflow-y: auto; }
-.sec-scroll.sec-tall { max-height: max(260px, calc(100vh - 330px)); }
+.sec-scroll.sec-tall { max-height: 360px; }   /* точная высота выставляется скриптом раздела по размеру окна */
 .sec-note { border-left: 4px solid <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; border-radius: 6px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; line-height: 1.45; }
 .sec-note.warn { border-left-color: <?= $themeCSS['warning'] ?>; }
 @media (max-width: 980px) { .sec-grid { flex-direction: column; } .sec-grid > .sec-col { width: 100% !important; flex: none !important; } }

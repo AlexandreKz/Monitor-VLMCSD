@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.2.0
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -18,6 +18,7 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'ldap.php') {
 }
 
 const LDAP_LOG_KEEP = 200;
+const LDAP_BACKUP_MAX = 5;   // резервных служебных записей
 
 /** Расширение PHP LDAP установлено (php-ldap). */
 function ldapAvailable() {
@@ -59,6 +60,7 @@ function ldapSettings($config = null) {
         'required_groups' => ldapNormalizeGroups($a['required_groups'] ?? ($a['required_group'] ?? '')),
         'service_user'   => trim((string)($a['service_user'] ?? '')),
         'has_password'   => !empty($a['service_password']),
+        'backup_accounts' => ldapBackupAccountsView($a),
         'default_permissions' => (int)($a['default_permissions'] ?? (PERM_DEVICES_VIEW | PERM_LOGS_VIEW)),
         'timeout'        => max(2, min(30, (int)($a['timeout'] ?? 5))),
     ];
@@ -77,6 +79,32 @@ function ldapNormalizeGroups($v) {
         }
     }
     return array_slice($out, 0, 50);
+}
+
+/** Резервные служебные записи для формы: логин и признак сохранённого пароля (сам пароль наружу не отдаётся). */
+function ldapBackupAccountsView($a) {
+    $out = [];
+    foreach ((array)($a['backup_accounts'] ?? []) as $b) {
+        if (is_array($b) && trim((string)($b['user'] ?? '')) !== '') {
+            $out[] = ['user' => trim((string)$b['user']), 'has_password' => !empty($b['password'])];
+        }
+    }
+    return array_slice($out, 0, LDAP_BACKUP_MAX);
+}
+
+/** Резервные служебные записи с расшифрованными паролями (для привязки). */
+function ldapBackupAccounts($config = null) {
+    if ($config === null) {
+        $r = config_read(vlmcConfigFile());
+        $config = ($r['status'] === 'ok' && is_array($r['config'])) ? $r['config'] : [];
+    }
+    $out = [];
+    foreach ((array)($config['integrations']['ad']['backup_accounts'] ?? []) as $b) {
+        if (is_array($b) && trim((string)($b['user'] ?? '')) !== '') {
+            $out[] = ['user' => trim((string)$b['user']), 'password' => notifyDecrypt((string)($b['password'] ?? ''))];
+        }
+    }
+    return array_slice($out, 0, LDAP_BACKUP_MAX);
 }
 
 function ldapServicePassword($config = null) {
@@ -150,21 +178,34 @@ function ldapOpen($s) {
     return [$conn, '', ''];
 }
 
-/** Привязка служебной учётной записью (или анонимная, если она не задана). Возвращает [ok, код, текст]. */
+/**
+ * Привязка служебной учётной записью (или анонимная, если она не задана).
+ * Если основная запись отклонена, по очереди пробуются резервные.
+ * Возвращает [ok, код, текст, логин использованной резервной записи или ''].
+ */
 function ldapServiceBind($conn, $s, $config = null) {
     if ($s['service_user'] === '') {
-        $ok = @ldap_bind($conn);
-    } else {
-        $ok = @ldap_bind($conn, $s['service_user'], ldapServicePassword($config));
+        if (@ldap_bind($conn)) {
+            return [true, '', '', ''];
+        }
+        return [false, 'bind_failed', ldap_error($conn), ''];
     }
-    if (!$ok) {
+    $candidates = [[$s['service_user'], ldapServicePassword($config), '']];
+    foreach (ldapBackupAccounts($config) as $b) {
+        $candidates[] = [$b['user'], $b['password'], $b['user']];
+    }
+    $lastError = '';
+    foreach ($candidates as $c) {
+        if (@ldap_bind($conn, $c[0], $c[1])) {
+            return [true, '', '', $c[2]];
+        }
         // -1 = «Can't contact LDAP server»: до проверки пароля дело не дошло (адрес, порт, сеть или сертификат)
         if (function_exists('ldap_errno') && @ldap_errno($conn) === -1) {
-            return [false, 'connect_failed', ldap_error($conn)];
+            return [false, 'connect_failed', ldap_error($conn), ''];
         }
-        return [false, 'bind_failed', ldap_error($conn)];
+        $lastError = ldap_error($conn);
     }
-    return [true, '', ''];
+    return [false, 'bind_failed', $lastError, ''];
 }
 
 function ldapAttrFirst($entry, $name) {
@@ -346,7 +387,7 @@ function ldapTest($config = null) {
     if (!$conn) {
         return ['success' => false, 'code' => $code, 'detail' => $detail];
     }
-    list($ok, $bcode, $bdetail) = ldapServiceBind($conn, $s, $config);
+    list($ok, $bcode, $bdetail, $usedBackup) = ldapServiceBind($conn, $s, $config);
     if (!$ok) {
         @ldap_close($conn);
         return ['success' => false, 'code' => $bcode, 'detail' => $bdetail];
@@ -363,7 +404,7 @@ function ldapTest($config = null) {
         $n = (int)ldap_count_entries($conn, $us);
     }
     @ldap_close($conn);
-    return ['success' => true, 'code' => 'ok', 'detail' => '', 'users' => $n];
+    return ['success' => true, 'code' => 'ok', 'detail' => '', 'users' => $n, 'backup_used' => $usedBackup];
 }
 
 /** Фильтр для списка пользователей (объекты-люди). */
