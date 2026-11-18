@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.0.0
+// ВЕРСИЯ: 6.0.1
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -199,8 +199,11 @@ function ldSave() {
 }
 function ldTest() {
     secMsg('ldMsg', true, <?= json_encode(__('ldap_testing')) ?>);
-    secPost({ ajax: 'ldap_test' }).then(d => secMsg('ldMsg', !!d.success, d.message || ''))
-        .catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
+    // проверяется то, что сейчас в форме: сначала сохраняем поля, затем проверяем связь
+    secPost(Object.assign({ ajax: 'ldap_save_settings' }, ldCollect())).then(function (sv) {
+        if (!sv.success) { secMsg('ldMsg', false, sv.message || ''); return null; }
+        return secPost({ ajax: 'ldap_test' }).then(d => secMsg('ldMsg', !!d.success, d.message || ''));
+    }).catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function ldFirstSearch() { if (!ldFound) { ldFound = true; ldSearch(); } }
 function ldSearch() {
