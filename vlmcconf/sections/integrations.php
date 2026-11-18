@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.0
+// ВЕРСИЯ: 6.4.1
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал действий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, audit log
@@ -240,6 +240,7 @@ $permOptions = [
 .ld-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 10000; }
 .ld-overlay.open { display: flex; }
 .ld-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(640px, 94vw); max-height: 86vh; display: flex; flex-direction: column; padding: 16px 18px; }
+.ld-modal .form-control { background: <?= $themeCSS['bg'] ?>; }
 .ld-modal h3 { margin: 0 0 10px; font-size: 15px; }
 .ld-list { overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; margin: 10px 0; min-height: 120px; flex: 1 1 auto; }
 .ld-item { display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; cursor: pointer; font-size: 13px; }
