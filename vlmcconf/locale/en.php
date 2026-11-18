@@ -1745,7 +1745,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_cal_1y' => '1 year',
     'api_scope_reports' => 'Reports',
     'api_scope_audit' => 'Event journal',
-    'api_docs_search' => 'Search methods: path, description, scope',
+    'api_docs_search' => 'Search methods',
     'api_docs_none' => 'No methods found',
     'api_ep_status' => 'Panel version and log state: whether the file exists, its size and update time, number of groups and known devices.',
     'api_ep_health' => 'Result of the "Status" tab: how many checks are OK, with warnings, failed or off, and the state of each. Suitable for monitoring, e.g. from Zabbix.',

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.0
+// ВЕРСИЯ: 6.7.1
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -191,15 +191,15 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: visible; padding: 16px 18px; }
 .api-modal h3 { margin: 0 0 12px; font-size: 15px; }
 .api-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-.api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
-.api-ep-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; background: <?= $themeCSS['card'] ?>; }
+.api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+.api-ep-head { display: flex; align-items: center; gap: 14px; padding: 13px 16px; cursor: pointer; background: <?= $themeCSS['card'] ?>; }
 .api-ep-head:hover { background: <?= $themeCSS['hover'] ?>; }
 .api-m-post { background: #2e9e5b !important; color: #fff !important; }
 .api-m-put, .api-m-patch { background: #d68a1f !important; color: #fff !important; }
 .api-m-delete { background: #c0392b !important; color: #fff !important; }
-.api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
-.api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; }
-.api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; min-width: 38px; text-align: center; }
+.api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 14px; }
+.api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 13.5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .api-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; }
 .api-search { position: relative; width: 240px; max-width: 100%; }
 .api-search .form-control { width: 100%; padding-right: 28px; }
@@ -208,8 +208,8 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-toolbar-right { margin-left: auto; flex: 1 1 280px; justify-content: flex-end; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .api-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .api-chip-n { opacity: 0.7; font-size: 10px; margin-left: 2px; }
-.api-desc { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
-.api-ep-body { display: none; padding: 10px 12px; border-top: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; }
+.api-desc { margin: 0 0 6px; font-size: 14px; line-height: 1.45; }
+.api-ep-body { display: none; padding: 12px 16px; border-top: 1px solid <?= $themeCSS['border'] ?>; font-size: 12px; }
 .api-ep.open .api-ep-body { display: block; }
 .api-ep h4 { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; color: <?= $themeCSS['muted'] ?>; }
 </style>
