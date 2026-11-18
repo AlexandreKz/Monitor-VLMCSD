@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.0.1
+// ВЕРСИЯ: 6.0.2
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -119,8 +119,10 @@ $permOptions = [
                         </select></div>
                     <div class="sec-row"><label for="ldGroup"><?= __('ldap_required_group') ?></label>
                         <input type="text" id="ldGroup" class="form-control" value="<?= htmlspecialchars($ld['required_group']) ?>" placeholder="KMS Admins" <?= $ldDis ?>></div>
+                    <p class="sec-hint" style="margin: -4px 0 10px;"><?= __('ldap_required_group_hint') ?></p>
                     <div class="sec-row"><label for="ldFilter"><?= __('ldap_user_filter') ?></label>
                         <input type="text" id="ldFilter" class="form-control" value="<?= htmlspecialchars($ld['user_filter']) ?>" placeholder="(department=IT)" <?= $ldDis ?>></div>
+                    <p class="sec-hint" style="margin: -4px 0 10px;"><?= __('ldap_user_filter_hint') ?></p>
                     <div class="sec-row"><label for="ldTimeout"><?= __('ldap_timeout') ?></label>
                         <input type="number" id="ldTimeout" class="form-control sec-narrow" min="2" max="30" value="<?= (int)$ld['timeout'] ?>" <?= $ldDis ?>>
                         <span class="sec-hint" style="margin: 0;"><?= __('ldap_timeout_unit') ?></span></div>

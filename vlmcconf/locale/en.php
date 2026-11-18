@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.10.1
+// ВЕРСИЯ: 5.10.2
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1289,6 +1289,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_login_attr' => 'Login attribute',
     'ldap_required_group' => 'Required group',
     'ldap_user_filter' => 'Extra filter',
+    'ldap_required_group_hint' => 'If set, only members of this AD group (group name or its DN) can sign in to the panel or appear in the import list. Empty — any directory account is enough.',
+    'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
     'ldap_timeout' => 'Timeout',
     'ldap_timeout_unit' => 'seconds',
     'ldap_security_note' => 'The required group (CN or full DN) limits login and import. Rights can be changed later in “Security”.',
