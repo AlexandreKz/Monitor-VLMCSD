@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.6.0
+// ВЕРСИЯ: 6.7.0
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -146,13 +146,17 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
     <div class="sec-tab-content" data-tab="docs">
         <div class="settings-card">
             <div class="settings-card-title">📖 <?= __('api_docs_title') ?></div>
-            <div class="sec-row">
-                <a class="sec-btn sm" id="apiSpecLink" href="#" target="_blank" rel="noopener">⬇️ openapi.json</a>
-                <span class="sec-hint" style="margin: 0;"><?= __('api_docs_hint') ?></span>
-            </div>
-            <div class="sec-row" style="margin-top: 10px;">
-                <input type="search" id="apiDocsSearch" class="form-control" placeholder="<?= htmlspecialchars(__('api_docs_search')) ?>" autocomplete="off" oninput="apiDocsFilter()">
+            <div class="api-toolbar">
+                <span class="api-search">
+                    <input type="text" id="apiDocsSearch" class="form-control" placeholder="<?= htmlspecialchars(__('api_docs_search')) ?>" autocomplete="off" oninput="apiDocsFilter()">
+                    <button type="button" class="api-search-x" id="apiDocsClear" title="<?= htmlspecialchars(__('api_docs_clear')) ?>" onclick="apiDocsClearSearch()" style="display: none;">✕</button>
+                </span>
+                <button type="button" class="sec-btn sm" id="apiDocsReset" onclick="apiDocsReset()" disabled>↺ <?= __('api_docs_reset') ?></button>
                 <span class="sec-hint" style="margin: 0;" id="apiDocsCount"></span>
+                <span class="api-toolbar-right">
+                    <a class="sec-btn sm" id="apiSpecLink" href="#" target="_blank" rel="noopener">⬇️ openapi.json</a>
+                    <span class="sec-hint" style="margin: 0;"><?= __('api_docs_hint') ?></span>
+                </span>
             </div>
             <div id="apiDocsMethods" class="api-chips"></div>
             <div id="apiDocsChips" class="api-chips"></div>
@@ -196,6 +200,12 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 .api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; }
 .api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.api-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; }
+.api-search { position: relative; width: 240px; max-width: 100%; }
+.api-search .form-control { width: 100%; padding-right: 28px; }
+.api-search-x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: <?= $themeCSS['muted'] ?>; cursor: pointer; font-size: 12px; line-height: 1; padding: 4px; border-radius: 50%; }
+.api-search-x:hover { color: <?= $themeCSS['text'] ?>; background: <?= $themeCSS['hover'] ?>; }
+.api-toolbar-right { margin-left: auto; flex: 1 1 280px; justify-content: flex-end; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .api-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .api-chip-n { opacity: 0.7; font-size: 10px; margin-left: 2px; }
 .api-desc { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
@@ -380,6 +390,13 @@ function apiDocsChips(spec) { // кнопки-фильтры: тип запро�
     document.getElementById('apiDocsChips').innerHTML = chip('t', '', <?= json_encode(__('api_docs_all')) ?>, eps.length, apiDocsTag === '') +
         Object.keys(apiScopeNames).filter(t => byTag[t]).map(t => chip('t', t, apiScopeNames[t] || t, byTag[t], apiDocsTag === t)).join('');
 }
+function apiDocsClearSearch() { document.getElementById('apiDocsSearch').value = ''; apiDocsFilter(); document.getElementById('apiDocsSearch').focus(); }
+function apiDocsReset() { // сбрасывает и поиск, и оба набора фильтров
+    document.getElementById('apiDocsSearch').value = '';
+    apiDocsTag = ''; apiDocsMethod = '';
+    if (apiDocsSpec) apiDocsChips(apiDocsSpec);
+    apiDocsFilter();
+}
 function apiDocsSet(kind, val) {
     if (kind === 'm') apiDocsMethod = apiDocsMethod === val ? '' : val; else apiDocsTag = apiDocsTag === val ? '' : val;
     apiDocsChips(apiDocsSpec);
@@ -395,6 +412,8 @@ function apiDocsFilter() {
     });
     document.getElementById('apiDocsCount').textContent = eps.length ? ((q || apiDocsTag || apiDocsMethod) ? shown + ' / ' : '') + eps.length : '';
     document.getElementById('apiDocsNone').style.display = eps.length && !shown ? '' : 'none';
+    document.getElementById('apiDocsClear').style.display = q ? '' : 'none';
+    document.getElementById('apiDocsReset').disabled = !(q || apiDocsTag || apiDocsMethod);
 }
 let apiDocsLoaded = false;
 function apiResolve(spec, node) {
