@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.1
+// ВЕРСИЯ: 5.15.2
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -224,6 +224,7 @@ return [
     'info_ip' => 'Server IP',
     'info_web_server' => 'Web server',
     'info_php' => 'PHP',
+    'info_server_time' => 'Server time',
     'info_uptime' => 'Uptime',
     'info_structure' => 'Project structure',
     'info_reset' => 'Reset settings',

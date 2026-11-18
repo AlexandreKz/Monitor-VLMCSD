@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.9.3
+// ВЕРСИЯ: 1.10.0
 // ДАТА: 2026-11-17
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -43,9 +43,23 @@ if (!$canViewInfo) {
             <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_web_server') ?>:</span><span><?= htmlspecialchars($serverSoftware) ?></span></div>
             <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_php') ?>:</span><span><?= htmlspecialchars($phpVersion) ?></span></div>
             <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_uptime') ?>:</span><span><?= $uptimeFormatted ?></span></div>
+            <div class="server-info-item"><span style="color: <?= $themeCSS['muted'] ?>;"><?= __('info_server_time') ?>:</span><span><span id="infoSrvTime" data-ts="<?= time() ?>" data-off="<?= (int)date('Z') ?>"><?= date('Y-m-d H:i:s') ?></span> <span style="color: <?= $themeCSS['muted'] ?>; font-size: 11px;">(<?= htmlspecialchars(date('T P')) ?>)</span></span></div>
         </div>
     </div>
     
+<script>
+(function () {
+    var el = document.getElementById('infoSrvTime');
+    if (!el) { return; }
+    var base = parseInt(el.getAttribute('data-ts'), 10), off = parseInt(el.getAttribute('data-off'), 10), t0 = Date.now();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    function tick() {
+        var d = new Date((base + Math.floor((Date.now() - t0) / 1000) + off) * 1000);
+        el.textContent = d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
+    }
+    setInterval(tick, 1000);
+})();
+</script>
     <!-- Структура проекта: прокручивается внутри блока, страница не уезжает -->
     <div id="infoStructure" class="info-page active">
         <div class="info-scroll"><?php renderFileStructure($themeCSS, $fileVersions, $configFile); ?></div>
