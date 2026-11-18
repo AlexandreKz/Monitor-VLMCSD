@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.9
+// ВЕРСИЯ: 5.15.10
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1622,7 +1622,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'sched_cron_active' => 'OS scheduler is working (last run: %s)',
     'sched_cron_none' => 'OS scheduler is not set up — tasks run only when the panel is opened',
     'sched_cron_stale' => 'OS scheduler has not run for a long time (last run: %s)',
-    'sched_cron_text_linux' => 'To run tasks without opening the panel, add this line to cron (sudo crontab -e -u root) — click it to copy:',
+    'sched_cron_text_linux' => 'To run tasks without opening the panel, paste this command into the server terminal (Ubuntu) — click it to copy. It creates a job in /etc/cron.d, no restart needed:',
     'sched_cron_text_windows' => 'To run tasks without opening the panel, run this in an administrator command prompt — click the command to copy:',
     'sched_copied' => 'Copied',
     'sched_t_update' => '🔄 Project update check',

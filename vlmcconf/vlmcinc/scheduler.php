@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/scheduler.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.0.1
 // ДАТА: 2026-11-18
 // @description: Единый планировщик фоновых задач: список задач, запуск просроченных (из браузера и из консоли cron.php),
 //               состояние и история запусков для вкладки «Фоновые» в «Журнале событий»
@@ -207,5 +207,14 @@ function schedCronCommand() {
     if (PHP_OS_FAMILY === 'Windows') {
         return ['os' => 'windows', 'cmd' => 'schtasks /Create /SC MINUTE /MO 15 /TN "KMS Monitor cron" /TR "php \"' . $script . '\"" /F'];
     }
-    return ['os' => 'linux', 'cmd' => '*/15 * * * * www-data php ' . $script . ' >/dev/null 2>&1'];
+    // Пользователь веб-сервера: владелец папки данных (иначе www-data), чтобы права на файлы состояния совпадали
+    $user = 'www-data';
+    if (function_exists('posix_getpwuid')) {
+        $pw = @posix_getpwuid((int)@fileowner(vlmcDataDir()));
+        if (is_array($pw) && preg_match('/^[a-z_][a-z0-9_-]*$/i', $pw['name']) && $pw['name'] !== 'root') {
+            $user = $pw['name'];
+        }
+    }
+    // Одна команда целиком: вставить в терминал Ubuntu — задание появится в /etc/cron.d и заработает без перезапуска
+    return ['os' => 'linux', 'cmd' => "echo '*/15 * * * * " . $user . ' php ' . $script . " >/dev/null 2>&1' | sudo tee /etc/cron.d/kms-monitor"];
 }
