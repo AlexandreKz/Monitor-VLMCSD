@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.3
+// ВЕРСИЯ: 6.7.4
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -55,6 +55,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
             <?php if ($apiCanEdit): ?>
             <div class="sec-row" style="margin-top: 8px;">
                 <button type="button" class="sec-btn primary" onclick="apiNewOpen()">➕ <?= __('api_key_new') ?></button>
+                <span id="apiKeysMsg" class="sec-msg" style="margin: 0;"></span>
             </div>
             <div id="apiOverlay" class="api-ov" onclick="if (event.target === this && !apiResultShown) apiClose()">
                 <div class="api-modal">
@@ -94,7 +95,6 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                 </div>
             </div>
             <?php endif; ?>
-            <div id="apiKeysMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
             <div class="sec-scroll" style="max-height: 360px;">
                 <table class="sec-table">
                     <thead><tr><th><?= __('api_col_name') ?></th><th><?= __('api_col_key') ?></th><th><?= __('api_col_scopes') ?></th><th><?= __('api_col_ips') ?></th><th><?= __('api_col_expires') ?></th><th><?= __('api_col_used') ?></th><th><?= __('api_col_status') ?></th><th></th></tr></thead>
