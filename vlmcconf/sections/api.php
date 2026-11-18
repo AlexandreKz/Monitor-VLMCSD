@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.9
+// ВЕРСИЯ: 6.7.10
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -145,7 +145,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
     <!-- ===== Документация ===== -->
     <div class="sec-tab-content" data-tab="docs">
         <div class="settings-card">
-            <div class="settings-card-title">📖 <?= __('api_docs_title') ?></div>
+            <div class="settings-card-title">🔎 <?= __('api_docs_filters_title') ?></div>
             <div class="api-toolbar">
                 <span class="api-search">
                     <input type="text" id="apiDocsSearch" class="form-control" placeholder="<?= htmlspecialchars(__('api_docs_search')) ?>" autocomplete="off" oninput="apiDocsFilter()">
@@ -159,6 +159,9 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
             </div>
             <div id="apiDocsMethods" class="api-chips"></div>
             <div id="apiDocsChips" class="api-chips"></div>
+        </div>
+        <div class="settings-card">
+            <div class="settings-card-title">📖 <?= __('api_docs_methods_title') ?></div>
             <div class="sec-scroll sec-tall" id="apiDocsScroll"><div id="apiDocs"><div class="sec-empty"><?= __('api_docs_loading') ?></div></div></div>
             <div class="sec-empty" id="apiDocsNone" style="display: none;"><?= __('api_docs_none') ?></div>
         </div>
@@ -395,7 +398,7 @@ function apiFit() {
     const pane = document.querySelector('.settings-content');
     const bottom = pane ? pane.getBoundingClientRect().bottom : window.innerHeight;
     // нижний край — по границе панели с учётом её внутреннего отступа и рамки карточки
-    el.style.maxHeight = Math.max(200, bottom - el.getBoundingClientRect().top - 92) + 'px';
+    el.style.maxHeight = Math.max(100, bottom - el.getBoundingClientRect().top - 90) + 'px';
 }
 window.addEventListener('resize', apiFit);
 function apiDocsClearSearch() { document.getElementById('apiDocsSearch').value = ''; apiDocsFilter(); document.getElementById('apiDocsSearch').focus(); }

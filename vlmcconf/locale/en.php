@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.21
+// ВЕРСИЯ: 5.15.22
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1777,5 +1777,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_docs_clear' => 'Clear search',
     'api_msg_key_on' => 'Key activated',
     'api_msg_key_off' => 'Key deactivated',
+    'api_docs_filters_title' => 'Search and filters',
+    'api_docs_methods_title' => 'Methods',
 ];
 ?>
