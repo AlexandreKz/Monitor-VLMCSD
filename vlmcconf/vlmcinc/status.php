@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/status.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-18
 // @description: Статус функций панели («Информация → Статус»): проверка ядра (vlmcsd, лог, данные, PHP), интеграций,
 //               безопасности и обслуживания. Проверки только читают состояние и ничего не меняют
@@ -145,6 +145,17 @@ function statusCollect() {
         $rows[] = stRow($G['int'], '☁️', 'st_c_cloud', 'warn', sprintf(__('st_cl_nobackup'), count($cl)));
     } else {
         $rows[] = stRow($G['int'], '☁️', 'st_c_cloud', 'ok', sprintf(__('st_cl_ok'), count($cl)));
+    }
+
+    require_once __DIR__ . '/api_core.php';
+    $apiSet = apiSettings($cfg);
+    $apiKeys = array_filter(apiKeysList(), function ($k) { return !empty($k['enabled']); });
+    if (!$apiSet['enabled']) {
+        $rows[] = stRow($G['int'], '🖥️', 'st_c_api', 'off', __('st_api_off'));
+    } elseif (!$apiKeys) {
+        $rows[] = stRow($G['int'], '🖥️', 'st_c_api', 'warn', __('st_api_nokeys'));
+    } else {
+        $rows[] = stRow($G['int'], '🖥️', 'st_c_api', 'ok', sprintf(__('st_api_ok'), count($apiKeys), $apiSet['rate_limit']));
     }
 
     $rows[] = stRow($G['int'], '🛰️', 'st_c_ms', 'off', __('st_wip'));

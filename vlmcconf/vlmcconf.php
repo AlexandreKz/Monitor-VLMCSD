@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.19.0
+// ВЕРСИЯ: 5.20.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -202,7 +202,7 @@ if (!isset($config['api'])) {
     $config['api'] = [
         'enabled' => false,
         'base_path' => '/api/v1',
-        'cors_origins' => ['*'],
+        'cors_origins' => [],
         'rate_limit' => 60,
         'keys' => []
     ];
@@ -346,9 +346,10 @@ $GLOBALS['themeCSS'] = $themeCSS;
 require_once __DIR__ . '/vlmcinc/ajax.php';
 
 $activeSection = $_GET['section'] ?? 'general';
-// Раздел «API» пока недоступен (в разработке); «Интеграции» — только с правом просмотра
+// «API» — только полный администратор; «Интеграции» — только с правом просмотра
 $integrationsAllowed = hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW);
-if ($activeSection === 'api' || ($activeSection === 'integrations' && !$integrationsAllowed)) {
+$apiAllowed = hasPermission($currentUserPermissions, PERM_ADMIN_FULL);
+if (($activeSection === 'api' && !$apiAllowed) || ($activeSection === 'integrations' && !$integrationsAllowed)) {
     $activeSection = 'general';
 }
 // «Уведомления» открываются только с правом «Уведомления: изменение» (у остальных пункт меню серый)
@@ -649,7 +650,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
             $config['api'] = [
                 'enabled' => false,
                 'base_path' => '/api/v1',
-                'cors_origins' => ['*'],
+                'cors_origins' => [],
                 'rate_limit' => 60,
                 'keys' => []
             ];
@@ -1646,7 +1647,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         
         const urlSection = new URLSearchParams(window.location.search).get('section');
         let sectionToActivate = urlSection || getActiveSection();
-        if (sectionToActivate === 'api') sectionToActivate = 'general';   // раздел в разработке
+        if (sectionToActivate === 'api' && !<?= $apiAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // API только для администратора
         if (sectionToActivate === 'integrations' && !<?= $integrationsAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // нет права на интеграции
         if (sectionToActivate === 'notifications' && !<?= $notifyAllowed ? 'true' : 'false' ?>) sectionToActivate = 'general';   // нет права на уведомления
         document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
@@ -1796,9 +1797,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     </div>
     <?php endif; ?>
     
-    <!-- API - только если есть права на просмотр -->
-    <?php if (hasPermission($currentUserPermissions, PERM_API_VIEW)): ?>
-    <div class="menu-item menu-item-disabled" title="<?= htmlspecialchars(__('section_under_development')) ?>">
+    <!-- API - только для полного администратора -->
+    <?php if ($apiAllowed): ?>
+    <div class="menu-item <?= $activeSection === 'api' ? 'active' : '' ?>" onclick="showSection('api', this)">
         <span class="menu-item-icon">🖥️</span>
         <span><?= __('api') ?></span>
     </div>
@@ -1851,7 +1852,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
                 <?php if (hasPermission($currentUserPermissions, PERM_INFO_VIEW)) include __DIR__ . '/sections/info.php'; ?>
                 <?php include __DIR__ . '/sections/tools.php'; ?>
                 <?php if (hasPermission($currentUserPermissions, PERM_INTEGRATIONS_VIEW)) include __DIR__ . '/sections/integrations.php'; ?>
-                <?php if (hasPermission($currentUserPermissions, PERM_API_VIEW)) include __DIR__ . '/sections/api.php'; ?>
+                <?php if ($apiAllowed) include __DIR__ . '/sections/api.php'; ?>
 				<?php include __DIR__ . '/sections/documentation.php'; ?>
             </div>
         </div>

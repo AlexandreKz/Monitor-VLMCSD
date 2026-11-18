@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.18.4
+// ВЕРСИЯ: 3.19.0
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -119,6 +119,13 @@ function ajaxActionPermissions() {
         'fw_apply'              => PERM_ADMIN_FULL,
         'save_privacy_settings' => PERM_ADMIN_FULL,   // скрытие всех IP от неавторизованных: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
+
+        // API (п. 25): ключи и настройки — только полный администратор
+        'api_keys_list'         => PERM_ADMIN_FULL,
+        'api_save_settings'     => PERM_ADMIN_FULL,
+        'api_key_create'        => PERM_ADMIN_FULL,
+        'api_key_toggle'        => PERM_ADMIN_FULL,
+        'api_key_delete'        => PERM_ADMIN_FULL,
 
         // Уведомления: каналы, правила, тест и история — право «Уведомления: изменение» или полный администратор
         'notify_get'            => $notifyEdit,

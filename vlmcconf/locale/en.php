@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.12
+// ВЕРСИЯ: 5.15.13
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1734,5 +1734,9 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'audit_act_panel_access_denied' => 'Panel access denied (IP)',
     'panel_denied_log' => 'Panel access denied: address %1$s, page %2$s, browser: %3$s',
     'fw_wip_sub' => 'This section is temporarily unavailable while it is being reworked',
+    'st_c_api' => 'API',
+    'st_api_off' => 'Disabled in settings',
+    'st_api_nokeys' => 'API is enabled but there are no active keys',
+    'st_api_ok' => 'Active keys: %s, limit: %s per minute',
 ];
 ?>
