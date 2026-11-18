@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/api_core.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.1.1
 // ДАТА: 2026-11-18
 // @description: REST API для внешних интеграций (п. 25): ключи доступа, лимит запросов, обработчики, описание OpenAPI
 // ============================================
@@ -703,7 +703,7 @@ function apiOpenApiSpec($serverUrl) {
             'securitySchemes' => ['bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'description' => 'API key (kms_…)']],
             'schemas' => [
                 'Status' => ['type' => 'object', 'properties' => [
-                    'version' => ['type' => 'string', 'example' => '6.0.0'], 'api_version' => ['type' => 'string', 'example' => 'v1'],
+                    'version' => ['type' => 'string', 'example' => '6.1.0'], 'api_version' => ['type' => 'string', 'example' => 'v1'],
                     'time' => ['type' => 'string', 'format' => 'date-time'], 'log_file_exists' => ['type' => 'boolean'],
                     'log_size_bytes' => ['type' => 'integer'], 'log_updated' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                     'groups' => ['type' => 'integer'], 'known_devices' => ['type' => 'integer']]],
