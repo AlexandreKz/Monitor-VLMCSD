@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.14
+// ВЕРСИЯ: 5.15.15
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1740,5 +1740,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'st_api_ok' => 'Active keys: %s, limit: %s per minute',
     'api_state_on' => 'API enabled',
     'api_state_off' => 'API disabled',
+    'api_cal_30d' => '30 days',
+    'api_cal_90d' => '90 days',
+    'api_cal_1y' => '1 year',
 ];
 ?>

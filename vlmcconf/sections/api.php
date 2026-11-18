@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.1.0
+// ВЕРСИЯ: 6.2.0
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -70,8 +70,12 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                             </span></div>
                         <div class="sec-row"><label for="apiKeyIps"><?= __('api_key_ips') ?></label>
                             <input type="text" id="apiKeyIps" class="form-control" placeholder="203.0.113.5, 10.0.0.0/24" autocomplete="off"></div>
-                        <div class="sec-row"><label for="apiKeyExpires"><?= __('api_key_expires') ?></label>
-                            <input type="date" id="apiKeyExpires" class="form-control sec-narrow" style="width: 160px; flex: 0 0 160px;"></div>
+                        <div class="sec-row"><label for="apiKeyExpiresShow"><?= __('api_key_expires') ?></label>
+                            <span class="api-datewrap">
+                                <input type="text" id="apiKeyExpiresShow" class="form-control" readonly placeholder="<?= htmlspecialchars(__('api_never')) ?>" onclick="apiCalToggle()" style="cursor: pointer;">
+                                <input type="hidden" id="apiKeyExpires" value="">
+                                <div class="api-cal" id="apiCal" style="display: none;"></div>
+                            </span></div>
                         <div class="api-foot">
                             <span id="apiModalMsg" class="sec-msg" style="margin-right: auto;"></span>
                             <button type="button" class="sec-btn" onclick="apiClose()"><?= __('cancel') ?></button>
@@ -107,7 +111,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                 <div class="settings-card">
                     <div class="settings-card-title">⚙️ <?= __('api_settings_title') ?></div>
                     <label class="sec-switch">
-                        <input type="checkbox" id="apiEnabled" <?= $apiSet['enabled'] ? 'checked' : '' ?> <?= $apiCanEdit ? '' : 'disabled' ?>>
+                        <input type="checkbox" id="apiEnabled" onchange="apiToggleEnabled()" <?= $apiSet['enabled'] ? 'checked' : '' ?> <?= $apiCanEdit ? '' : 'disabled' ?>>
                         <span><?= __('api_enable') ?></span>
                     </label>
                     <p class="sec-hint"><?= __('api_enable_hint') ?></p>
@@ -153,9 +157,28 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 </div>
 
 <style>
+.api-datewrap { position: relative; display: block; width: 180px; flex: 0 0 180px; }
+.api-cal { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; width: 268px; background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); color: <?= $themeCSS['text'] ?>; }
+.api-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+.api-cal-nav { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; line-height: 1; }
+.api-cal-nav:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
+.api-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.api-cal-wd { font-size: 10px; color: <?= $themeCSS['muted'] ?>; text-align: center; padding: 2px 0; text-transform: uppercase; }
+.api-cal-day { background: transparent; border: 1px solid transparent; color: <?= $themeCSS['text'] ?>; border-radius: 6px; height: 28px; font-size: 12px; cursor: pointer; padding: 0; }
+.api-cal-day:hover:not(:disabled) { background: <?= $themeCSS['hover'] ?>; }
+.api-cal-day.other { opacity: 0.35; }
+.api-cal-day.today { border-color: <?= $themeCSS['primary'] ?>; }
+.api-cal-day.sel { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
+.api-cal-day:disabled { opacity: 0.2; cursor: not-allowed; }
+.api-cal-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid <?= $themeCSS['border'] ?>; }
+.api-cal-preset { background: transparent; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; border-radius: 12px; padding: 2px 10px; font-size: 11px; cursor: pointer; }
+.api-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
+.api-codebox { position: relative; }
+.api-codebox .api-copy { position: absolute; top: 6px; right: 6px; z-index: 2; }
+.api-codebox .sec-code { padding-right: 44px; }
 .api-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 10000; }
 .api-ov.open { display: flex; }
-.api-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: auto; padding: 16px 18px; }
+.api-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: visible; padding: 16px 18px; }
 .api-modal h3 { margin: 0 0 12px; font-size: 15px; }
 .api-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
@@ -203,14 +226,70 @@ function apiSetState(on) {
     b.className = 'sec-badge ' + (on ? 'ok' : 'err');
     b.textContent = on ? apiStateStr.on : apiStateStr.off;
 }
+const apiLang = <?= json_encode(($config['language'] ?? 'ru') === 'en' ? 'en-US' : 'ru-RU') ?>;
+const apiCalStr = { never: <?= json_encode(__('api_never')) ?>, d30: <?= json_encode(__('api_cal_30d')) ?>, d90: <?= json_encode(__('api_cal_90d')) ?>, y1: <?= json_encode(__('api_cal_1y')) ?> };
+let apiCalView = new Date();
+function apiIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function apiCalToggle() {
+    const box = document.getElementById('apiCal');
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    const v = document.getElementById('apiKeyExpires').value;
+    apiCalView = v ? new Date(v + 'T00:00:00') : new Date();
+    apiCalDraw(); box.style.display = 'block';
+}
+function apiCalSet(iso) {
+    document.getElementById('apiKeyExpires').value = iso;
+    document.getElementById('apiKeyExpiresShow').value = iso ? new Date(iso + 'T00:00:00').toLocaleDateString(apiLang) : '';
+    document.getElementById('apiCal').style.display = 'none';
+}
+function apiCalAdd(days, years) {
+    const d = new Date(); d.setDate(d.getDate() + days); d.setFullYear(d.getFullYear() + years); apiCalSet(apiIso(d));
+}
+function apiCalNav(n) { apiCalView = new Date(apiCalView.getFullYear(), apiCalView.getMonth() + n, 1); apiCalDraw(); }
+function apiCalDraw() {
+    const box = document.getElementById('apiCal'), y = apiCalView.getFullYear(), m = apiCalView.getMonth();
+    const sel = document.getElementById('apiKeyExpires').value, today = apiIso(new Date());
+    const first = new Date(y, m, 1), shift = (first.getDay() + 6) % 7, start = new Date(y, m, 1 - shift);
+    let h = '<div class="api-cal-head"><button type="button" class="api-cal-nav" onclick="apiCalNav(-1)">‹</button><span>' +
+        secEsc(first.toLocaleDateString(apiLang, { month: 'long', year: 'numeric' }).replace(/\s?г\.$/, '').replace(/^./, c => c.toUpperCase())) + '</span><button type="button" class="api-cal-nav" onclick="apiCalNav(1)">›</button></div><div class="api-cal-grid">';
+    for (let i = 0; i < 7; i++) { h += '<div class="api-cal-wd">' + secEsc(new Date(2024, 0, 1 + i).toLocaleDateString(apiLang, { weekday: 'short' })) + '</div>'; }
+    for (let i = 0; i < 42; i++) {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), iso = apiIso(d);
+        h += '<button type="button" class="api-cal-day' + (d.getMonth() !== m ? ' other' : '') + (iso === today ? ' today' : '') + (iso === sel ? ' sel' : '') + '"' +
+             (iso < today ? ' disabled' : '') + ' onclick="apiCalSet(\'' + iso + '\')">' + d.getDate() + '</button>';
+    }
+    h += '</div><div class="api-cal-presets"><button type="button" class="api-cal-preset" onclick="apiCalSet(\'\')">' + secEsc(apiCalStr.never) + '</button>' +
+         '<button type="button" class="api-cal-preset" onclick="apiCalAdd(30,0)">' + secEsc(apiCalStr.d30) + '</button>' +
+         '<button type="button" class="api-cal-preset" onclick="apiCalAdd(90,0)">' + secEsc(apiCalStr.d90) + '</button>' +
+         '<button type="button" class="api-cal-preset" onclick="apiCalAdd(0,1)">' + secEsc(apiCalStr.y1) + '</button></div>';
+    box.innerHTML = h;
+}
+document.addEventListener('click', function (e) {   // клик вне календаря закрывает его
+    const box = document.getElementById('apiCal');
+    if (box && box.style.display !== 'none' && !e.target.closest('.api-datewrap')) box.style.display = 'none';
+});
+function apiToggleEnabled() { // переключатель сохраняется сразу, без кнопки «Сохранить»
+    const cb = document.getElementById('apiEnabled'), want = cb.checked;
+    secPost({ ajax: 'api_save_settings', enabled: want ? '1' : '0' })
+        .then(d => {
+            secMsg('apiSetMsg', !!d.success, d.message || '');
+            if (d.success) apiSetState(want); else cb.checked = !want;
+        })
+        .catch(() => { cb.checked = !want; secMsg('apiSetMsg', false, <?= json_encode(__('msg_save_error')) ?>); });
+}
+function apiCopyBtn(btn) {
+    secCopy(btn.parentNode.querySelector('.sec-code').textContent, function () {
+        const t = btn.textContent; btn.textContent = '✅'; setTimeout(function () { btn.textContent = t; }, 1200);
+    });
+}
 let apiResultShown = false;
 function apiNewOpen() {
     apiResultShown = false;
     document.getElementById('apiKeyName').value = '';
     document.getElementById('apiKeyIps').value = '';
-    document.getElementById('apiKeyExpires').value = '';
+    apiCalSet('');
     document.querySelectorAll('.apiScope').forEach(c => { c.checked = c.value !== 'security'; });
-    secMsg('apiModalMsg', true, '');
+    const mm = document.getElementById('apiModalMsg'); mm.textContent = ''; mm.className = 'sec-msg'; mm.title = '';
     document.getElementById('apiFormPane').style.display = '';
     document.getElementById('apiResultPane').style.display = 'none';
     document.getElementById('apiOverlay').classList.add('open');
@@ -291,11 +370,10 @@ function apiDocsLoad() {
                 '<span class="api-method">GET</span><span class="api-path">/v1' + secEsc(p) + '</span><span class="api-sum">' + secEsc(op.summary) + '</span>' +
                 '<span class="sec-badge">' + secEsc(op.description || '') + '</span></div><div class="api-ep-body">' +
                 (params ? '<h4><?= __('api_docs_params') ?></h4><table class="sec-table"><tbody>' + params + '</tbody></table>' : '') +
-                '<h4><?= __('api_docs_example') ?></h4><div class="sec-code">' + secEsc(curl) + '</div>' +
-                '<h4><?= __('api_docs_response') ?></h4><div class="sec-code">' + secEsc(ex) + '</div></div></div>';
+                '<h4><?= __('api_docs_example') ?></h4><div class="api-codebox"><button type="button" class="sec-btn sm api-copy" title="<?= htmlspecialchars(__('copy')) ?>" onclick="apiCopyBtn(this)">📋</button><div class="sec-code">' + secEsc(curl) + '</div></div>' +
+                '<h4><?= __('api_docs_response') ?></h4><div class="api-codebox"><button type="button" class="sec-btn sm api-copy" title="<?= htmlspecialchars(__('copy')) ?>" onclick="apiCopyBtn(this)">📋</button><div class="sec-code">' + secEsc(ex) + '</div></div></div></div>';
         });
         document.getElementById('apiDocs').innerHTML = html;
-        document.getElementById('apiEp0').classList.add('open');
     }).catch(() => { document.getElementById('apiDocs').innerHTML = '<div class="sec-empty">' + secEsc(<?= json_encode(__('api_docs_error')) ?>) + '</div>'; });
 }
 

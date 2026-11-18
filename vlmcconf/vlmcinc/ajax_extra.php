@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.5.0
+// ВЕРСИЯ: 1.5.1
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики разделов «Интеграции» (п. 26: Active Directory / LDAP) и «API» (п. 25: ключи и настройки).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -80,22 +80,33 @@ if (in_array($xAction, ['api_keys_list', 'api_save_settings', 'api_key_create', 
 
     if ($xAction === 'api_save_settings') {
         $enabled = xBool($_POST['enabled'] ?? '0');
-        $limit = (int)($_POST['rate_limit'] ?? 60);
-        if ($limit < 0 || $limit > 100000) {
-            xjson(['success' => false, 'message' => __('api_msg_bad_limit')]);
-        }
-        $origins = [];
-        foreach (preg_split('/[\s,]+/', (string)($_POST['cors_origins'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) as $o) {
-            if ($o !== '*' && !preg_match('#^https?://[A-Za-z0-9.\-:\[\]]+$#', $o)) {
-                xjson(['success' => false, 'message' => sprintf(__('api_msg_bad_origin'), htmlspecialchars(mb_substr($o, 0, 80)))]);
+        // Переключатель «API включён» отправляет только enabled: лимит и источники CORS остаются прежними
+        $limit = null;
+        if (isset($_POST['rate_limit'])) {
+            $limit = (int)$_POST['rate_limit'];
+            if ($limit < 0 || $limit > 100000) {
+                xjson(['success' => false, 'message' => __('api_msg_bad_limit')]);
             }
-            $origins[] = $o;
+        }
+        $origins = null;
+        if (isset($_POST['cors_origins'])) {
+            $origins = [];
+            foreach (preg_split('/[\s,]+/', (string)$_POST['cors_origins'], -1, PREG_SPLIT_NO_EMPTY) as $o) {
+                if ($o !== '*' && !preg_match('#^https?://[A-Za-z0-9.\-:\[\]]+$#', $o)) {
+                    xjson(['success' => false, 'message' => sprintf(__('api_msg_bad_origin'), htmlspecialchars(mb_substr($o, 0, 80)))]);
+                }
+                $origins[] = $o;
+            }
         }
         $saved = xConfigUpdate(function (&$config) use ($enabled, $limit, $origins) {
             $api = isset($config['api']) && is_array($config['api']) ? $config['api'] : [];
             $api['enabled'] = $enabled;
-            $api['rate_limit'] = $limit;
-            $api['cors_origins'] = $origins;
+            if ($limit !== null) {
+                $api['rate_limit'] = $limit;
+            }
+            if ($origins !== null) {
+                $api['cors_origins'] = $origins;
+            }
             $config['api'] = $api;
         });
         xjson(['success' => $saved, 'message' => __($saved ? 'api_msg_settings_saved' : 'msg_save_error')]);
