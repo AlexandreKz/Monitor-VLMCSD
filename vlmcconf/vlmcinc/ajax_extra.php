@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.2.0
+// ВЕРСИЯ: 1.2.1
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -156,7 +156,14 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
         if (!$r['success'] && !empty($r['detail'])) {
             $msg .= ' (' . mb_substr($r['detail'], 0, 120) . ')';
         }
-        ldapLog('test', $r['success'], $msg);
+        // подробная запись в журнал: сервер, учётная запись, причина
+        $anon = __('ldap_log_anonymous');
+        $logText = $r['success']
+            ? sprintf(__('ldap_log_test_ok'), $r['server'], $r['account'] !== '' ? $r['account'] : $anon, (int)($r['users'] ?? 0))
+              . (!empty($r['backup_used']) ? ' ' . __('ldap_log_backup_mark') : '')
+            : sprintf(__('ldap_log_test_fail'), __('ldap_err_' . $r['code']), $r['server'] ?? '', $r['tried'] ? implode(', ', $r['tried']) : $anon)
+              . (!empty($r['detail']) ? ' · ' . sprintf(__('ldap_log_reason'), mb_substr($r['detail'], 0, 200)) : '');
+        ldapLog('test', $r['success'], $logText);
         xjson(['success' => $r['success'], 'message' => $msg]);
     }
 

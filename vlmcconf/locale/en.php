@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.13.1
+// ВЕРСИЯ: 5.13.2
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1341,6 +1341,11 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_log_result' => 'Result',
     'ldap_log_text' => 'Details',
     'ldap_log_empty' => 'No entries yet',
+    'ldap_log_anonymous' => 'anonymous',
+    'ldap_log_test_ok' => 'Connected · server: %1$s · account: %2$s · users found: %3$d',
+    'ldap_log_backup_mark' => '(backup; main rejected)',
+    'ldap_log_test_fail' => '%1$s · server: %2$s · accounts: %3$s',
+    'ldap_log_reason' => 'reason: %s',
     'ldap_log_ok' => 'success',
     'ldap_log_fail' => 'error',
     'ldap_log_type_test' => 'Connection test',

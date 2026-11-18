@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.2.0
+// ВЕРСИЯ: 1.2.1
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -137,7 +137,7 @@ function ldapLog($type, $ok, $text) {
     config_lock($file);
     $r = config_read($file);
     $rows = ($r['status'] === 'ok' && is_array($r['config'])) ? $r['config'] : [];
-    array_unshift($rows, ['time' => date('Y-m-d H:i:s'), 'type' => $type, 'ok' => (bool)$ok, 'text' => mb_substr((string)$text, 0, 300)]);
+    array_unshift($rows, ['time' => date('Y-m-d H:i:s'), 'type' => $type, 'ok' => (bool)$ok, 'text' => mb_substr((string)$text, 0, 600)]);
     save_config($file, array_slice($rows, 0, LDAP_LOG_KEEP));
 }
 
@@ -377,6 +377,23 @@ function ldapAuthenticate($username, $password, $config = null) {
 /** Проверка настроек: связь, привязка, поиск. Возвращает ['success' => bool, 'code' => строка, 'detail' => текст, 'users' => число]. */
 function ldapTest($config = null) {
     $s = ldapSettings($config);
+    $r = ldapTestCore($s, $config);
+    // сведения для журнала: к чему подключались и какими записями
+    $tried = [];
+    if ($s['service_user'] !== '') {
+        $tried[] = $s['service_user'];
+        foreach (ldapBackupAccounts($config) as $b) {
+            $tried[] = $b['user'];
+        }
+    }
+    $r['server'] = ldapUri($s);
+    $r['security'] = $s['security'];
+    $r['tried'] = $tried;
+    $r['account'] = !empty($r['backup_used']) ? $r['backup_used'] : $s['service_user'];
+    return $r;
+}
+
+function ldapTestCore($s, $config) {
     if (!ldapAvailable()) {
         return ['success' => false, 'code' => 'no_extension', 'detail' => ''];
     }
