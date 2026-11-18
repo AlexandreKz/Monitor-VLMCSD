@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.3.1
+// ВЕРСИЯ: 1.4.0
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -465,5 +465,90 @@ if (in_array($xAction, ['cloud_list', 'cloud_save', 'cloud_delete', 'cloud_toggl
         if ($r['detail'] !== '') { $reason .= ($reason !== '' ? ' · ' : '') . $r['detail']; }
         auditLog('cloud_test', sprintf(__($r['success'] ? 'cl_log_test_ok' : 'cl_log_test_fail'), $pub['name'], $pub['host'], ($r['success'] && $reason !== '' ? ' — ' : '') . $reason), $r['success'] ? 'ok' : 'error');
         xjson(['success' => $r['success'], 'message' => ($r['success'] ? __('cl_msg_test_ok') : __('cl_msg_test_fail')) . ($reason !== '' ? ': ' . $reason : '')]);
+    }
+}
+
+// ============================================
+// П. 29: белый список IP для панели
+// ============================================
+if ($xAction === 'panel_wl_save') {
+    require_once __DIR__ . '/panel_access.php';
+    $enabled = xBool($_POST['enabled'] ?? '0');
+    $raw = json_decode((string)($_POST['entries'] ?? '[]'), true);
+    if (!is_array($raw) || count($raw) > 200) {
+        xjson(['success' => false, 'message' => __('panel_wl_msg_bad_list')]);
+    }
+    $entries = [];
+    $seen = [];
+    foreach ($raw as $e) {
+        $ip = vlmcPanelNormalizeEntry($e['ip'] ?? '');
+        if ($ip === null) {
+            xjson(['success' => false, 'message' => sprintf(__('panel_wl_msg_bad_entry'), htmlspecialchars(mb_substr((string)($e['ip'] ?? ''), 0, 60)))]);
+        }
+        if (isset($seen[$ip])) {
+            continue;
+        }
+        $seen[$ip] = true;
+        $entries[] = ['ip' => $ip, 'comment' => mb_substr(trim((string)($e['comment'] ?? '')), 0, 100)];
+    }
+    // Защита от блокировки самого себя: при включении адрес администратора должен подходить под список
+    $me = vlmcPanelClientIp();
+    if ($enabled && !vlmcPanelAccessAllowed($me, ['enabled' => true, 'entries' => $entries])) {
+        xjson(['success' => false, 'code' => 'self_lockout', 'message' => sprintf(__('panel_wl_msg_self_lockout'), $me)]);
+    }
+    $saved = xConfigUpdate(function (&$config) use ($enabled, $entries) {
+        $config['security']['panel_whitelist'] = ['enabled' => $enabled, 'entries' => $entries];
+    });
+    xjson(['success' => $saved, 'enabled' => $enabled,
+           'message' => __($saved ? ($enabled ? 'panel_wl_msg_saved_on' : 'panel_wl_msg_saved_off') : 'msg_save_error')]);
+}
+
+// ============================================
+// П. 30: блокировка IP в фаерволе
+// ============================================
+if (in_array($xAction, ['fw_save_settings', 'fw_status', 'fw_list', 'fw_block', 'fw_unblock', 'fw_apply'], true)) {
+    require_once __DIR__ . '/firewall.php';
+
+    if ($xAction === 'fw_save_settings') {
+        $backend = in_array($_POST['backend'] ?? '', FW_BACKENDS, true) ? $_POST['backend'] : 'auto';
+        $scope = (($_POST['scope'] ?? 'all') === 'port') ? 'port' : 'all';
+        $port = (int)($_POST['port'] ?? 1688);
+        if ($port < 1 || $port > 65535) {
+            xjson(['success' => false, 'message' => __('fw_msg_bad_port')]);
+        }
+        $saved = xConfigUpdate(function (&$config) use ($backend, $scope, $port) {
+            $config['firewall'] = ['backend' => $backend, 'scope' => $scope, 'port' => $port];
+        });
+        xjson(['success' => $saved, 'message' => __($saved ? 'fw_msg_settings_saved' : 'msg_save_error')]);
+    }
+
+    if ($xAction === 'fw_status') {
+        $st = fwStatus();
+        xjson(['success' => true, 'ready' => $st['ready'], 'effective' => $st['effective'], 'problem' => $st['problem'],
+               'message' => $st['ready'] ? sprintf(__('fw_msg_ready'), $st['effective']) : __('fw_problem_' . $st['problem'])]);
+    }
+
+    if ($xAction === 'fw_list') {
+        xjson(['success' => true, 'rows' => fwList()]);
+    }
+
+    if ($xAction === 'fw_block') {
+        $r = fwBlock((string)($_POST['ip'] ?? ''), (string)($_POST['reason'] ?? ''), xUser());
+        xjson(['success' => $r['success'], 'applied' => $r['applied'], 'code' => $r['code'], 'message' => __('fw_msg_' . $r['code'])]);
+    }
+
+    if ($xAction === 'fw_unblock') {
+        $r = fwUnblock((string)($_POST['ip'] ?? ''));
+        $msg = __('fw_msg_' . $r['code']);
+        if (!empty($r['detail'])) {
+            $msg .= ': ' . $r['detail'];
+        }
+        xjson(['success' => $r['success'], 'code' => $r['code'], 'message' => $msg]);
+    }
+
+    if ($xAction === 'fw_apply') {
+        $r = fwApplyPending(xBool($_POST['all'] ?? '0'));
+        xjson(['success' => $r['success'], 'applied' => $r['applied'],
+               'message' => $r['success'] ? sprintf(__('fw_msg_applied_n'), $r['applied']) : __('fw_problem_' . $r['code'])]);
     }
 }

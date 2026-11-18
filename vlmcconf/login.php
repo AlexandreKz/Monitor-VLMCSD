@@ -7,6 +7,8 @@
 // ============================================
 require_once __DIR__ . '/vlmcinc/csrf.php';
 require_once __DIR__ . '/vlmcinc/paths.php';
+require_once __DIR__ . '/vlmcinc/panel_access.php';
+vlmcPanelAccessEnforce();   // ограничение доступа к панели по IP
 vlmcSessionStart();
 require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/auth.php';

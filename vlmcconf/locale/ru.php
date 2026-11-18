@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.15.2
+// ВЕРСИЯ: 5.15.3
 // ДАТА: 2026-11-18
 // @description: Русские переводы интерфейса
 // ============================================
@@ -320,7 +320,7 @@ return [
     'export_error' => 'Ошибка при создании экспорта',
     
     // Белые IP
-    'whitelist_title' => '⚪ Белые IP',
+    'whitelist_title' => '⚪ Не подозрительные',
     'whitelist_description' => 'IP-адреса из этого списка НЕ будут отображаться в блоке «Подозрительные IP» на главной.',
     'whitelist_ip' => 'IP-адрес',
     'whitelist_add_ip' => '➕ Добавить IP',
@@ -1530,5 +1530,9 @@ return [
     'audit_act_cloud_delete' => 'Cloud Storage: удаление',
     'audit_act_cloud_toggle' => 'Cloud Storage: включение/отключение',
     'audit_act_cloud_test' => 'Cloud Storage: проверка',
+    'sec_tab_users' => 'Пользователи',
+    'sec_tab_access' => 'Доступ и IP',
+    'sec_tab_firewall' => 'Firewall',
+    'access_admin_only' => 'Этот блок доступен только полному администратору.',
 ];
 ?>

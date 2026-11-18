@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.2
+// ВЕРСИЯ: 5.15.3
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -318,7 +318,7 @@ return [
     'export_error' => 'Export creation error',
     
     // Whitelist IPs
-    'whitelist_title' => '⚪ Whitelist IPs',
+    'whitelist_title' => '⚪ Not suspicious',
     'whitelist_description' => 'IP addresses in this list will NOT appear in the "Suspicious IPs" block on the main page.',
     'whitelist_ip' => 'IP address',
     'whitelist_add_ip' => '➕ Add IP',
@@ -1528,5 +1528,9 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'audit_act_cloud_delete' => 'Cloud Storage: delete',
     'audit_act_cloud_toggle' => 'Cloud Storage: enable/disable',
     'audit_act_cloud_test' => 'Cloud Storage: test',
+    'sec_tab_users' => 'Users',
+    'sec_tab_access' => 'Access & IP',
+    'sec_tab_firewall' => 'Firewall',
+    'access_admin_only' => 'This block is available to the full administrator only.',
 ];
 ?>

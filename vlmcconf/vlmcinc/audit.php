@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/audit.php
-// ВЕРСИЯ: 2.4.1
+// ВЕРСИЯ: 2.5.0
 // ДАТА: 2026-11-18
 // @description: Журнал событий пользователей панели: запись (с изменениями «было → стало»), срок хранения, очистка, фильтры, поиск, сводка по пользователю, активность по часам и дням
 // ============================================
@@ -27,6 +27,7 @@ function auditAjaxActions() {
         'rename_group', 'delete_group', 'save_group_changes', 'add_device', 'mass_move_devices',
         'add_whitelist_ip', 'remove_whitelist_ip',
         'save_audit_settings', 'save_privacy_settings', 'save_session_settings', 'clear_audit',
+        'panel_wl_save', 'fw_save_settings', 'fw_block', 'fw_unblock', 'fw_apply',
         'panel_wl_save', 'fw_save_settings', 'fw_block', 'fw_unblock', 'fw_apply',
         'api_save_settings', 'api_key_create', 'api_key_toggle', 'api_key_delete',
         'ldap_save_settings', 'ldap_test', 'ldap_import', 'ldap_sync',

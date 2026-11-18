@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.17.1
+// ВЕРСИЯ: 3.18.0
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -97,6 +97,14 @@ function ajaxActionPermissions() {
         'export_audit'          => PERM_LOGS_VIEW,
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
         'save_session_settings' => PERM_ADMIN_FULL,   // таймаут входа: только администратор
+        // Безопасность → «Доступ и IP» и Firewall: ограничение доступа к панели по IP и блокировка IP — только полный администратор
+        'panel_wl_save'         => PERM_ADMIN_FULL,
+        'fw_save_settings'      => PERM_ADMIN_FULL,
+        'fw_status'             => PERM_ADMIN_FULL,
+        'fw_list'               => PERM_ADMIN_FULL,
+        'fw_block'              => PERM_ADMIN_FULL,
+        'fw_unblock'            => PERM_ADMIN_FULL,
+        'fw_apply'              => PERM_ADMIN_FULL,
         'save_privacy_settings' => PERM_ADMIN_FULL,   // скрытие всех IP от неавторизованных: только администратор
         'clear_audit'           => PERM_ADMIN_FULL,   // очистка журнала: только администратор
 
@@ -1076,7 +1084,9 @@ if (isset($_POST['ajax'])) {
         if ($permission === 'PERM_DEVICES_EDIT') {
             $userPermissions = $_SESSION['vlmc_permissions'] ?? 0;
             $hasPermission = ($userPermissions & 8) === 8;
-            echo json_encode(['has_permission' => $hasPermission]);
+            // can_block: кнопка блокировки IP в блоке «Подозрительные IP» (нужен полный администратор)
+            $canBlock = ($userPermissions & PERM_ADMIN_FULL) === PERM_ADMIN_FULL;
+            echo json_encode(['has_permission' => $hasPermission, 'can_block' => $canBlock]);
             exit;
         }
         

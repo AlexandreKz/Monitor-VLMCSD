@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 5.4.2
+// ВЕРСИЯ: 6.0.0
 // ДАТА: 2026-11-18
-// @description: Секция "Безопасность" — управление пользователями, белые IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
+// @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'security.php') {
@@ -22,6 +22,24 @@ $sessionTimeoutMin = max(5, min(1440, (int)($config['security']['session_timeout
 
 // Получаем список белых IP из конфига
 $whitelistIps = $config['whitelist_ips'] ?? [];
+
+require_once __DIR__ . '/../vlmcinc/section_ui.php';
+require_once __DIR__ . '/../vlmcinc/panel_access.php';
+require_once __DIR__ . '/../vlmcinc/firewall.php';
+
+// Ограничение доступа к панели и Firewall: менять может только полный администратор
+$pwSettings = vlmcPanelAccessSettings($config);
+$pwMyIp = vlmcPanelClientIp();
+$pwEmergency = vlmcPanelAccessEmergencyOff();
+$pwOffFile = vlmcDataDir() . DIRECTORY_SEPARATOR . 'panel_whitelist.off';
+$fwSet = fwSettings($config);
+$fwBlocked = fwList();
+$fwIsWin = fwIsWindows();
+$fwHelperSrc = realpath(__DIR__ . '/../vlmcinc/vlmc-firewall.sh') ?: (__DIR__ . '/../vlmcinc/vlmc-firewall.sh');
+$fwHelperDst = FW_HELPER_DEFAULT;
+$webUser = 'www-data';
+
+vlmcSectionUi($themeCSS);
 ?>
 
 <script>
@@ -42,16 +60,22 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 </script>
 
 <div id="section-security" class="settings-section <?= $activeSection === 'security' ? 'active' : '' ?>">
-    <div class="section-title">
+    <div class="section-title sec-title">
         <span>🔒 <?= __('security_title') ?></span>
         <?php if ($activeSection === 'security' && $message): ?>
         <div class="section-message <?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
+        <div class="sec-tabs">
+            <button class="sec-tab-btn active" data-for="users" onclick="secTab('section-security','users',this)">👥 <?= __('sec_tab_users') ?></button>
+            <button class="sec-tab-btn" data-for="access" onclick="secTab('section-security','access',this)">🌐 <?= __('sec_tab_access') ?></button>
+            <button class="sec-tab-btn" data-for="firewall" onclick="secTab('section-security','firewall',this); if (window.fwFirstCheck) { fwFirstCheck(); }">🚫 <?= __('sec_tab_firewall') ?></button>
+        </div>
     </div>
-    
-    <!-- Две колонки -->
+
+    <!-- ===== Вкладка «Пользователи» ===== -->
+    <div class="sec-tab-content active" data-tab="users">
     <div class="security-two-columns">
-        
+
         <!-- ЛЕВАЯ КОЛОНКА: Управление пользователями (65%) -->
         <div class="security-users-column">
             <div class="settings-card">
@@ -77,8 +101,41 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
             </div>
         </div>
         
-        <!-- ПРАВАЯ КОЛОНКА: Белые IP (35%) -->
-		<div class="security-whitelist-column">
+        <!-- ПРАВАЯ КОЛОНКА: таймаут входа и скрытие IP (только администратор) -->
+        <div class="security-side-column">
+			<?php if ($isFullAdmin): ?>
+			<!-- Таймаут входа (только администратор) -->
+			<div class="settings-card privacy-card">
+				<div class="settings-card-title">⏱️ <?= __('session_timeout_title') ?></div>
+				<div class="session-row">
+					<input type="number" id="sessionTimeoutMin" class="form-control" min="5" max="1440" step="1" value="<?= (int)$sessionTimeoutMin ?>">
+					<span><?= __('session_timeout_unit') ?></span>
+					<button type="button" class="btn btn-primary" onclick="saveSessionSettings()">💾 <?= __('save') ?></button>
+				</div>
+				<p class="privacy-hint"><?= __('session_timeout_hint') ?></p>
+				<div id="sessionMessage" class="privacy-message" style="display: none;"></div>
+			</div>
+
+			<!-- Скрытие IP от неавторизованных (только администратор) -->
+			<div class="settings-card privacy-card">
+				<div class="settings-card-title">🙈 <?= __('privacy_title') ?></div>
+				<label class="privacy-switch">
+					<input type="checkbox" id="hideIps" <?= $hideIps ? 'checked' : '' ?> onchange="savePrivacySettings(this)">
+					<span><?= __('privacy_hide_ips_label') ?></span>
+				</label>
+				<p class="privacy-hint"><?= __('privacy_hide_ips_hint') ?></p>
+				<div id="privacyMessage" class="privacy-message" style="display: none;"></div>
+			</div>
+			<?php endif; ?>
+        </div>
+
+    </div>
+    </div>
+
+    <!-- ===== Вкладка «Доступ и IP» ===== -->
+    <div class="sec-tab-content" data-tab="access">
+        <div class="sec-grid">
+            <div class="sec-col" style="flex: 0.5;">
 			<div class="settings-card">
 				<div class="settings-card-title"><?= __('whitelist_title') ?></div>  <!-- иконка уже в переводе -->
 				
@@ -117,34 +174,283 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 				</div>
 			</div>
 
-			<?php if ($isFullAdmin): ?>
-			<!-- Скрытие IP от неавторизованных (только администратор) -->
-			<div class="settings-card privacy-card">
-				<div class="settings-card-title">🙈 <?= __('privacy_title') ?></div>
-				<label class="privacy-switch">
-					<input type="checkbox" id="hideIps" <?= $hideIps ? 'checked' : '' ?> onchange="savePrivacySettings(this)">
-					<span><?= __('privacy_hide_ips_label') ?></span>
-				</label>
-				<p class="privacy-hint"><?= __('privacy_hide_ips_hint') ?></p>
-				<div id="privacyMessage" class="privacy-message" style="display: none;"></div>
-			</div>
+                <?php if ($isFullAdmin): ?>
+                <div class="settings-card">
+                    <div class="settings-card-title">🌐 <?= __('panel_wl_title') ?></div>
+                    <label class="sec-switch">
+                        <input type="checkbox" id="pwEnabled" <?= $pwSettings['enabled'] ? 'checked' : '' ?>>
+                        <span><?= __('panel_wl_enable') ?></span>
+                    </label>
+                    <p class="sec-hint"><?= __('panel_wl_hint') ?></p>
 
-			<!-- Таймаут входа (только администратор) -->
-			<div class="settings-card privacy-card">
-				<div class="settings-card-title">⏱️ <?= __('session_timeout_title') ?></div>
-				<div class="session-row">
-					<input type="number" id="sessionTimeoutMin" class="form-control" min="5" max="1440" step="1" value="<?= (int)$sessionTimeoutMin ?>">
-					<span><?= __('session_timeout_unit') ?></span>
-					<button type="button" class="btn btn-primary" onclick="saveSessionSettings()">💾 <?= __('save') ?></button>
-				</div>
-				<p class="privacy-hint"><?= __('session_timeout_hint') ?></p>
-				<div id="sessionMessage" class="privacy-message" style="display: none;"></div>
-			</div>
-			<?php endif; ?>
-		</div>
-        
+                    <div class="sec-row" style="margin-top: 12px;">
+                        <span><?= __('panel_wl_your_ip') ?>: <b class="sec-mono" id="pwMyIp"><?= htmlspecialchars($pwMyIp ?: '—') ?></b></span>
+                        <span id="pwMyState" class="sec-badge"></span>
+                    </div>
+
+                    <div class="sec-row">
+                        <input type="text" id="pwNewIp" class="form-control" placeholder="203.0.113.10 / 192.168.1.0/24 / 2001:db8::/32" autocomplete="off">
+                        <input type="text" id="pwNewComment" class="form-control" placeholder="<?= __('panel_wl_comment_ph') ?>" maxlength="100" autocomplete="off">
+                        <button type="button" class="sec-btn primary" onclick="pwAdd()">➕ <?= __('panel_wl_add') ?></button>
+                    </div>
+                    <div class="sec-row" style="margin-bottom: 0;">
+                        <button type="button" class="sec-btn" onclick="pwAddMine()" <?= $pwMyIp === '' ? 'disabled' : '' ?>>📍 <?= __('panel_wl_add_mine') ?></button>
+                        <button type="button" class="sec-btn primary" onclick="pwSave()">💾 <?= __('save') ?></button>
+                    </div>
+                    <div id="pwMsg" class="sec-msg"></div>
+                </div>
+                <?php else: ?>
+                <div class="settings-card"><div class="sec-note"><?= __('access_admin_only') ?></div></div>
+                <?php endif; ?>
+            </div>
+            <div class="sec-col" style="flex: 0.5;">
+                <?php if ($isFullAdmin): ?>
+                <div class="settings-card">
+                    <div class="settings-card-title">📋 <?= __('panel_wl_list') ?></div>
+                    <div class="sec-scroll">
+                        <table class="sec-table">
+                            <thead><tr><th><?= __('panel_wl_col_ip') ?></th><th><?= __('panel_wl_col_comment') ?></th><th></th></tr></thead>
+                            <tbody id="pwRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <div class="settings-card-title">🆘 <?= __('panel_wl_emergency_title') ?></div>
+                    <?php if ($pwEmergency): ?>
+                    <div class="sec-note warn"><?= __('panel_wl_emergency_active') ?></div>
+                    <?php endif; ?>
+                    <p class="sec-hint" style="margin-top:0;"><?= __('panel_wl_emergency_text') ?></p>
+                    <div class="sec-code"><?= htmlspecialchars($pwOffFile) ?></div>
+                    <p class="sec-hint"><?= __('panel_wl_scope_note') ?></p>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Вкладка Firewall ===== -->
+    <div class="sec-tab-content" data-tab="firewall">
+        <?php if ($isFullAdmin): ?>
+        <div class="sec-grid">
+            <div class="sec-col" style="flex: 0.42;">
+                <div class="settings-card">
+                    <div class="settings-card-title">⚙️ <?= __('fw_title') ?></div>
+                    <div class="sec-row">
+                        <span><?= __('fw_status') ?>:</span>
+                        <span id="fwState" class="sec-badge"><?= __('fw_checking') ?></span>
+                        <button type="button" class="sec-btn sm" onclick="fwCheck()">🔄 <?= __('fw_check') ?></button>
+                    </div>
+                    <p class="sec-hint" id="fwStateText" style="margin-top: 0;"></p>
+                    <hr style="border: none; border-top: 1px solid <?= $themeCSS['border'] ?>; margin: 12px 0;">
+                    <div class="sec-row">
+                        <label for="fwBackend"><?= __('fw_backend') ?></label>
+                        <select id="fwBackend" class="form-control">
+                            <?php if ($fwIsWin): ?>
+                            <option value="auto" <?= $fwSet['backend'] !== 'none' ? 'selected' : '' ?>>Windows Firewall (netsh)</option>
+                            <?php else: ?>
+                            <option value="auto" <?= $fwSet['backend'] === 'auto' ? 'selected' : '' ?>><?= __('fw_backend_auto') ?></option>
+                            <option value="ufw" <?= $fwSet['backend'] === 'ufw' ? 'selected' : '' ?>>ufw</option>
+                            <option value="iptables" <?= $fwSet['backend'] === 'iptables' ? 'selected' : '' ?>>iptables</option>
+                            <option value="nftables" <?= $fwSet['backend'] === 'nftables' ? 'selected' : '' ?>>nftables</option>
+                            <?php endif; ?>
+                            <option value="none" <?= $fwSet['backend'] === 'none' ? 'selected' : '' ?>><?= __('fw_backend_none') ?></option>
+                        </select>
+                    </div>
+                    <div class="sec-row">
+                        <label for="fwScope"><?= __('fw_scope') ?></label>
+                        <select id="fwScope" class="form-control" onchange="fwScopeChange()">
+                            <option value="all" <?= $fwSet['scope'] === 'all' ? 'selected' : '' ?>><?= __('fw_scope_all') ?></option>
+                            <option value="port" <?= $fwSet['scope'] === 'port' ? 'selected' : '' ?>><?= __('fw_scope_port') ?></option>
+                        </select>
+                        <input type="number" id="fwPort" class="form-control sec-narrow" min="1" max="65535" value="<?= (int)$fwSet['port'] ?>" <?= $fwSet['scope'] === 'port' ? '' : 'disabled' ?>>
+                    </div>
+                    <div class="sec-row" style="margin-bottom: 0;">
+                        <button type="button" class="sec-btn primary" onclick="fwSaveSettings()">💾 <?= __('save') ?></button>
+                    </div>
+                    <div id="fwSetMsg" class="sec-msg"></div>
+                </div>
+
+                <?php if (!$fwIsWin): ?>
+                <div class="settings-card" id="fwSetupCard">
+                    <div class="settings-card-title">🔧 <?= __('fw_setup_title') ?></div>
+                    <p class="sec-hint" style="margin-top:0;"><?= __('fw_setup_text') ?></p>
+                    <div class="sec-code" id="fwSetupCode">sudo install -m 750 -o root -g root <?= htmlspecialchars($fwHelperSrc) ?> <?= htmlspecialchars($fwHelperDst) ?>
+
+echo '<?= htmlspecialchars($webUser) ?> ALL=(root) NOPASSWD: <?= htmlspecialchars($fwHelperDst) ?>' | sudo tee /etc/sudoers.d/vlmc-firewall
+sudo chmod 440 /etc/sudoers.d/vlmc-firewall</div>
+                    <button type="button" class="sec-btn sm" onclick="fwCopySetup(this)">📋 <?= __('copy') ?></button>
+                    <p class="sec-hint"><?= __('fw_setup_note') ?></p>
+                </div>
+                <?php else: ?>
+                <div class="settings-card">
+                    <div class="settings-card-title">🔧 <?= __('fw_setup_title') ?></div>
+                    <p class="sec-hint" style="margin-top:0;"><?= __('fw_setup_windows') ?></p>
+                </div>
+                <?php endif; ?>
+            </div>
+            <div class="sec-col" style="flex: 0.58;">
+                <div class="settings-card">
+                    <div class="settings-card-title">🚫 <?= __('fw_list_title') ?> <span class="sec-badge" id="fwCount"><?= count($fwBlocked) ?></span></div>
+                    <div class="sec-row">
+                        <input type="text" id="fwNewIp" class="form-control" placeholder="203.0.113.7" autocomplete="off">
+                        <input type="text" id="fwNewReason" class="form-control" placeholder="<?= __('fw_reason_ph') ?>" maxlength="200" autocomplete="off">
+                        <button type="button" class="sec-btn danger" onclick="fwBlockNew()">🚫 <?= __('fw_block') ?></button>
+                    </div>
+                    <div id="fwMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
+                    <div class="sec-scroll">
+                        <table class="sec-table">
+                            <thead><tr><th>IP</th><th><?= __('fw_col_reason') ?></th><th><?= __('fw_col_by') ?></th><th><?= __('fw_col_time') ?></th><th><?= __('fw_col_status') ?></th><th></th></tr></thead>
+                            <tbody id="fwRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="sec-row" style="margin: 10px 0 0;">
+                        <button type="button" class="sec-btn sm" onclick="fwApply(false)">▶️ <?= __('fw_apply_pending') ?></button>
+                        <button type="button" class="sec-btn sm" onclick="fwApply(true)">🔁 <?= __('fw_apply_all') ?></button>
+                    </div>
+                    <p class="sec-hint"><?= __('fw_list_hint') ?></p>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="settings-card"><div class="sec-note"><?= __('access_admin_only') ?></div></div>
+        <?php endif; ?>
     </div>
 </div>
+
+<?php if ($isFullAdmin): ?>
+<script>
+// ===== Доступ к панели (п. 29) =====
+let pwEntries = <?= json_encode($pwSettings['entries'], JSON_UNESCAPED_UNICODE) ?>;
+const pwMyIp = <?= json_encode($pwMyIp) ?>;
+const pwStrings = { remove: <?= json_encode(__('delete')) ?>, empty: <?= json_encode(__('panel_wl_empty')) ?>,
+    allowed: <?= json_encode(__('panel_wl_state_allowed')) ?>, denied: <?= json_encode(__('panel_wl_state_denied')) ?>, loop: <?= json_encode(__('panel_wl_state_loop')) ?> };
+
+function pwIpToBytes(ip) {
+    if (ip.indexOf(':') === -1) {
+        const p = ip.split('.').map(Number);
+        return p.length === 4 && p.every(n => n >= 0 && n <= 255) ? p : null;
+    }
+    let parts = ip.split('::');
+    if (parts.length > 2) return null;
+    const head = parts[0] ? parts[0].split(':') : [];
+    const tail = parts.length === 2 && parts[1] ? parts[1].split(':') : [];
+    const fill = parts.length === 2 ? 8 - head.length - tail.length : 0;
+    if (fill < 0 || (parts.length === 1 && head.length !== 8)) return null;
+    const groups = head.concat(Array(fill).fill('0'), tail);
+    const out = [];
+    for (const g of groups) { if (!/^[0-9a-fA-F]{1,4}$/.test(g)) return null; const v = parseInt(g, 16); out.push(v >> 8, v & 255); }
+    return out.length === 16 ? out : null;
+}
+function pwMatch(ip, entry) {
+    const a = pwIpToBytes(ip); if (!a) return false;
+    let net = entry, bits = null;
+    if (entry.indexOf('/') !== -1) { const s = entry.split('/'); net = s[0]; bits = parseInt(s[1], 10); }
+    const b = pwIpToBytes(net); if (!b || a.length !== b.length) return false;
+    if (bits === null) bits = a.length * 8;
+    for (let i = 0; i < a.length && bits > 0; i++, bits -= 8) {
+        const mask = bits >= 8 ? 255 : (255 << (8 - bits)) & 255;
+        if ((a[i] & mask) !== (b[i] & mask)) return false;
+    }
+    return true;
+}
+function pwRender() {
+    const body = document.getElementById('pwRows');
+    if (!pwEntries.length) { body.innerHTML = '<tr><td colspan="3" class="sec-empty">' + secEsc(pwStrings.empty) + '</td></tr>'; }
+    else body.innerHTML = pwEntries.map((e, i) =>
+        '<tr><td class="mono">' + secEsc(e.ip) + '</td><td>' + secEsc(e.comment) + '</td>' +
+        '<td><div class="sec-actions"><button class="sec-btn sm" title="' + secEsc(pwStrings.remove) + '" onclick="pwRemove(' + i + ')">🗑️</button></div></td></tr>').join('');
+    pwState();
+}
+function pwState() {
+    const el = document.getElementById('pwMyState');
+    const on = document.getElementById('pwEnabled').checked;
+    if (!on) { el.className = 'sec-badge'; el.textContent = ''; return; }
+    const loop = pwMyIp === '::1' || pwMyIp.indexOf('127.') === 0;
+    const ok = loop || pwEntries.some(e => pwMatch(pwMyIp, e.ip));
+    el.className = 'sec-badge ' + (ok ? 'ok' : 'err');
+    el.textContent = loop ? pwStrings.loop : (ok ? pwStrings.allowed : pwStrings.denied);
+}
+function pwAdd() {
+    const ip = document.getElementById('pwNewIp').value.trim();
+    const comment = document.getElementById('pwNewComment').value.trim();
+    if (!ip) return;
+    if (!pwIpToBytes(ip.split('/')[0]) || (ip.indexOf('/') !== -1 && !/^\d{1,3}$/.test(ip.split('/')[1]))) { secMsg('pwMsg', false, <?= json_encode(__('panel_wl_msg_bad_entry_short')) ?>); return; }
+    if (!pwEntries.some(e => e.ip === ip)) pwEntries.push({ ip: ip, comment: comment });
+    document.getElementById('pwNewIp').value = ''; document.getElementById('pwNewComment').value = '';
+    pwRender();
+}
+function pwAddMine() { if (pwMyIp && !pwEntries.some(e => e.ip === pwMyIp)) { pwEntries.push({ ip: pwMyIp, comment: <?= json_encode(__('panel_wl_my_comment')) ?> }); pwRender(); } }
+function pwRemove(i) { pwEntries.splice(i, 1); pwRender(); }
+function pwSave() {
+    secPost({ ajax: 'panel_wl_save', enabled: document.getElementById('pwEnabled').checked ? '1' : '0', entries: JSON.stringify(pwEntries) })
+        .then(d => secMsg('pwMsg', !!d.success, d.message || ''))
+        .catch(() => secMsg('pwMsg', false, <?= json_encode(__('msg_save_error')) ?>));
+}
+if (document.getElementById('pwEnabled')) { document.getElementById('pwEnabled').addEventListener('change', pwState); }
+
+// ===== Блокировка IP (п. 30) =====
+let fwRows = <?= json_encode($fwBlocked, JSON_UNESCAPED_UNICODE) ?>;
+const fwStr = { applied: <?= json_encode(__('fw_st_applied')) ?>, pending: <?= json_encode(__('fw_st_pending')) ?>, empty: <?= json_encode(__('fw_empty')) ?>,
+    unblock: <?= json_encode(__('fw_unblock')) ?>, confirm: <?= json_encode(__('fw_unblock_confirm')) ?>, ready: <?= json_encode(__('fw_state_ready')) ?>, notReady: <?= json_encode(__('fw_state_not_ready')) ?> };
+function fwRender() {
+    const body = document.getElementById('fwRows');
+    document.getElementById('fwCount').textContent = fwRows.length;
+    if (!fwRows.length) { body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(fwStr.empty) + '</td></tr>'; return; }
+    body.innerHTML = fwRows.map(r =>
+        '<tr><td class="mono">' + secEsc(r.ip) + '</td><td>' + secEsc(r.reason) + '</td><td>' + secEsc(r.user) + '</td><td class="mono">' + secEsc(r.time) + '</td>' +
+        '<td><span class="sec-badge ' + (r.status === 'applied' ? 'ok' : 'warn') + '" title="' + secEsc(r.note || '') + '">' + secEsc(r.status === 'applied' ? fwStr.applied : fwStr.pending) + '</span></td>' +
+        '<td><div class="sec-actions"><button class="sec-btn sm" onclick="fwUnblock(\'' + secEsc(r.ip) + '\')">♻️ ' + secEsc(fwStr.unblock) + '</button></div></td></tr>').join('');
+}
+function fwReload(done) {
+    secPost({ ajax: 'fw_list' }).then(d => { if (d.success) { fwRows = d.rows; } fwRender(); if (done) done(); });
+}
+let fwChecked = false;
+function fwFirstCheck() { if (!fwChecked) { fwChecked = true; fwCheck(); } }
+function fwCheck() {
+    const st = document.getElementById('fwState'), tx = document.getElementById('fwStateText');
+    st.className = 'sec-badge'; st.textContent = <?= json_encode(__('fw_checking')) ?>; tx.textContent = '';
+    secPost({ ajax: 'fw_status' }).then(d => {
+        st.className = 'sec-badge ' + (d.ready ? 'ok' : 'warn');
+        st.textContent = d.ready ? fwStr.ready : fwStr.notReady;
+        tx.textContent = d.message || '';
+        const card = document.getElementById('fwSetupCard'); if (card) card.style.display = d.problem === 'helper_missing' || d.problem === 'sudo_denied' || !d.ready ? '' : 'none';
+    }).catch(() => { st.className = 'sec-badge err'; st.textContent = '?'; });
+}
+function fwScopeChange() { document.getElementById('fwPort').disabled = document.getElementById('fwScope').value !== 'port'; }
+function fwSaveSettings() {
+    secPost({ ajax: 'fw_save_settings', backend: document.getElementById('fwBackend').value, scope: document.getElementById('fwScope').value, port: document.getElementById('fwPort').value })
+        .then(d => { secMsg('fwSetMsg', !!d.success, d.message || ''); if (d.success) fwCheck(); })
+        .catch(() => secMsg('fwSetMsg', false, <?= json_encode(__('msg_save_error')) ?>));
+}
+function fwBlockNew() {
+    const ip = document.getElementById('fwNewIp').value.trim(); if (!ip) return;
+    secPost({ ajax: 'fw_block', ip: ip, reason: document.getElementById('fwNewReason').value })
+        .then(d => { secMsg('fwMsg', !!d.success, d.message || ''); if (d.success) { document.getElementById('fwNewIp').value = ''; document.getElementById('fwNewReason').value = ''; fwReload(); } })
+        .catch(() => secMsg('fwMsg', false, <?= json_encode(__('msg_save_error')) ?>));
+}
+function fwUnblock(ip) {
+    if (!confirm(fwStr.confirm + ' ' + ip + '?')) return;
+    secPost({ ajax: 'fw_unblock', ip: ip }).then(d => { secMsg('fwMsg', !!d.success, d.message || ''); if (d.success) fwReload(); });
+}
+function fwApply(all) {
+    secPost({ ajax: 'fw_apply', all: all ? '1' : '0' }).then(d => { secMsg('fwMsg', !!d.success, d.message || ''); fwReload(); });
+}
+function fwCopySetup(btn) {
+    secCopy(document.getElementById('fwSetupCode').textContent, function () { const t = btn.textContent; btn.textContent = '✅'; setTimeout(() => { btn.textContent = t; }, 1500); });
+}
+
+if (document.getElementById('pwRows')) { pwRender(); } if (document.getElementById('fwRows')) { fwRender(); }
+document.addEventListener('DOMContentLoaded', function () {
+    secTabRestore('section-security', 'users');
+    const act = document.querySelector('#section-security .sec-tab-btn.active');
+    if (act && act.getAttribute('data-for') === 'firewall') fwFirstCheck();
+});
+</script>
+<?php else: ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () { secTabRestore('section-security', 'users'); });
+</script>
+<?php endif; ?>
 
 <!-- Модальное окно для выбора прав при добавлении/редактировании пользователя -->
 <div id="permissionsModal" class="modal" style="display: none; z-index: 100000;">
@@ -295,15 +601,14 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
     min-width: 0;
 }
 
-.security-whitelist-column {
+.security-side-column {
     flex: 0.35;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
-.security-whitelist-column > .settings-card:first-child { flex: 1 1 auto; height: auto; }
-.security-whitelist-column > .privacy-card { flex: 0 0 auto; height: auto; }
+.security-side-column > .privacy-card { flex: 0 0 auto; height: auto; }
 .session-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 13px; }
 .session-row input { width: 80px; flex: 0 0 auto; }
 .session-row input[type=number] { -moz-appearance: textfield; appearance: textfield; }

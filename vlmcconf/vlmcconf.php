@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.17.1
+// ВЕРСИЯ: 5.18.0
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -31,6 +31,8 @@ require_once __DIR__ . '/vlmcinc/version.php';
 require_once __DIR__ . '/vlmcinc/audit.php';
 require_once __DIR__ . '/vlmcinc/http_client.php';
 require_once __DIR__ . '/vlmcinc/updater.php';
+require_once __DIR__ . '/vlmcinc/panel_access.php';
+vlmcPanelAccessEnforce();   // ограничение доступа к панели по IP (Безопасность → Доступ и IP): чужой адрес получает 403
 vlmcSessionStart();
 
 // Проверка авторизации

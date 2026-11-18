@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.2.1
+// ВЕРСИЯ: 1.3.0
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -66,6 +66,8 @@ function vlmcSectionUi($themeCSS) {
 .sec-btn:hover { background: <?= $themeCSS['hover'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
 .sec-btn.primary { background: <?= $themeCSS['primary'] ?>; border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; }
 .sec-btn.primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.sec-btn.danger { background: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['onDanger'] ?>; border-color: <?= $themeCSS['danger'] ?>; }
+.sec-btn.danger:hover { opacity: 0.9; background: <?= $themeCSS['danger'] ?>; }
 .sec-btn.sm { padding: 3px 10px; font-size: 11px; border-radius: 14px; }
 .sec-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 .sec-code { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; position: relative; margin: 6px 0; }

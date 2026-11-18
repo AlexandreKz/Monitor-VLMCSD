@@ -1,14 +1,14 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.6.3
+// ВЕРСИЯ: 5.7.0
 // ДАТА: 2026-11-18
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
 
 /* KMS Monitor - Web Interface for vlmcsd
- * Version: 5.6.3
+ * Version: 5.7.0
  * 
  * @author AlexandreKz
  * @link https://github.com/AlexandreKz
@@ -647,6 +647,8 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .add-device-btn, .add-whitelist-btn { background: transparent; border: none; color: #4ade80; cursor: pointer; padding: 0 2px; border-radius: 3px; font-size: 12px; transition: all 0.2s; }
         .add-device-btn:hover, .add-whitelist-btn:hover { color: #6ee7b7; transform: scale(1.1); }
         .add-whitelist-lock, .add-device-lock { color: #8aa0bb; font-size: 12px; cursor: help; }
+        .block-ip-btn { background: transparent; border: none; color: #f87171; cursor: pointer; padding: 0 2px; border-radius: 3px; font-size: 12px; transition: all 0.2s; }
+        .block-ip-btn:hover { color: #fca5a5; transform: scale(1.1); }
         .cache-warning { color: <?= $themeCSS['warning'] ?>; font-size: 11px; background: rgba(243, 156, 18, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid <?= $themeCSS['warning'] ?>; }
         .uptime-info { display: flex; align-items: center; gap: 8px; background: <?= $themeCSS['card'] ?>; padding: 3px 10px; border-radius: 20px; border: 1px solid <?= $themeCSS['border'] ?>; font-size: 11px; }
         .uptime-status { color: #4ade80; }
@@ -722,7 +724,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .suspicious-header .sort-arrow { display: inline-block; margin-left: 3px; font-size: 8px; }
         .suspicious-header {
             display: grid;
-            grid-template-columns: 0.1fr 1fr 0.5fr 0.15fr 1.1fr;
+            grid-template-columns: 0.1fr 1fr 0.5fr 0.3fr 1.1fr;
             padding: 3px 8px;
             margin-bottom: 3px;
             color: #8aa0bb;
@@ -743,7 +745,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
             font-size: 10px;
             border: 1px solid <?= $themeCSS['danger'] ?>;
             display: grid;
-            grid-template-columns: 0.1fr 1fr 0.5fr 0.15fr 1.1fr;
+            grid-template-columns: 0.1fr 1fr 0.5fr 0.3fr 1.1fr;
             align-items: center;
             gap: 4px;
             border-left: 3px solid <?= $themeCSS['danger'] ?>;
@@ -999,6 +1001,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     let currentGroupFilter = 'all';
     
     let canAddToWhitelist = false;
+    let canBlockIp = false;
     
     function positionTooltips() {
         const v4badge = document.getElementById('v4-badge');
@@ -1119,6 +1122,20 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
     
     function closeAddDeviceModal() { document.getElementById('addDeviceModal').style.display = 'none'; }
     
+    function blockIp(ip) {
+        if (!confirm(`<?= __('fw_block_confirm') ?> ${ip}?`)) return;
+        const fd = new FormData();
+        fd.append('ajax', 'fw_block');
+        fd.append('ip', ip);
+        fd.append('reason', 'suspicious');
+        fetch('vlmcconf/vlmcinc/ajax.php', { method: 'POST', body: fd })
+            .then(response => response.json())
+            .then(data => {
+                showToast(withIcon(data.success ? '✅' : '❌', data.message || ''));
+            })
+            .catch(() => showToast('❌ <?= __('fw_block_error') ?>'));
+    }
+
     function addToWhitelist(ip) {
         if (!confirm(`<?= __('whitelist_remove_confirm') ?> ${ip}?`)) return;
         
@@ -1275,11 +1292,13 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         .then(response => response.json())
         .then(data => {
             canAddToWhitelist = data.has_permission;
+            canBlockIp = data.can_block === true;
             renderSuspiciousListWithPermission();
         })
         .catch(error => {
             console.error('Permission check error:', error);
             canAddToWhitelist = false;
+            canBlockIp = false;
             renderSuspiciousListWithPermission();
         });
         
@@ -1309,6 +1328,10 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     ? `<button class="add-whitelist-btn" onclick="addToWhitelist('${escapedIp}')" title="<?= __('whitelist_add_ip') ?>">➕</button>`
                     : `<span class="add-whitelist-lock" title="<?= __('whitelist_auth_required') ?>">🔒</span>`;
                 
+                const blockButton = canBlockIp
+                    ? `<button class="block-ip-btn" onclick="blockIp('${escapedIp}')" title="<?= __('fw_block_btn_title') ?>">🚫</button>`
+                    : '';
+                
                 html += `<div class="suspicious-item" title="<?= __('suspicious_duration') ?>: ${item.duration}с">
                     <span class="suspicious-actions">
                         <button class="copy-ip-btn" onclick="event.stopPropagation(); copyToClipboard('${escapedIp}')" title="<?= __('suspicious_copy_ip') ?>">📋</button>
@@ -1316,7 +1339,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
                     <span class="suspicious-ip" onclick="showGeoModal('${escapedIp}', 'suspicious')">${escapedIp}</span>
                     <span class="suspicious-count">${item.count}</span>
                     <span class="suspicious-actions">
-                        ${whitelistButton}
+                        ${whitelistButton}${blockButton}
                     </span>
                     <span class="suspicious-country">${flagUrl ? `<img src="${flagUrl}" alt="${countryCode}" style="width: 16px; height: 12px; margin-right: 4px; vertical-align: middle;">` : ''}${countryName}</span>
                 </div>`;
