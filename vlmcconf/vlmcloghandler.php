@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcloghandler.php
-// ВЕРСИЯ: 1.5.1
+// ВЕРСИЯ: 1.5.2
 // ДАТА: 2026-11-18
 // @description: Обработчик и форматирование логов KMS с поддержкой tooltip
 // @description: KMS log handler and formatter with tooltip support
@@ -177,7 +177,7 @@ function processLine($line, $devices, $deviceComments, $groups, $groupColors, $f
         );
         
         $result .= sprintf(
-            '<div style="background-color:%s; border-left: 6px solid %s; padding: 4px 0 4px 10px; margin: 0; border-radius: 0 4px 4px 0; display: flex; align-items: center; flex-wrap: wrap;">%s%s</div>',
+            '<div style="background-color:%s; border-left: 6px solid %s; padding: 4px 0 4px 10px; margin: 0; border-radius: 0 4px 4px 0; display: flex; align-items: center; flex-wrap: wrap;"><span>%s</span>%s</div>',
             "rgba(" . hex2rgb($groupColor) . ", 0.15)",
             $groupColor,
             $lineWithHighlights,
