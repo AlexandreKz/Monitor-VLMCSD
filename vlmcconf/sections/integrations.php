@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.1.0
+// ВЕРСИЯ: 6.1.1
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -121,7 +121,7 @@ $permOptions = [
                         <div style="flex: 1 1 200px; min-width: 0;">
                             <div id="ldGroupChips" class="ld-chips"></div>
                             <?php if ($ldCanEdit): ?>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="ldGroupsOpen()">📂 <?= __('ldap_groups_pick') ?></button>
+                            <button type="button" class="sec-btn sm" onclick="ldGroupsOpen()">📂 <?= __('ldap_groups_pick') ?></button>
                             <?php endif; ?>
                         </div></div>
                     <p class="sec-hint" style="margin: -4px 0 10px;"><?= __('ldap_required_group_hint') ?></p>
@@ -142,15 +142,14 @@ $permOptions = [
         <div class="settings-card">
             <div class="settings-card-title">👥 <?= __('ldap_users_title') ?> <span class="sec-badge" id="ldUsersCount">0</span></div>
             <div class="sec-row">
-                <input type="text" id="ldQuery" class="form-control" placeholder="<?= __('ldap_search_ph') ?>" autocomplete="off" onkeydown="if(event.key==='Enter') ldSearch()">
-                <button type="button" class="btn btn-primary" onclick="ldSearch()">🔍 <?= __('ldap_search') ?></button>
+                <input type="text" id="ldQuery" class="form-control" placeholder="<?= __('ldap_search_ph') ?>" autocomplete="off" oninput="ldSearchLive()">
                 <?php if ($ldCanEdit): ?>
-                <button type="button" class="btn" onclick="ldImport()">⬇️ <?= __('ldap_import_selected') ?></button>
-                <button type="button" class="btn" onclick="ldSync()">🔄 <?= __('ldap_sync_now') ?></button>
+                <button type="button" class="sec-btn primary" onclick="ldImport()">⬇️ <?= __('ldap_import_selected') ?></button>
+                <button type="button" class="sec-btn" onclick="ldSync()">🔄 <?= __('ldap_sync_now') ?></button>
                 <?php endif; ?>
             </div>
             <div id="ldUsersMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
-            <div class="sec-scroll" style="max-height: 380px;">
+            <div class="sec-scroll sec-tall">
                 <table class="sec-table">
                     <thead><tr><th style="width: 28px;"><input type="checkbox" id="ldAll" onchange="ldToggleAll(this)"></th><th><?= __('ldap_col_login') ?></th><th><?= __('ldap_col_name') ?></th><th><?= __('ldap_col_email') ?></th><th><?= __('ldap_col_groups') ?></th><th><?= __('ldap_col_state') ?></th></tr></thead>
                     <tbody id="ldUserRows"><tr><td colspan="6" class="sec-empty"><?= __('ldap_users_hint') ?></td></tr></tbody>
@@ -163,7 +162,7 @@ $permOptions = [
     <div class="sec-tab-content" data-tab="log">
         <div class="settings-card">
             <div class="settings-card-title">📜 <?= __('ldap_log_title') ?></div>
-            <div class="sec-scroll" style="max-height: 420px;">
+            <div class="sec-scroll sec-tall">
                 <table class="sec-table">
                     <thead><tr><th><?= __('ldap_log_time') ?></th><th><?= __('ldap_log_type') ?></th><th><?= __('ldap_log_result') ?></th><th><?= __('ldap_log_text') ?></th></tr></thead>
                     <tbody>
@@ -205,16 +204,16 @@ $permOptions = [
         <h3>📂 <?= __('ldap_groups_title') ?></h3>
         <div style="display: flex; gap: 8px;">
             <input type="text" id="ldGroupsQuery" class="form-control" placeholder="<?= htmlspecialchars(__('ldap_groups_search')) ?>" onkeydown="if (event.key === 'Enter') ldGroupsLoad()">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="ldGroupsLoad()">🔍</button>
+            <button type="button" class="sec-btn" onclick="ldGroupsLoad()">🔍</button>
         </div>
         <div id="ldGroupsList" class="ld-list"></div>
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <input type="text" id="ldGroupsManual" class="form-control" placeholder="<?= htmlspecialchars(__('ldap_groups_manual')) ?>" onkeydown="if (event.key === 'Enter') ldGroupsAddManual()">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="ldGroupsAddManual()"><?= __('ldap_groups_add') ?></button>
+            <button type="button" class="sec-btn" onclick="ldGroupsAddManual()"><?= __('ldap_groups_add') ?></button>
         </div>
         <div class="ld-foot">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="ldGroupsClose()"><?= __('cancel') ?></button>
-            <button type="button" class="btn btn-primary btn-sm" onclick="ldGroupsApply()"><?= __('ldap_groups_apply') ?></button>
+            <button type="button" class="sec-btn" onclick="ldGroupsClose()"><?= __('cancel') ?></button>
+            <button type="button" class="sec-btn primary" onclick="ldGroupsApply()"><?= __('ldap_groups_apply') ?></button>
         </div>
     </div>
 </div>
@@ -317,10 +316,14 @@ function ldTest() {
     }).catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function ldFirstSearch() { if (!ldFound) { ldFound = true; ldSearch(); } }
+let ldSearchTimer = null, ldSearchSeq = 0;
+function ldSearchLive() { clearTimeout(ldSearchTimer); ldSearchTimer = setTimeout(ldSearch, 250); }
 function ldSearch() {
+    const seq = ++ldSearchSeq;
     const body = document.getElementById('ldUserRows');
     body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(ldStr.searching) + '</td></tr>';
     secPost({ ajax: 'ldap_search', q: document.getElementById('ldQuery').value }).then(d => {
+        if (seq !== ldSearchSeq) return;   // пришёл ответ на устаревший запрос
         if (!d.success) { body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(d.message || '') + '</td></tr>'; document.getElementById('ldUsersCount').textContent = 0; return; }
         document.getElementById('ldUsersCount').textContent = d.users.length;
         if (!d.users.length) { body.innerHTML = '<tr><td colspan="6" class="sec-empty">' + secEsc(ldStr.empty) + '</td></tr>'; return; }
