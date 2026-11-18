@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.5.2
+// ВЕРСИЯ: 1.5.3
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики разделов «Интеграции» (п. 26: Active Directory / LDAP) и «API» (п. 25: ключи и настройки).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -231,6 +231,17 @@ if (in_array($xAction, ['ldap_status', 'ldap_save_settings', 'ldap_test', 'ldap_
         if (!$r['success'] && !empty($r['detail'])) {
             $msg .= ' (' . mb_substr($r['detail'], 0, 120) . ')';
         }
+        // записи, которые сервер не принял (в том числе резервные, пока основная работает)
+        $badAcc = [];
+        foreach ((array)($r['accounts'] ?? []) as $a) {
+            if (empty($a['ok'])) {
+                $badAcc[] = $a['user'];
+            }
+        }
+        $warn = $r['success'] && $badAcc;
+        if ($warn) {
+            $msg = __('ldap_msg_link_ok') . ' ' . sprintf(__('ldap_msg_acc_bad'), implode(', ', $badAcc));
+        }
         // подробная запись в журнал: сервер, учётная запись, причина
         $anon = __('ldap_log_anonymous');
         $logText = $r['success']
@@ -238,9 +249,12 @@ if (in_array($xAction, ['ldap_status', 'ldap_save_settings', 'ldap_test', 'ldap_
               . (!empty($r['backup_used']) ? ' ' . __('ldap_log_backup_mark') : '')
             : sprintf(__('ldap_log_test_fail'), __('ldap_err_' . $r['code']), $r['server'] ?? '', $r['tried'] ? implode(', ', $r['tried']) : $anon)
               . (!empty($r['detail']) ? ' · ' . sprintf(__('ldap_log_reason'), mb_substr($r['detail'], 0, 200)) : '');
-        ldapLog('test', $r['success'], $logText);
-        ldapStatusStore($r['success'], $r['success'] ? '' : __('ldap_err_' . $r['code']));
-        xjson(['success' => $r['success'], 'message' => $msg]);
+        if ($warn) {
+            $logText .= ' · ' . sprintf(__('ldap_msg_acc_bad'), implode(', ', $badAcc));
+        }
+        ldapLog('test', $r['success'] && !$warn, $logText);
+        ldapStatusStore($r['success'], $r['success'] ? '' : __('ldap_err_' . $r['code']), $r['accounts'] ?? []);
+        xjson(['success' => $r['success'], 'warning' => $warn, 'message' => $msg, 'accounts' => $r['accounts'] ?? []]);
     }
 
     if ($xAction === 'ldap_groups') {

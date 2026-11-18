@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.8
+// ВЕРСИЯ: 6.5.1
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -86,6 +86,7 @@ $permOptions = [
                         <div style="flex: 1 1 200px; min-width: 0;"><div class="ld-bk" style="margin: 0;">
                             <input type="text" id="ldSvcUser" class="form-control" value="<?= htmlspecialchars($ld['service_user']) ?>" placeholder="CN=svc-kms,OU=Service,DC=corp,DC=example,DC=com" <?= $ldDis ?>>
                             <input type="password" id="ldSvcPass" class="form-control" value="<?= $ld['has_password'] ? '********' : '' ?>" placeholder="<?= htmlspecialchars(__('ldap_service_password')) ?>" autocomplete="new-password" <?= $ldDis ?>>
+                            <span class="ld-acc" id="ldAccMain"></span>
                             <span style="width: 22px; flex: none;"></span>
                         </div></div></div>
                     <div class="sec-row" style="align-items: flex-start;"><label><?= __('ldap_backup_accounts') ?></label>
@@ -106,7 +107,7 @@ $permOptions = [
                         <button type="button" class="sec-btn" onclick="ldTest()">🔌 <?= __('ldap_test') ?></button>
                         <?php endif; ?>
                     </div>
-                    <div id="ldMsg" class="sec-msg"></div>
+                    <div style="min-height: 28px; margin-top: 8px; text-align: right;"><span id="ldMsg" class="sec-msg" style="margin: 0; max-width: 100%;"></span></div>
                 </div>
             </div>
 
@@ -271,6 +272,7 @@ $permOptions = [
 .ld-foot { display: flex; gap: 8px; justify-content: flex-end; }
 .ld-bk { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
 .ld-bk input { flex: 1 1 0; min-width: 0; }
+.ld-acc { width: 22px; flex: none; text-align: center; font-size: 13px; cursor: default; }
 .ld-bk button { background: none; border: none; cursor: pointer; color: <?= $themeCSS['muted'] ?>; font-size: 14px; padding: 0 4px; }
 .ld-bk button:hover { color: <?= $themeCSS['dangerText'] ?>; }
 </style>
@@ -383,10 +385,27 @@ let ldFound = false;
 const LD_BK_MAX = <?= (int)LDAP_BACKUP_MAX ?>;
 let ldBackups = <?= json_encode(array_map(function ($b) { return ['user' => $b['user'], 'password' => $b['has_password'] ? '********' : '']; }, $ld['backup_accounts']), JSON_UNESCAPED_UNICODE) ?>;
 const ldBkStr = { user: <?= json_encode(__('ldap_backup_user_ph')) ?>, pass: <?= json_encode(__('ldap_service_password')) ?>, remove: <?= json_encode(__('ldap_groups_remove')) ?> };
+// ---- Статусы служебных записей (по результату последней проверки связи)
+let ldAcc = {};
+function ldAccKey(u) { return String(u || '').trim().toLowerCase(); }
+function ldAccIcon(user) {
+    const a = ldAcc[ldAccKey(user)];
+    if (!a) return '<span class="ld-acc" title="' + secEsc(<?= json_encode(__('ldap_acc_unknown')) ?>) + '">⚪</span>';
+    return a.ok ? '<span class="ld-acc" title="' + secEsc(<?= json_encode(__('ldap_acc_ok')) ?>) + '">✅</span>'
+                : '<span class="ld-acc" title="' + secEsc(<?= json_encode(__('ldap_err_bind_failed')) ?> + (a.detail ? ' (' + a.detail + ')' : '')) + '">❌</span>';
+}
+function ldAccShow(list) {
+    ldAcc = {};
+    (list || []).forEach(a => { ldAcc[ldAccKey(a.user)] = a; });
+    const m = document.getElementById('ldAccMain');
+    if (m) m.outerHTML = ldAccIcon(document.getElementById('ldSvcUser').value).replace('<span class="ld-acc"', '<span class="ld-acc" id="ldAccMain"');
+    ldBkRender();
+}
 function ldBkRender() {
     const box = document.getElementById('ldBackups');
     box.innerHTML = ldBackups.map((b, i) => '<div class="ld-bk"><input type="text" class="form-control" placeholder="' + secEsc(ldBkStr.user) + '" value="' + secEsc(b.user) + '" ' + (ldCanEdit ? '' : 'disabled') + ' oninput="ldBackups[' + i + '].user = this.value">' +
         '<input type="password" class="form-control" autocomplete="new-password" placeholder="' + secEsc(ldBkStr.pass) + '" value="' + secEsc(b.password) + '" ' + (ldCanEdit ? '' : 'disabled') + ' oninput="ldBackups[' + i + '].password = this.value">' +
+        ldAccIcon(b.user) +
         (ldCanEdit ? '<button type="button" title="' + secEsc(ldBkStr.remove) + '" onclick="ldBkDel(' + i + ')">✕</button>' : '') + '</div>').join('');
     const add = document.getElementById('ldBkAddBtn');
     if (add) add.style.display = ldBackups.length >= LD_BK_MAX ? 'none' : '';
@@ -503,6 +522,7 @@ function ldStatusShow(st) {
     el.className = 'sec-badge' + (m[0] ? ' ' + m[0] : '');
     el.textContent = m[1];
     el.title = (st.time ? <?= json_encode(__('ldap_status_checked')) ?> + ' ' + st.time : '') + (st.text ? ' — ' + st.text : '');
+    ldAccShow(st.accounts);
 }
 function ldStatusLoad() { secPost({ ajax: 'ldap_status' }).then(d => { if (d.success) { ldStatusShow(d.status); } }).catch(() => {}); }
 function ldTest() {
@@ -510,7 +530,7 @@ function ldTest() {
     // проверяется то, что сейчас в форме: сначала сохраняем поля, затем проверяем связь
     secPost(Object.assign({ ajax: 'ldap_save_settings' }, ldCollect())).then(function (sv) {
         if (!sv.success) { secMsg('ldMsg', false, sv.message || ''); return null; }
-        return secPost({ ajax: 'ldap_test' }).then(d => { secMsg('ldMsg', !!d.success, d.message || ''); ldStatusLoad(); window.addEventListener('vlmc-sched-done', ldStatusLoad); });
+        return secPost({ ajax: 'ldap_test' }).then(d => { secMsg('ldMsg', !!d.success && !d.warning, d.message || ''); if (d.accounts) ldAccShow(d.accounts); ldStatusLoad(); window.addEventListener('vlmc-sched-done', ldStatusLoad); });
     }).catch(() => secMsg('ldMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 function ldFirstSearch() { if (!ldFound) { ldFound = true; ldSearch(); } }

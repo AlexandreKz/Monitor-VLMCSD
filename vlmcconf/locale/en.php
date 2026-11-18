@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.22
+// ВЕРСИЯ: 5.15.23
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1312,7 +1312,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_backup_accounts' => 'Backup accounts',
     'ldap_backup_add' => 'Add',
     'ldap_backup_user_ph' => 'Login or DN',
-    'ldap_backup_hint' => 'Backup service accounts (up to 5) are tried in order if the main one is rejected, for example after its password was changed or the account locked. Passwords are stored encrypted.',
+    'ldap_backup_hint' => 'Backup service accounts (up to 5) are tried in order if the main one is rejected, for example after its password was changed or the account locked. Passwords are stored encrypted. “Check connection” tests every account separately: ✅ accepted, ❌ rejected.',
     'ldap_msg_backup_used' => 'The main account was rejected; the backup account was used: %s.',
     'ldap_user_filter' => 'Extra filter',
     'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
@@ -1779,5 +1779,9 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_msg_key_off' => 'Key deactivated',
     'api_docs_filters_title' => 'Search and filters',
     'api_docs_methods_title' => 'Methods',
+    'ldap_msg_link_ok' => 'Connected.',
+    'ldap_msg_acc_bad' => 'Account not accepted: %s',
+    'ldap_acc_ok' => 'Account accepted by the server',
+    'ldap_acc_unknown' => 'Not checked yet',
 ];
 ?>

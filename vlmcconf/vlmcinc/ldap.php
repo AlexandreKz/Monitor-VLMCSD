@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.3.0
+// ВЕРСИЯ: 1.4.0
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -393,6 +393,30 @@ function ldapTest($config = null) {
     return $r;
 }
 
+/**
+ * Проверка всех служебных записей (основная + резервные) на одном соединении.
+ * Возвращает список [user, role (main|backup), ok, detail] или null, если сервер недоступен.
+ */
+function ldapCheckAccounts($conn, $s, $config = null) {
+    $list = [['user' => $s['service_user'], 'role' => 'main', 'password' => ldapServicePassword($config)]];
+    foreach (ldapBackupAccounts($config) as $b) {
+        $list[] = ['user' => $b['user'], 'role' => 'backup', 'password' => $b['password']];
+    }
+    $out = [];
+    foreach ($list as $a) {
+        $ok = @ldap_bind($conn, $a['user'], $a['password']);
+        $detail = '';
+        if (!$ok) {
+            if (function_exists('ldap_errno') && @ldap_errno($conn) === -1) {
+                return null;
+            }
+            $detail = ldap_error($conn);
+        }
+        $out[] = ['user' => $a['user'], 'role' => $a['role'], 'ok' => (bool)$ok, 'detail' => mb_substr((string)$detail, 0, 200)];
+    }
+    return $out;
+}
+
 function ldapTestCore($s, $config) {
     if (!ldapAvailable()) {
         return ['success' => false, 'code' => 'no_extension', 'detail' => ''];
@@ -404,10 +428,20 @@ function ldapTestCore($s, $config) {
     if (!$conn) {
         return ['success' => false, 'code' => $code, 'detail' => $detail];
     }
+    // проверяем КАЖДУЮ служебную запись отдельно: резерв, который не работает, нужно заметить заранее
+    $accounts = [];
+    if ($s['service_user'] !== '') {
+        $accounts = ldapCheckAccounts($conn, $s, $config);
+        if ($accounts === null) {
+            $err = function_exists('ldap_error') ? ldap_error($conn) : '';
+            @ldap_close($conn);
+            return ['success' => false, 'code' => 'connect_failed', 'detail' => $err];
+        }
+    }
     list($ok, $bcode, $bdetail, $usedBackup) = ldapServiceBind($conn, $s, $config);
     if (!$ok) {
         @ldap_close($conn);
-        return ['success' => false, 'code' => $bcode, 'detail' => $bdetail];
+        return ['success' => false, 'code' => $bcode, 'detail' => $bdetail, 'accounts' => $accounts];
     }
     $sr = @ldap_search($conn, $s['base_dn'], '(objectClass=*)', ['dn'], 0, 1, $s['timeout']);
     if (!$sr) {
@@ -421,7 +455,7 @@ function ldapTestCore($s, $config) {
         $n = (int)ldap_count_entries($conn, $us);
     }
     @ldap_close($conn);
-    return ['success' => true, 'code' => 'ok', 'detail' => '', 'users' => $n, 'backup_used' => $usedBackup];
+    return ['success' => true, 'code' => 'ok', 'detail' => '', 'users' => $n, 'backup_used' => $usedBackup, 'accounts' => $accounts];
 }
 
 /** Фильтр для списка пользователей (объекты-люди). */
@@ -640,13 +674,13 @@ function ldapStatusFile() {
 function ldapStatusRead() {
     $r = config_read(ldapStatusFile());
     $d = ($r['status'] === 'ok' && is_array($r['config'])) ? $r['config'] : [];
-    return isset($d['time']) ? ['ok' => !empty($d['ok']), 'time' => (int)$d['time'], 'text' => (string)($d['text'] ?? '')] : null;
+    return isset($d['time']) ? ['ok' => !empty($d['ok']), 'time' => (int)$d['time'], 'text' => (string)($d['text'] ?? ''), 'accounts' => is_array($d['accounts'] ?? null) ? $d['accounts'] : []] : null;
 }
 
-function ldapStatusStore($ok, $text) {
+function ldapStatusStore($ok, $text, array $accounts = []) {
     $file = ldapStatusFile();
     config_lock($file);
-    save_config($file, ['ok' => (bool)$ok, 'time' => time(), 'text' => mb_substr((string)$text, 0, 300)]);
+    save_config($file, ['ok' => (bool)$ok, 'time' => time(), 'text' => mb_substr((string)$text, 0, 300), 'accounts' => array_values($accounts)]);
 }
 
 function ldapStatusReset() {
@@ -661,12 +695,12 @@ function ldapStatusView($config = null) {
     $s = ldapSettings($config);
     $st = ldapStatusRead();
     if (empty($s['enabled'])) {
-        return ['state' => 'off', 'time' => $st ? date('Y-m-d H:i', $st['time']) : '', 'text' => ''];
+        return ['state' => 'off', 'time' => $st ? date('Y-m-d H:i', $st['time']) : '', 'text' => '', 'accounts' => []];
     }
     if (!$st) {
-        return ['state' => 'unknown', 'time' => '', 'text' => ''];
+        return ['state' => 'unknown', 'time' => '', 'text' => '', 'accounts' => []];
     }
-    return ['state' => $st['ok'] ? 'active' : 'down', 'time' => date('Y-m-d H:i', $st['time']), 'text' => $st['text']];
+    return ['state' => $st['ok'] ? 'active' : 'down', 'time' => date('Y-m-d H:i', $st['time']), 'text' => $st['text'], 'accounts' => $st['accounts']];
 }
 
 /** Пора ли проверять: интеграция включена и последняя проверка старше 12 часов (или её не было). */
@@ -684,7 +718,7 @@ function ldapStatusCheck($config = null) {
     $prev = ldapStatusRead();
     $r = ldapTest($config);
     $text = $r['success'] ? '' : (function_exists('__') ? __('ldap_err_' . ($r['code'] ?? 'connect')) : '');
-    ldapStatusStore($r['success'], $text);
+    ldapStatusStore($r['success'], $text, $r['accounts'] ?? []);
     if (!$prev || $prev['ok'] !== (bool)$r['success']) {
         ldapLog('check', $r['success'], $r['success'] ? __('ldap_status_log_up') : sprintf(__('ldap_status_log_down'), $text));
     }
