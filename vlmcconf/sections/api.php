@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.5.0
+// ВЕРСИЯ: 6.6.0
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -154,6 +154,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                 <input type="search" id="apiDocsSearch" class="form-control" placeholder="<?= htmlspecialchars(__('api_docs_search')) ?>" autocomplete="off" oninput="apiDocsFilter()">
                 <span class="sec-hint" style="margin: 0;" id="apiDocsCount"></span>
             </div>
+            <div id="apiDocsMethods" class="api-chips"></div>
             <div id="apiDocsChips" class="api-chips"></div>
             <div id="apiDocs"><div class="sec-empty"><?= __('api_docs_loading') ?></div></div>
             <div class="sec-empty" id="apiDocsNone" style="display: none;"><?= __('api_docs_none') ?></div>
@@ -189,6 +190,9 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
 .api-ep-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; background: <?= $themeCSS['card'] ?>; }
 .api-ep-head:hover { background: <?= $themeCSS['hover'] ?>; }
+.api-m-post { background: #2e9e5b !important; color: #fff !important; }
+.api-m-put, .api-m-patch { background: #d68a1f !important; color: #fff !important; }
+.api-m-delete { background: #c0392b !important; color: #fff !important; }
 .api-method { background: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['onPrimary'] ?>; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
 .api-path { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; }
 .api-sum { color: <?= $themeCSS['muted'] ?>; font-size: 12px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -358,17 +362,26 @@ function apiSaveSettings() {
 
 // Документация из openapi.json
 let apiDocsSpec = null;
-let apiDocsTag = '';
-function apiDocsChips(spec) { // кнопки-фильтры по областям доступа (типам методов) с числом методов
-    const counts = {};
-    Object.keys(spec.paths).forEach(p => { const t = ((spec.paths[p].get.tags) || [])[0] || ''; counts[t] = (counts[t] || 0) + 1; });
-    const order = Object.keys(apiScopeNames).filter(t => counts[t]);
-    const all = Object.keys(spec.paths).length;
-    const chip = (tag, label, n) => '<button type="button" class="sec-btn sm' + (apiDocsTag === tag ? ' primary' : '') + '" onclick="apiDocsSetTag(\'' + tag + '\')">' + secEsc(label) + ' <span class="api-chip-n">' + n + '</span></button>';
-    document.getElementById('apiDocsChips').innerHTML = chip('', <?= json_encode(__('api_docs_all')) ?>, all) + order.map(t => chip(t, apiScopeNames[t] || t, counts[t])).join('');
+const apiHttpMethods = ['get', 'post', 'put', 'patch', 'delete'];
+function apiEndpoints(spec) { // плоский список «адрес + HTTP-метод»; сейчас в API только GET
+    const list = [];
+    Object.keys(spec.paths).forEach(p => apiHttpMethods.forEach(m => { if (spec.paths[p][m]) list.push({ path: p, method: m, op: spec.paths[p][m] }); }));
+    return list;
 }
-function apiDocsSetTag(tag) {
-    apiDocsTag = apiDocsTag === tag ? '' : tag;
+let apiDocsTag = '';
+let apiDocsMethod = '';
+function apiDocsChips(spec) { // кнопки-фильтры: тип запроса (GET, POST…) и область доступа, с числом методов
+    const eps = apiEndpoints(spec), byTag = {}, byMethod = {};
+    eps.forEach(e => { const t = (e.op.tags || [])[0] || ''; byTag[t] = (byTag[t] || 0) + 1; byMethod[e.method] = (byMethod[e.method] || 0) + 1; });
+    const chip = (kind, val, label, n, active) => '<button type="button" class="sec-btn sm' + (active ? ' primary' : '') + '"' + (n === 0 ? ' disabled title="<?= htmlspecialchars(__('api_docs_no_methods')) ?>"' : '') +
+        ' onclick="apiDocsSet(\'' + kind + '\', \'' + val + '\')">' + secEsc(label) + ' <span class="api-chip-n">' + n + '</span></button>';
+    document.getElementById('apiDocsMethods').innerHTML = chip('m', '', <?= json_encode(__('api_docs_all')) ?>, eps.length, apiDocsMethod === '') +
+        apiHttpMethods.map(m => chip('m', m, m.toUpperCase(), byMethod[m] || 0, apiDocsMethod === m)).join('');
+    document.getElementById('apiDocsChips').innerHTML = chip('t', '', <?= json_encode(__('api_docs_all')) ?>, eps.length, apiDocsTag === '') +
+        Object.keys(apiScopeNames).filter(t => byTag[t]).map(t => chip('t', t, apiScopeNames[t] || t, byTag[t], apiDocsTag === t)).join('');
+}
+function apiDocsSet(kind, val) {
+    if (kind === 'm') apiDocsMethod = apiDocsMethod === val ? '' : val; else apiDocsTag = apiDocsTag === val ? '' : val;
     apiDocsChips(apiDocsSpec);
     apiDocsFilter();
 }
@@ -377,10 +390,10 @@ function apiDocsFilter() {
     const eps = document.querySelectorAll('#apiDocs .api-ep');
     let shown = 0;
     eps.forEach(e => {
-        const ok = (!q || e.getAttribute('data-s').indexOf(q) !== -1) && (!apiDocsTag || e.getAttribute('data-t') === apiDocsTag);
+        const ok = (!q || e.getAttribute('data-s').indexOf(q) !== -1) && (!apiDocsTag || e.getAttribute('data-t') === apiDocsTag) && (!apiDocsMethod || e.getAttribute('data-m') === apiDocsMethod);
         e.style.display = ok ? '' : 'none'; if (ok) shown++;
     });
-    document.getElementById('apiDocsCount').textContent = eps.length ? ((q || apiDocsTag) ? shown + ' / ' : '') + eps.length : '';
+    document.getElementById('apiDocsCount').textContent = eps.length ? ((q || apiDocsTag || apiDocsMethod) ? shown + ' / ' : '') + eps.length : '';
     document.getElementById('apiDocsNone').style.display = eps.length && !shown ? '' : 'none';
 }
 let apiDocsLoaded = false;
@@ -403,14 +416,14 @@ function apiDocsLoad() {
     fetch(apiBase + '/openapi.json').then(r => r.json()).then(spec => {
         apiDocsSpec = spec;
         let html = '<p class="sec-hint">' + secEsc(<?= json_encode(__('api_docs_intro')) ?>) + '</p>';
-        Object.keys(spec.paths).forEach((p, i) => {
-            const op = spec.paths[p].get, txt = apiEpText[p] || op.summary || '', scope = (op.tags || [])[0] || '';
+        apiEndpoints(spec).forEach((ep, i) => {
+            const p = ep.path, op = ep.op, mth = ep.method.toUpperCase(), txt = apiEpText[p] || op.summary || '', scope = (op.tags || [])[0] || '';
             const params = (op.parameters || []).map(q => '<tr><td class="mono">' + secEsc(q.name) + '</td><td>' + secEsc(q.in) + '</td><td>' + secEsc((q.schema && q.schema.type) || '') + (q.required ? ' *' : '') + '</td><td>' + secEsc(q.description || '') + '</td></tr>').join('');
             const okSchema = op.responses['200'].content['application/json'].schema;
             const ex = JSON.stringify({ data: apiExample(spec, okSchema) }, null, 2);
-            const curl = 'curl -H "Authorization: Bearer <?= 'kms_…' ?>" "' + apiBase + p.replace('{name}', 'DEVICE-01') + '"';
-            html += '<div class="api-ep" id="apiEp' + i + '" data-t="' + secEsc(scope) + '" data-s="' + secEsc((p + ' ' + txt + ' ' + (op.summary || '') + ' ' + (apiScopeNames[scope] || '') + ' ' + scope).toLowerCase()) + '"><div class="api-ep-head" onclick="document.getElementById(\'apiEp' + i + '\').classList.toggle(\'open\')">' +
-                '<span class="api-method">GET</span><span class="api-path">/v1' + secEsc(p) + '</span><span class="api-sum">' + secEsc(txt) + '</span>' +
+            const curl = 'curl ' + (mth === 'GET' ? '' : '-X ' + mth + ' ') + '-H "Authorization: Bearer <?= 'kms_…' ?>" "' + apiBase + p.replace('{name}', 'DEVICE-01') + '"';
+            html += '<div class="api-ep" id="apiEp' + i + '" data-m="' + ep.method + '" data-t="' + secEsc(scope) + '" data-s="' + secEsc((p + ' ' + txt + ' ' + (op.summary || '') + ' ' + (apiScopeNames[scope] || '') + ' ' + scope).toLowerCase()) + '"><div class="api-ep-head" onclick="document.getElementById(\'apiEp' + i + '\').classList.toggle(\'open\')">' +
+                '<span class="api-method api-m-' + ep.method + '">' + mth + '</span><span class="api-path">/v1' + secEsc(p) + '</span><span class="api-sum">' + secEsc(txt) + '</span>' +
                 '<span class="sec-badge"><?= htmlspecialchars(__('api_docs_scope')) ?>: ' + secEsc(apiScopeNames[scope] || scope) + '</span></div><div class="api-ep-body">' +
                 '<p class="api-desc">' + secEsc(txt) + '</p>' +
                 (params ? '<h4><?= __('api_docs_params') ?></h4><table class="sec-table"><tbody>' + params + '</tbody></table>' : '') +

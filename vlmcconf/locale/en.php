@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.18
+// ВЕРСИЯ: 5.15.19
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1772,5 +1772,6 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'api_docs_intro' => 'Read-only (GET). Create a key on the "Keys" tab and pass it in the header Authorization: Bearer <key> or X-API-Key. Each method requires the matching key scope. The request limit is set in the settings.',
     'api_docs_scope' => 'Scope',
     'api_docs_all' => 'All',
+    'api_docs_no_methods' => 'No such methods yet',
 ];
 ?>
