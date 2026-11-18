@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.2.1
 // ДАТА: 2026-11-18
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -92,11 +92,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
             <button class="btn btn-primary" id="auditRefreshBtn" style="padding: 6px 14px; font-size: 12px;">🔄 <?= __('audit_refresh') ?></button>
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
         </div>
-        <div class="audit-bar-right">
-            <?php if ($canAuditAdmin): ?>
-            <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px;">🗑️ <?= __('audit_clear') ?></button>
-            <?php endif; ?>
-        </div>
     </div>
 
     <div class="audit-table-wrap">
@@ -149,10 +144,10 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         <button class="btn btn-primary" id="auditRetSave" style="padding: 6px 14px; font-size: 12px;">💾 <?= __('save') ?></button>
         <?php endif; ?>
         <span id="auditRetMsg" style="font-size: 12px;"></span>
-        <div class="audit-ret-info">
-            <span id="auditStatsLine" class="audit-hint"></span>
-            <span class="audit-hint"><?= __('audit_retention_hint') ?></span>
-        </div>
+        <span id="auditStatsLine" class="audit-hint"></span>
+        <?php if ($canAuditAdmin): ?>
+        <button class="btn btn-danger" id="auditClearBtn" style="padding: 6px 14px; font-size: 12px; margin-left: auto;">🗑️ <?= __('audit_clear') ?></button>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -206,7 +201,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-cal-preset:hover { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['accentText'] ?>; }
 .audit-ret { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 15px; margin-bottom: 0; }
 .audit-ret .audit-panel-title { margin: 0; }
-.audit-ret-info { display: flex; flex-direction: column; margin-left: auto; text-align: right; gap: 1px; }
 .audit-pager-right { display: flex; align-items: center; gap: 10px; }
 .audit-panel { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; }
 .audit-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
