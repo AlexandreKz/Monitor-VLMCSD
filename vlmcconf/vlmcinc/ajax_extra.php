@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.0.0
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -68,7 +68,7 @@ $xAction = (string)($_POST['ajax'] ?? '');
 // ============================================
 // П. 26: Active Directory / LDAP
 // ============================================
-if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_search', 'ldap_import', 'ldap_sync'], true)) {
+if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_search', 'ldap_import', 'ldap_sync'], true)) {
     require_once __DIR__ . '/ldap.php';
 
     if ($xAction === 'ldap_save_settings') {
@@ -106,7 +106,8 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_search', 'ldap_
             'domain' => mb_substr(trim((string)($_POST['domain'] ?? '')), 0, 100),
             'login_attr' => $attr,
             'user_filter' => $filter,
-            'required_group' => mb_substr(trim((string)($_POST['required_group'] ?? '')), 0, 300),
+            'required_groups' => ldapNormalizeGroups(json_decode((string)($_POST['required_groups'] ?? '[]'), true) ?: []),
+            'required_group' => '',
             'service_user' => mb_substr(trim((string)($_POST['service_user'] ?? '')), 0, 300),
             'default_permissions' => $perms,
             'timeout' => max(2, min(30, (int)($_POST['timeout'] ?? 5))),
@@ -134,6 +135,15 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_search', 'ldap_
         }
         ldapLog('test', $r['success'], $msg);
         xjson(['success' => $r['success'], 'message' => $msg]);
+    }
+
+    if ($xAction === 'ldap_groups') {
+        $r = ldapListGroups((string)($_POST['q'] ?? ''), 300);
+        $msg = $r['success'] ? '' : __('ldap_err_' . $r['code']);
+        if (!$r['success'] && !empty($r['detail'])) {
+            $msg .= ' (' . mb_substr($r['detail'], 0, 120) . ')';
+        }
+        xjson(['success' => $r['success'], 'message' => $msg, 'groups' => $r['groups']]);
     }
 
     if ($xAction === 'ldap_search') {

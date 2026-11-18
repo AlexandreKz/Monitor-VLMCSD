@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.10.2
+// ВЕРСИЯ: 5.11.0
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1288,12 +1288,24 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_perm_edit' => 'Work: view and edit devices and groups',
     'ldap_login_attr' => 'Login attribute',
     'ldap_required_group' => 'Required group',
+    'ldap_groups_pick' => 'Select groups…',
+    'ldap_groups_none' => 'None selected — any directory user is allowed',
+    'ldap_groups_title' => 'Directory groups',
+    'ldap_groups_search' => 'Search group by name',
+    'ldap_groups_apply' => 'Apply',
+    'ldap_groups_manual' => 'Group manually: name or DN',
+    'ldap_groups_add' => 'Add',
+    'ldap_groups_missing' => 'not in directory',
+    'ldap_groups_loading' => 'Loading…',
+    'ldap_groups_empty' => 'No groups found',
+    'ldap_groups_remove' => 'Remove',
+    'ldap_groups_manual_tag' => 'manual',
+    'ldap_required_group_hint' => 'Members of any selected group may sign in. The list is loaded from the directory using the saved connection settings; if the directory is unreachable, add a group manually (name or DN). None selected — any directory account is enough.',
     'ldap_user_filter' => 'Extra filter',
-    'ldap_required_group_hint' => 'If set, only members of this AD group (group name or its DN) can sign in to the panel or appear in the import list. Empty — any directory account is enough.',
     'ldap_user_filter_hint' => 'Optional. An extra LDAP search condition combined with the main one (AND): e.g. (department=IT) keeps only that department. Must be in parentheses. Empty — no restriction.',
     'ldap_timeout' => 'Timeout',
     'ldap_timeout_unit' => 'seconds',
-    'ldap_security_note' => 'The required group (CN or full DN) limits login and import. Rights can be changed later in “Security”.',
+    'ldap_security_note' => 'The selected groups limit login and import. Rights can be changed later in “Security”.',
     'ldap_users_title' => 'Directory users',
     'ldap_search_ph' => 'Search by name, login or email',
     'ldap_search' => 'Search',

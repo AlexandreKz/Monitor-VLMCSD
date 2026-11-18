@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.0.1
+// ВЕРСИЯ: 1.1.0
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -56,12 +56,27 @@ function ldapSettings($config = null) {
         'domain'         => trim((string)($a['domain'] ?? '')),
         'login_attr'     => $attr,
         'user_filter'    => trim((string)($a['user_filter'] ?? '')),
-        'required_group' => trim((string)($a['required_group'] ?? '')),
+        'required_groups' => ldapNormalizeGroups($a['required_groups'] ?? ($a['required_group'] ?? '')),
         'service_user'   => trim((string)($a['service_user'] ?? '')),
         'has_password'   => !empty($a['service_password']),
         'default_permissions' => (int)($a['default_permissions'] ?? (PERM_DEVICES_VIEW | PERM_LOGS_VIEW)),
         'timeout'        => max(2, min(30, (int)($a['timeout'] ?? 5))),
     ];
+}
+
+/** Список обязательных групп (DN или имена) из массива или строки; пустые и повторы убираются. */
+function ldapNormalizeGroups($v) {
+    if (is_string($v)) {
+        $v = trim($v) === '' ? [] : [$v];
+    }
+    $out = [];
+    foreach ((array)$v as $g) {
+        $g = mb_substr(trim((string)$g), 0, 300);
+        if ($g !== '' && !in_array(mb_strtolower($g), array_map('mb_strtolower', $out), true)) {
+            $out[] = $g;
+        }
+    }
+    return array_slice($out, 0, 50);
 }
 
 function ldapServicePassword($config = null) {
@@ -191,20 +206,21 @@ function ldapEntryToUser($entry, $s, $fallbackName = '') {
     ];
 }
 
-/** Состоит ли пользователь в обязательной группе (по CN или полному DN). Пустое требование = всегда да. */
+/** Состоит ли пользователь хотя бы в одной из обязательных групп (по CN или полному DN). Пустой список = всегда да. */
 function ldapInRequiredGroup($user, $s) {
-    $req = $s['required_group'];
-    if ($req === '') {
+    if (empty($s['required_groups'])) {
         return true;
     }
-    foreach ($user['group_dns'] as $dn) {
-        if (strcasecmp($dn, $req) === 0) {
-            return true;
+    foreach ($s['required_groups'] as $req) {
+        foreach ($user['group_dns'] as $dn) {
+            if (strcasecmp($dn, $req) === 0) {
+                return true;
+            }
         }
-    }
-    foreach ($user['groups'] as $cn) {
-        if (strcasecmp($cn, $req) === 0) {
-            return true;
+        foreach ($user['groups'] as $cn) {
+            if (strcasecmp($cn, $req) === 0) {
+                return true;
+            }
         }
     }
     return false;
@@ -301,7 +317,7 @@ function ldapAuthenticate($username, $password, $config = null) {
         $user = ldapFindUser($conn, $s, $username);
         if ($user === null) {
             $user = ['username' => $username, 'fullname' => $username, 'email' => '', 'dn' => '', 'groups' => [], 'group_dns' => []];
-            if ($s['required_group'] !== '') {
+            if (!empty($s['required_groups'])) {
                 @ldap_close($conn);
                 return $fail('group_check_failed');   // группу проверить нельзя, а она обязательна
             }
@@ -365,6 +381,45 @@ function ldapListFilter($s, $query = '') {
         $base = '(&' . $base . '(|(cn=*' . $q . '*)(displayName=*' . $q . '*)(' . $s['login_attr'] . '=*' . $q . '*)(mail=*' . $q . '*)))';
     }
     return $base;
+}
+
+/** Список групп каталога для выбора обязательных. Возвращает ['success','code','detail','groups'=>[['dn','name','description']]]. */
+function ldapListGroups($query = '', $limit = 300, $config = null) {
+    $s = ldapSettings($config);
+    list($conn, $code, $detail) = ldapOpen($s);
+    if (!$conn) {
+        return ['success' => false, 'code' => $code, 'detail' => $detail, 'groups' => []];
+    }
+    list($ok, $bcode, $bdetail) = ldapServiceBind($conn, $s, $config);
+    if (!$ok) {
+        @ldap_close($conn);
+        return ['success' => false, 'code' => $bcode, 'detail' => $bdetail, 'groups' => []];
+    }
+    $isAd = ($s['login_attr'] === 'sAMAccountName' || $s['login_attr'] === 'userPrincipalName');
+    $filter = $isAd ? '(objectClass=group)' : '(|(objectClass=groupOfNames)(objectClass=groupOfUniqueNames)(objectClass=posixGroup))';
+    $q = trim((string)$query);
+    if ($q !== '') {
+        $filter = '(&' . $filter . '(cn=*' . ldapEscapeFilter($q) . '*))';
+    }
+    $sr = @ldap_search($conn, $s['base_dn'], $filter, ['cn', 'description'], 0, $limit, $s['timeout']);
+    if (!$sr) {
+        $err = ldap_error($conn);
+        @ldap_close($conn);
+        return ['success' => false, 'code' => 'search_failed', 'detail' => $err, 'groups' => []];
+    }
+    $entries = ldap_get_entries($conn, $sr);
+    @ldap_close($conn);
+    $out = [];
+    for ($i = 0; $i < ($entries['count'] ?? 0); $i++) {
+        $dn = (string)($entries[$i]['dn'] ?? '');
+        $name = ldapAttrFirst($entries[$i], 'cn');
+        if ($dn === '' || $name === '') {
+            continue;
+        }
+        $out[] = ['dn' => $dn, 'name' => $name, 'description' => mb_substr(ldapAttrFirst($entries[$i], 'description'), 0, 200)];
+    }
+    usort($out, function ($a, $b) { return strcasecmp($a['name'], $b['name']); });
+    return ['success' => true, 'code' => 'ok', 'detail' => '', 'groups' => $out];
 }
 
 /** Список пользователей каталога для импорта (не более $limit). */

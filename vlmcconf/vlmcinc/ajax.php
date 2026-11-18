@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.16.0
+// ВЕРСИЯ: 3.16.1
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -74,6 +74,7 @@ function ajaxActionPermissions() {
         // Интеграции: Active Directory / LDAP (п. 26)
         'ldap_save_settings'    => PERM_INTEGRATIONS_EDIT,
         'ldap_test'             => PERM_INTEGRATIONS_EDIT,
+        'ldap_groups'           => PERM_INTEGRATIONS_EDIT,
         'ldap_search'           => PERM_INTEGRATIONS_EDIT,
         'ldap_import'           => PERM_INTEGRATIONS_EDIT,
         'ldap_sync'             => PERM_INTEGRATIONS_EDIT,
