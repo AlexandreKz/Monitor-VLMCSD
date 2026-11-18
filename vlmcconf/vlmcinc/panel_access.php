@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/panel_access.php
-// ВЕРСИЯ: 1.0.1
+// ВЕРСИЯ: 1.0.2
 // ДАТА: 2026-11-18
 // @description: Белый список IP для доступа к панели управления (п. 29): проверка адреса, CIDR, аварийное отключение
 // ============================================
@@ -122,12 +122,44 @@ function vlmcPanelAccessAllowed($ip = null, $settings = null) {
     return false;
 }
 
+const VLMC_PANEL_DENIED_THROTTLE = 600;   // повторный отказ с того же адреса пишется в журнал не чаще раза в 10 минут
+
+/** Отказ в доступе → «Журнал событий» (адрес, страница, браузер). Без шума: один адрес — не чаще раза в 10 минут. */
+function vlmcPanelAccessLogDenied() {
+    try {
+        $ip = vlmcPanelClientIp() ?: (string)($_SERVER['REMOTE_ADDR'] ?? '?');
+        $file = vlmcDataDir() . DIRECTORY_SEPARATOR . 'panel_denied.json';
+        config_lock($file);
+        $r = config_read($file);
+        $seen = ($r['status'] === 'ok' && is_array($r['config'])) ? $r['config'] : [];
+        $now = time();
+        foreach ($seen as $k => $t) {
+            if ($now - (int)$t > VLMC_PANEL_DENIED_THROTTLE) { unset($seen[$k]); }
+        }
+        if (isset($seen[$ip])) {
+            return;
+        }
+        if (count($seen) >= 500) {   // сканирование из многих адресов: журнал не засоряем
+            return;
+        }
+        $seen[$ip] = $now;
+        save_config($file, $seen);
+        require_once __DIR__ . '/audit.php';
+        $page = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+        $ua = mb_substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? '')), 0, 120);
+        auditLog('panel_access_denied', sprintf(function_exists('__') ? __('panel_denied_log') : 'Panel access denied: address %1$s, page %2$s, browser: %3$s', $ip, $page, $ua !== '' ? $ua : '—'), 'denied', '—');
+    } catch (\Throwable $e) {
+        // журнал не должен мешать ответу 403
+    }
+}
+
 /** Вызывается в начале страниц панели: чужому адресу отвечает 403 и завершает работу. */
 function vlmcPanelAccessEnforce() {
     if (vlmcPanelAccessAllowed()) {
         return;
     }
     error_log('KMS Monitor: panel access denied for ' . vlmcPanelClientIp());
+    vlmcPanelAccessLogDenied();
     if (!headers_sent()) {
         http_response_code(403);
         header('Content-Type: text/html; charset=UTF-8');
