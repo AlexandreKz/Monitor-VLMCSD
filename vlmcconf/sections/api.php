@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.8
+// ВЕРСИЯ: 6.7.9
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -152,7 +152,6 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
                     <button type="button" class="api-search-x" id="apiDocsClear" title="<?= htmlspecialchars(__('api_docs_clear')) ?>" onclick="apiDocsClearSearch()" style="display: none;">✕</button>
                 </span>
                 <button type="button" class="sec-btn sm" id="apiDocsReset" onclick="apiDocsReset()" disabled>↺ <?= __('api_docs_reset') ?></button>
-                <span class="sec-hint" style="margin: 0;" id="apiDocsCount"></span>
                 <span class="api-toolbar-right">
                     <a class="sec-btn sm" id="apiSpecLink" href="#" target="_blank" rel="noopener">⬇️ openapi.json</a>
                     <span class="sec-hint" style="margin: 0;"><?= __('api_docs_hint') ?></span>
@@ -393,7 +392,10 @@ function apiDocsChips(spec) { // кнопки-фильтры: тип запро�
 function apiFit() {
     const el = document.getElementById('apiDocsScroll');
     if (!el || !el.offsetParent) return;
-    el.style.maxHeight = Math.max(200, window.innerHeight - el.getBoundingClientRect().top - 40) + 'px';
+    const pane = document.querySelector('.settings-content');
+    const bottom = pane ? pane.getBoundingClientRect().bottom : window.innerHeight;
+    // нижний край — по границе панели с учётом её внутреннего отступа и рамки карточки
+    el.style.maxHeight = Math.max(200, bottom - el.getBoundingClientRect().top - 92) + 'px';
 }
 window.addEventListener('resize', apiFit);
 function apiDocsClearSearch() { document.getElementById('apiDocsSearch').value = ''; apiDocsFilter(); document.getElementById('apiDocsSearch').focus(); }
@@ -416,7 +418,6 @@ function apiDocsFilter() {
         const ok = (!q || e.getAttribute('data-s').indexOf(q) !== -1) && (!apiDocsTag || e.getAttribute('data-t') === apiDocsTag) && (!apiDocsMethod || e.getAttribute('data-m') === apiDocsMethod);
         e.style.display = ok ? '' : 'none'; if (ok) shown++;
     });
-    document.getElementById('apiDocsCount').textContent = eps.length ? ((q || apiDocsTag || apiDocsMethod) ? shown + ' / ' : '') + eps.length : '';
     document.getElementById('apiDocsNone').style.display = eps.length && !shown ? '' : 'none';
     document.getElementById('apiDocsClear').style.display = q ? '' : 'none';
     document.getElementById('apiDocsReset').disabled = !(q || apiDocsTag || apiDocsMethod);
