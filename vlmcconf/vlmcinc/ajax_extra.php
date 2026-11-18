@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.5.3
+// ВЕРСИЯ: 1.5.4
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики разделов «Интеграции» (п. 26: Active Directory / LDAP) и «API» (п. 25: ключи и настройки).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -249,8 +249,9 @@ if (in_array($xAction, ['ldap_status', 'ldap_save_settings', 'ldap_test', 'ldap_
               . (!empty($r['backup_used']) ? ' ' . __('ldap_log_backup_mark') : '')
             : sprintf(__('ldap_log_test_fail'), __('ldap_err_' . $r['code']), $r['server'] ?? '', $r['tried'] ? implode(', ', $r['tried']) : $anon)
               . (!empty($r['detail']) ? ' · ' . sprintf(__('ldap_log_reason'), mb_substr($r['detail'], 0, 200)) : '');
-        if ($warn) {
-            $logText .= ' · ' . sprintf(__('ldap_msg_acc_bad'), implode(', ', $badAcc));
+        $accLog = ldapAccountsLogText($r['accounts'] ?? []);
+        if ($accLog !== '') {
+            $logText .= ' · ' . $accLog;
         }
         ldapLog('test', $r['success'] && !$warn, $logText);
         ldapStatusStore($r['success'], $r['success'] ? '' : __('ldap_err_' . $r['code']), $r['accounts'] ?? []);

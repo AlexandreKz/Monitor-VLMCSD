@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.23
+// ВЕРСИЯ: 5.15.24
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1783,5 +1783,12 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_msg_acc_bad' => 'Account not accepted: %s',
     'ldap_acc_ok' => 'Account accepted by the server',
     'ldap_acc_unknown' => 'Not checked yet',
+    'ldap_log_type_check' => 'Auto check',
+    'ldap_log_accounts' => 'accounts: %s',
+    'ldap_log_acc_item' => '%1$s %2$s — %3$s',
+    'ldap_role_main' => 'main',
+    'ldap_role_backup' => 'backup',
+    'ldap_acc_ok_short' => 'accepted',
+    'ldap_acc_fail_short' => 'rejected',
 ];
 ?>

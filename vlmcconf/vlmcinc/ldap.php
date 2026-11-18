@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.4.0
+// ВЕРСИЯ: 1.4.1
 // ДАТА: 2026-11-18
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
@@ -677,6 +677,21 @@ function ldapStatusRead() {
     return isset($d['time']) ? ['ok' => !empty($d['ok']), 'time' => (int)$d['time'], 'text' => (string)($d['text'] ?? ''), 'accounts' => is_array($d['accounts'] ?? null) ? $d['accounts'] : []] : null;
 }
 
+/** Строка для журнала: результат по каждой служебной записи (основная и резервные). */
+function ldapAccountsLogText(array $accounts) {
+    if (!$accounts) {
+        return '';
+    }
+    $parts = [];
+    foreach ($accounts as $a) {
+        $parts[] = sprintf(__('ldap_log_acc_item'),
+            __(($a['role'] ?? '') === 'backup' ? 'ldap_role_backup' : 'ldap_role_main'),
+            $a['user'] ?? '',
+            !empty($a['ok']) ? __('ldap_acc_ok_short') : __('ldap_acc_fail_short') . (!empty($a['detail']) ? ': ' . $a['detail'] : ''));
+    }
+    return sprintf(__('ldap_log_accounts'), implode('; ', $parts));
+}
+
 function ldapStatusStore($ok, $text, array $accounts = []) {
     $file = ldapStatusFile();
     config_lock($file);
@@ -720,7 +735,8 @@ function ldapStatusCheck($config = null) {
     $text = $r['success'] ? '' : (function_exists('__') ? __('ldap_err_' . ($r['code'] ?? 'connect')) : '');
     ldapStatusStore($r['success'], $text, $r['accounts'] ?? []);
     if (!$prev || $prev['ok'] !== (bool)$r['success']) {
-        ldapLog('check', $r['success'], $r['success'] ? __('ldap_status_log_up') : sprintf(__('ldap_status_log_down'), $text));
+        $accLog = ldapAccountsLogText($r['accounts'] ?? []);
+        ldapLog('check', $r['success'], ($r['success'] ? __('ldap_status_log_up') : sprintf(__('ldap_status_log_down'), $text)) . ($accLog !== '' ? ' · ' . $accLog : ''));
     }
     return $r;
 }
