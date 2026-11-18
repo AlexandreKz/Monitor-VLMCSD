@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax_extra.php
-// ВЕРСИЯ: 1.3.0
+// ВЕРСИЯ: 1.3.1
 // ДАТА: 2026-11-18
 // @description: AJAX-обработчики раздела «Интеграции» (п. 26: Active Directory / LDAP).
 //               Подключается из ajax.php после проверки прав (ajaxAuthorizeOrDie).
@@ -208,7 +208,7 @@ if (in_array($xAction, ['ldap_save_settings', 'ldap_test', 'ldap_groups', 'ldap_
 // Интеграции: Webhook и Cloud Storage
 // ============================================
 if (!function_exists('xDiff')) {
-    /** Строки «поле: было → стало» для журнала действий (только изменившиеся значения; секреты не передаются). */
+    /** Строки «поле: было → стало» для журнала событий (только изменившиеся значения; секреты не передаются). */
     function xDiff(array $old, array $new, array $labels) {
         $out = [];
         foreach ($labels as $k => $label) {

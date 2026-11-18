@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.2.0
+// ВЕРСИЯ: 3.2.1
 // ДАТА: 2026-11-17
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -85,7 +85,7 @@ function notifyDefaultRules() {
         $mk('d_failed_logins', 'Безопасность — серия неудачных входов', ['failed_logins'], 30),
         $mk('d_access_denied', 'Безопасность — отказ в доступе', ['access_denied'], 30),
         $mk('d_users', 'Безопасность — изменения пользователей', ['user_added', 'user_deleted', 'user_updated', 'password_changed'], 0),
-        $mk('d_audit_cleared', 'Журнал действий очищен', ['audit_cleared'], 0),
+        $mk('d_audit_cleared', 'Журнал событий очищен', ['audit_cleared'], 0),
         $mk('d_update', 'Обновления — новая версия панели', ['update_available'], 60),
     ];
 }
@@ -553,7 +553,7 @@ function notifyParseDetails($d) {
     return $o;
 }
 
-/** Вызывается из журнала действий для каждой записи: переводит её в события уведомлений. */
+/** Вызывается из журнала событий для каждой записи: переводит её в события уведомлений. */
 function notifyOnAudit(array $e) {
     $a = (string)($e['a'] ?? '');
     $ok = ($e['r'] ?? '') === 'ok';
@@ -591,7 +591,7 @@ function notifyOnAudit(array $e) {
             if ($ok) { notifyEmit('log_cleared', 'Очищен лог KMS-сервера', 'Выполнил: ' . $who); }
             return;
         case 'clear_audit':
-            if ($ok) { notifyEmit('audit_cleared', 'Очищен журнал действий', 'Выполнил: ' . $who); }
+            if ($ok) { notifyEmit('audit_cleared', 'Очищен журнал событий', 'Выполнил: ' . $who); }
             return;
         case 'perform_update':
             notifyEmit($ok ? 'update_installed' : 'update_failed', $ok ? 'Панель обновлена' : 'Ошибка обновления панели', 'Выполнил: ' . $who . "\n" . $det);

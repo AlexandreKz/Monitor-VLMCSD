@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.17.0
+// ВЕРСИЯ: 3.17.1
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -92,7 +92,7 @@ function ajaxActionPermissions() {
         'cloud_test'            => PERM_INTEGRATIONS_EDIT,
 
 
-        // Журнал действий
+        // Журнал событий
         'get_audit'             => PERM_LOGS_VIEW,
         'export_audit'          => PERM_LOGS_VIEW,
         'save_audit_settings'   => PERM_ADMIN_FULL,   // срок хранения: только администратор
@@ -1484,7 +1484,7 @@ if (in_array($_POST['ajax'], ['notify_get', 'notify_channel_save', 'notify_chann
 }
 
 // ============================================
-// AJAX: Журнал действий (просмотр с фильтрами и экспорт CSV)
+// AJAX: Журнал событий (просмотр с фильтрами и экспорт CSV)
 // ============================================
 if ($_POST['ajax'] === 'save_audit_settings') {
     $days = (int)($_POST['retention_days'] ?? 0);

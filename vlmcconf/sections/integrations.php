@@ -1,10 +1,10 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.2
+// ВЕРСИЯ: 6.4.3
 // ДАТА: 2026-11-18
-// @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал действий
-// @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, audit log
+// @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
+// @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
 // ============================================
 
 if (!defined('VLMCS_CONF')) {

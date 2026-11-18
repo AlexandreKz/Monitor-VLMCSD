@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.0
+// ВЕРСИЯ: 5.15.1
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1045,7 +1045,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_ev_group_renamed' => 'Group renamed',
     'notify_ev_group_deleted' => 'Group deleted',
     'notify_ev_log_cleared' => 'KMS server log cleared',
-    'notify_ev_audit_cleared' => 'Audit log cleared',
+    'notify_ev_audit_cleared' => 'Event log cleared',
     'notify_ev_update_available' => 'New panel version available',
     'notify_ev_update_installed' => 'Panel updated',
     'notify_ev_update_failed' => 'Panel update failed',
@@ -1081,8 +1081,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'info_data_hint' => 'Files are created automatically on first use of the related feature.',
     'info_data_config' => 'Panel settings (theme, language, section options)',
     'info_data_users' => 'Accounts, permissions and groups',
-    'info_data_audit' => 'Action audit log',
-    'info_data_audit_prune' => 'Timestamp of the last audit log cleanup',
+    'info_data_audit' => 'Event log',
+    'info_data_audit_prune' => 'Timestamp of the last event log cleanup',
     'info_data_notify' => 'Notification channels and rules (secrets encrypted)',
     'info_data_notify_key' => 'Encryption key for notification and GitHub token secrets',
     'info_data_notify_state' => 'Notification internal state (throttling, counters)',
@@ -1449,7 +1449,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'cl_what_config' => 'Settings',
     'cl_what_users' => 'Users',
     'cl_what_log' => 'KMS log',
-    'cl_what_audit' => 'Audit log',
+    'cl_what_audit' => 'Event log',
     'cl_sched_off' => 'manual',
     'cl_sched_daily' => 'daily',
     'cl_sched_weekly' => 'weekly',

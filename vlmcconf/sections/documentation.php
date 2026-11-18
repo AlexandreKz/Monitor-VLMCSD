@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.5.2
+// ВЕРСИЯ: 5.5.3
 // ДАТА: 2026-11-18
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -432,7 +432,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — данные панели (вне веб-папки)</div>
             <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки (создаётся панелью автоматически при первом запуске)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — пользователи</div>
-            <div style="margin-left: 20px;">├── 📄 audit.log — журнал действий</div>
+            <div style="margin-left: 20px;">├── 📄 audit.log — журнал событий</div>
             <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — каналы, правила и история уведомлений, ключ шифрования</div>
             <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — состояние проверки обновлений, токен GitHub</div>
             <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — журналы изменений и служебные блокировки</div>
@@ -826,10 +826,10 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
     </div>
     
-    <!-- Action log -->
+    <!-- Event log -->
     <div class="section-card">
-        <div class="section-title"><span>📜</span> Action log</div>
-        <p>The <strong>"Action log"</strong> section shows who did what and when in the panel: logins and logouts, failed login attempts, changes to users, groups, devices and settings, log and cache cleanup, updates, access denials. Changes show "before → after" values (passwords and tokens are never recorded). The section is available to users with the "Logs: view" permission.</p>
+        <div class="section-title"><span>📜</span> Event log</div>
+        <p>The <strong>"Event log"</strong> section shows who did what and when in the panel: logins and logouts, failed login attempts, changes to users, groups, devices and settings, log and cache cleanup, updates, access denials. Changes show "before → after" values (passwords and tokens are never recorded). The section is available to users with the "Logs: view" permission.</p>
         <ul>
             <li><strong>Filters:</strong> user, action, result, period; <strong>search</strong> by user, IP, action and details.</li>
             <li>Clicking a user name shows that user's history and a summary (action count, activity period, IP addresses).</li>
@@ -863,7 +863,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — panel data (outside the web root)</div>
             <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings (created by the panel automatically on first run)</div>
             <div style="margin-left: 20px;">├── 📄 users.json — users</div>
-            <div style="margin-left: 20px;">├── 📄 audit.log — action log</div>
+            <div style="margin-left: 20px;">├── 📄 audit.log — event log</div>
             <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — notification channels, rules, history and encryption key</div>
             <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — update check state, GitHub token</div>
             <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — change logs and service locks</div>

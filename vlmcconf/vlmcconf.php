@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.17.0
+// ВЕРСИЯ: 5.17.1
 // ДАТА: 2026-11-18
 // @description: Панель управления настройками монитора
 // ============================================
@@ -1803,7 +1803,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
         <span><?= __('menu_stats') ?></span>
     </div>
     
-    <!-- Журнал действий - только с правом просмотра логов -->
+    <!-- Журнал событий - только с правом просмотра логов -->
     <?php if (hasPermission($currentUserPermissions, PERM_LOGS_VIEW)): ?>
     <div class="menu-item <?= $activeSection === 'audit' ? 'active' : '' ?>" onclick="showSection('audit', this)">
         <span class="menu-item-icon">📜</span>
