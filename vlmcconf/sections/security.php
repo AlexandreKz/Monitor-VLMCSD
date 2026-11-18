@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.4
+// ВЕРСИЯ: 6.0.6
 // ДАТА: 2026-11-18
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -176,7 +176,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
 
                 <?php if ($isFullAdmin): ?>
                 <div class="settings-card">
-                    <div class="settings-card-title">🌐 <?= __('panel_wl_title') ?></div>
+                    <div class="settings-card-title sec-th">🌐 <?= __('panel_wl_title') ?> <span id="pwMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
                     <label class="sec-switch">
                         <input type="checkbox" id="pwEnabled" <?= $pwSettings['enabled'] ? 'checked' : '' ?>>
                         <span><?= __('panel_wl_enable') ?></span>
@@ -197,7 +197,6 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                         <button type="button" class="sec-btn" onclick="pwAddMine()" <?= $pwMyIp === '' ? 'disabled' : '' ?>>📍 <?= __('panel_wl_add_mine') ?></button>
                         <button type="button" class="sec-btn primary" onclick="pwSave()">💾 <?= __('save') ?></button>
                     </div>
-                    <div id="pwMsg" class="sec-msg"></div>
                 </div>
                 <?php else: ?>
                 <div class="settings-card"><div class="sec-note"><?= __('access_admin_only') ?></div></div>
@@ -241,7 +240,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
         <div class="sec-grid">
             <div class="sec-col" style="flex: 0.42;">
                 <div class="settings-card">
-                    <div class="settings-card-title">⚙️ <?= __('fw_title') ?></div>
+                    <div class="settings-card-title sec-th">⚙️ <?= __('fw_title') ?> <span id="fwSetMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
                     <div class="sec-row">
                         <span><?= __('fw_status') ?>:</span>
                         <span id="fwState" class="sec-badge"><?= __('fw_checking') ?></span>
@@ -274,7 +273,6 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
                     <div class="sec-row" style="margin-bottom: 0;">
                         <button type="button" class="sec-btn primary" onclick="fwSaveSettings()">💾 <?= __('save') ?></button>
                     </div>
-                    <div id="fwSetMsg" class="sec-msg"></div>
                 </div>
 
                 <?php if (!$fwIsWin): ?>
@@ -296,13 +294,12 @@ sudo chmod 440 /etc/sudoers.d/vlmc-firewall</div>
             </div>
             <div class="sec-col" style="flex: 0.58;">
                 <div class="settings-card">
-                    <div class="settings-card-title">🚫 <?= __('fw_list_title') ?> <span class="sec-badge" id="fwCount"><?= count($fwBlocked) ?></span></div>
+                    <div class="settings-card-title sec-th">🚫 <?= __('fw_list_title') ?> <span class="sec-badge" id="fwCount"><?= count($fwBlocked) ?></span> <span id="fwMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
                     <div class="sec-row">
                         <input type="text" id="fwNewIp" class="form-control" placeholder="203.0.113.7" autocomplete="off">
                         <input type="text" id="fwNewReason" class="form-control" placeholder="<?= __('fw_reason_ph') ?>" maxlength="200" autocomplete="off">
                         <button type="button" class="sec-btn danger" onclick="fwBlockNew()">🚫 <?= __('fw_block') ?></button>
                     </div>
-                    <div id="fwMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
                     <div class="sec-scroll">
                         <table class="sec-table">
                             <thead><tr><th>IP</th><th><?= __('fw_col_reason') ?></th><th><?= __('fw_col_by') ?></th><th><?= __('fw_col_time') ?></th><th><?= __('fw_col_status') ?></th><th></th></tr></thead>

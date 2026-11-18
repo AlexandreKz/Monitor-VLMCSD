@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.3
+// ВЕРСИЯ: 6.4.4
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -201,7 +201,7 @@ $permOptions = [
     <!-- ===== Cloud Storage ===== -->
     <div class="sec-tab-content" data-tab="cloud">
         <div class="settings-card">
-            <div class="settings-card-title">☁️ <?= __('int_cl_title') ?>
+            <div class="settings-card-title sec-th">☁️ <?= __('int_cl_title') ?>
                 <span id="clMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
             <div class="sec-note"><?= __('int_cl_intro') ?></div>
             <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="clEdit('')">➕ <?= __('int_cl_add') ?></button></div><?php endif; ?>
@@ -217,7 +217,7 @@ $permOptions = [
     <!-- ===== Webhook ===== -->
     <div class="sec-tab-content" data-tab="webhook">
         <div class="settings-card">
-            <div class="settings-card-title">🔗 <?= __('int_wh_title') ?>
+            <div class="settings-card-title sec-th">🔗 <?= __('int_wh_title') ?>
                 <span id="whMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
             <div class="sec-note"><?= __('int_wh_intro') ?></div>
             <?php if ($ldCanEdit): ?><div style="margin: 8px 0;"><button type="button" class="sec-btn primary" onclick="whEdit('')">➕ <?= __('int_wh_add') ?></button></div><?php endif; ?>

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.3.2
+// ВЕРСИЯ: 1.3.4
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -43,6 +43,8 @@ function vlmcSectionUi($themeCSS) {
 .sec-badge.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
 .sec-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
 .sec-badge.warn { color: <?= $themeCSS['warning'] ?>; border-color: <?= $themeCSS['warning'] ?>; }
+.settings-card-title.sec-th { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.settings-card-title.sec-th .sec-msg { min-width: 0; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sec-msg { margin-top: 8px; font-size: 11px; padding: 3px 10px; border-radius: 12px; border: 1px solid transparent; display: none; }
 .sec-msg.ok { display: inline-block; color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
 .sec-msg.err { display: inline-block; color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
@@ -108,6 +110,7 @@ function secMsg(id, ok, text) {
     if (!m) return;
     text = String(text || '').replace(/^[^\p{L}\p{N}]+/u, '');   // у части сообщений уже есть значок
     m.textContent = (ok ? '✅ ' : '❌ ') + text;
+    m.title = text;
     m.className = 'sec-msg ' + (ok ? 'ok' : 'err');
     clearTimeout(m._t);
     m._t = setTimeout(function () { m.className = 'sec-msg'; }, 8000);
