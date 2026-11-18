@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.4.5
+// ВЕРСИЯ: 6.4.6
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
@@ -233,7 +233,8 @@ $permOptions = [
 
     <!-- ===== Мультисервер (набросок) ===== -->
     <div class="sec-tab-content" data-tab="multiserver">
-        <div class="settings-card">
+        <div class="settings-card ms-wip-wrap">
+            <div class="ms-wip"><div class="ms-wip-box">🚧 <?= __('int_ms_wip') ?><div class="ix-sub"><?= __('int_ms_wip_sub') ?></div></div></div>
             <div class="settings-card-title sec-th">🛰️ <?= __('int_ms_title') ?>
                 <span id="msMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
             <div class="sec-note"><?= __('int_ms_intro') ?></div>
@@ -249,6 +250,9 @@ $permOptions = [
 </div>
 
 <style>
+.ms-wip-wrap { position: relative; overflow: hidden; }
+.ms-wip { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, <?= $themeCSS['card'] ?> 82%, transparent); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); cursor: not-allowed; }
+.ms-wip-box { text-align: center; font-size: 18px; font-weight: 600; color: <?= $themeCSS['text'] ?>; padding: 16px 24px; border: 1px dashed <?= $themeCSS['border'] ?>; border-radius: 10px; background: <?= $themeCSS['card'] ?>; }
 .ld-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .ld-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 6px 3px 12px; border-radius: 14px; font-size: 12px; border: 1px solid <?= $themeCSS['primary'] ?>; background: <?= $themeCSS['card'] ?>; max-width: 100%; }
 .ld-chip button { background: none; border: none; cursor: pointer; color: <?= $themeCSS['muted'] ?>; font-size: 13px; padding: 0 4px; line-height: 1; }

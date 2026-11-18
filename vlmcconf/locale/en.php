@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.6
+// ВЕРСИЯ: 5.15.7
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -1585,5 +1585,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'audit_act_ms_save' => 'Multi-server: save',
     'audit_act_ms_delete' => 'Multi-server: delete',
     'audit_act_ms_test' => 'Multi-server: check',
+    'int_ms_wip' => 'Under development',
+    'int_ms_wip_sub' => 'This section will appear in one of the next versions',
 ];
 ?>
