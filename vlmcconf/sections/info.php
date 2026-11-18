@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.11.1
+// ВЕРСИЯ: 1.11.2
 // ДАТА: 2026-11-18
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -175,8 +175,12 @@ if (!$canViewInfo) {
 .st-sum.err, .st-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
 .st-sum.off, .st-badge.off { color: <?= $themeCSS['muted'] ?>; }
 .st-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; border: 1px solid <?= $themeCSS['border'] ?>; white-space: nowrap; }
-.st-table td { vertical-align: middle; }
-.st-group td { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['muted'] ?>; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; }
+.st-table { font-size: 11.5px; }
+.st-table th { padding: 5px 10px; font-size: 11px; }
+.st-table td { vertical-align: middle; padding: 3px 10px; line-height: 1.3; }
+.st-table .st-badge { padding: 0 8px; font-size: 10.5px; line-height: 17px; }
+.st-table .info-data-path code { font-size: 10.5px; }
+.st-group td { background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['muted'] ?>; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; font-size: 10px; }
 .info-data-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .info-hint-top { margin: 0 0 0 auto; text-align: right; }
 .info-hint { margin-top: 10px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
