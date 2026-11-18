@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.11.3
+// ВЕРСИЯ: 1.11.4
 // ДАТА: 2026-11-18
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -276,9 +276,9 @@ if (!$canViewInfo) {
     'use strict';
 
     // вкладки раздела
-    document.querySelectorAll('#section-info .info-tab').forEach(function (b) {
+    document.querySelectorAll('#section-info .info-tab[data-p]').forEach(function (b) {
         b.onclick = function () {
-            document.querySelectorAll('#section-info .info-tab, #section-info .info-page').forEach(function (x) { x.classList.remove('active'); });
+            document.querySelectorAll('#section-info .info-tab[data-p], #section-info .info-page').forEach(function (x) { x.classList.remove('active'); });
             b.classList.add('active');
             document.getElementById(b.dataset.p).classList.add('active');
             if (window.infoStatusRefresh) window.infoStatusRefresh();
