@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.3.1
+// ВЕРСИЯ: 3.3.2
 // ДАТА: 2026-11-18
 // @description: Секция «Журнал действий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -18,7 +18,6 @@ $auditI18n = [
     'empty'      => __('audit_empty'),
     'page'       => __('audit_page'),
     'loadError'  => __('audit_load_error'),
-    'refreshed'  => __('audit_refreshed'),
     'allUsers'   => __('audit_all_users'),
     'allActions' => __('audit_all_actions'),
     'ok'         => __('audit_result_ok'),
@@ -92,7 +91,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         <div class="audit-bar-left">
             <button type="button" class="audit-ico" id="auditRefreshBtn" title="<?= htmlspecialchars(__('audit_refresh')) ?>" aria-label="<?= htmlspecialchars(__('audit_refresh')) ?>"><span>🔄</span></button>
             <label class="audit-check"><input type="checkbox" id="auditAuto"> <?= __('audit_auto') ?></label>
-            <span id="auditRefreshMsg" class="audit-refresh-msg"></span>
         </div>
     </div>
 
@@ -159,8 +157,6 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
 .audit-f .form-control { width: 100%; box-sizing: border-box; }
 .audit-bar { display: flex; align-items: center; margin: -2px 0 6px; padding: 0 2px; }
 .audit-ico { box-sizing: border-box; width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; font-size: 12px; line-height: 1; cursor: pointer; transition: all 0.2s; }
-.audit-refresh-msg { font-size: 12px; color: <?= $themeCSS['okText'] ?>; margin-left: 6px; }
-.audit-refresh-msg.err { color: <?= $themeCSS['dangerText'] ?>; }
 .audit-ico.busy { opacity: 0.5; pointer-events: none; }
 .audit-ico.busy span { display: inline-block; animation: auditSpin 0.8s linear infinite; }
 @keyframes auditSpin { to { transform: rotate(360deg); } }
@@ -436,17 +432,9 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         }
     }
 
-    let refreshMsgTimer = null;
-    function refreshNote(text, isErr) {
-        const m = $('auditRefreshMsg');
-        m.textContent = text;
-        m.className = 'audit-refresh-msg' + (isErr ? ' err' : '');
-        clearTimeout(refreshMsgTimer);
-        refreshMsgTimer = setTimeout(function () { m.textContent = ''; }, 5000);
-    }
-
-    function load(confirmDone) {
+    function load(manual) {
         const f = filters();
+        if (manual === true) f.refresh = '1';   // ручное обновление записывается в журнал
         f.ajax = 'get_audit';
         f.page = page;
         f.per_page = $('auditPerPage').value;
@@ -454,10 +442,8 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
         post(f).then(function (data) {
             if (!data.success) throw new Error('fail');
             render(data);
-            if (confirmDone === true) refreshNote(I18N.refreshed, false);
         }).catch(function () {
             $('auditFound').textContent = I18N.loadError;
-            if (confirmDone === true) refreshNote(I18N.loadError, true);
         }).then(function () { $('auditRefreshBtn').classList.remove('busy'); });
     }
 

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.13.3
+// ВЕРСИЯ: 5.13.4
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -615,7 +615,6 @@ return [
     'audit_range_all' => 'All time',
     'audit_export' => 'Export CSV',
     'audit_refresh' => 'Refresh',
-    'audit_refreshed' => 'Log refreshed',
     'audit_auto' => 'Auto-refresh',
     'audit_per_page' => 'Rows per page',
     'audit_col_time' => 'Time',
@@ -691,6 +690,7 @@ return [
     'audit_notify_user_delete' => 'User deletion',
     'audit_act_save_audit_settings' => '🗓️ Log retention',
     'audit_act_clear_audit' => '🗑️ Log cleared',
+    'audit_act_audit_refresh' => '🔄 Log refreshed',
     'update_channel_saved' => 'Selected channel saved',
     'update_token_label' => 'GitHub token (optional)',
     'update_token_placeholder' => 'ghp_… or github_pat_…',

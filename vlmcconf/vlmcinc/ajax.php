@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.16.1
+// ВЕРСИЯ: 3.16.2
 // ДАТА: 2026-11-18
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
@@ -1554,6 +1554,9 @@ if (in_array($_POST['ajax'], ['get_audit', 'export_audit'], true)) {
     if ($_POST['ajax'] === 'export_audit') {
         echo json_encode(['success' => true, 'csv' => auditExportCsv($auditFilters)], JSON_UNESCAPED_UNICODE);
         exit;
+    }
+    if (($_POST['refresh'] ?? '') === '1') {
+        auditLog('audit_refresh');   // ручное обновление журнала: запись появится в самом журнале
     }
     $res = auditQuery($auditFilters, (int)($_POST['page'] ?? 1), (int)($_POST['per_page'] ?? 50));
     echo json_encode(['success' => true, 'stats' => auditStats()] + $res, JSON_UNESCAPED_UNICODE);

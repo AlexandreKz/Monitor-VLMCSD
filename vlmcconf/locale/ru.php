@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.13.3
+// ВЕРСИЯ: 5.13.4
 // ДАТА: 2026-11-18
 // @description: Русские переводы интерфейса
 // ============================================
@@ -617,7 +617,6 @@ return [
     'audit_range_all' => 'Весь период',
     'audit_export' => 'Экспорт CSV',
     'audit_refresh' => 'Обновить',
-    'audit_refreshed' => 'Журнал обновлён',
     'audit_auto' => 'Автообновление',
     'audit_per_page' => 'Записей на странице',
     'audit_col_time' => 'Время',
@@ -693,6 +692,7 @@ return [
     'audit_notify_user_delete' => 'Удаление пользователей',
     'audit_act_save_audit_settings' => '🗓️ Срок хранения журнала',
     'audit_act_clear_audit' => '🗑️ Очистка журнала',
+    'audit_act_audit_refresh' => '🔄 Обновление журнала',
     'update_channel_saved' => 'Выбранный канал сохранён',
     'update_token_label' => 'Токен GitHub (необязательно)',
     'update_token_placeholder' => 'ghp_… или github_pat_…',
