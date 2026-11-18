@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/info.php
-// ВЕРСИЯ: 1.11.0
+// ВЕРСИЯ: 1.11.1
 // ДАТА: 2026-11-18
 // @description: Секция "Информация" (доступ по праву PERM_INFO_VIEW): сервер, структура проекта (вкладка, прокручивается внутри блока) и файлы данных вне веб-папки (имя, назначение, полный путь на Ubuntu)
 // ============================================
@@ -24,6 +24,7 @@ if (!$canViewInfo) {
     <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <span>ℹ️ <?= __('info_title') ?></span>
         <div class="info-tabs">
+            <span id="fileInfoStatus" class="file-info-status" style="display: none;"></span>
             <button type="button" class="info-tab active" data-p="infoStructure">📁 <?= __('info_tab_structure') ?></button>
             <button type="button" class="info-tab" data-p="infoData">🗄️ <?= __('info_tab_data') ?></button>
             <button type="button" class="info-tab" data-p="infoStatus">🩺 <?= __('info_tab_status') ?></button>
@@ -140,7 +141,6 @@ if (!$canViewInfo) {
         </div>
     </div>
 
-    <div class="info-auto-note"><span>🔄 <?= __('info_auto_note') ?></span><span id="fileInfoStatus" class="file-info-status" style="display: none;"></span></div>
 </div>
 
 <style>
@@ -153,9 +153,9 @@ if (!$canViewInfo) {
 .info-scroll { flex: 1 1 auto; min-height: 160px; overflow: auto; }
 #infoStructure .info-scroll, #infoData .info-scroll, #infoStatus .info-scroll { overflow: hidden; display: flex; flex-direction: column; }
 #infoStructure .struct-card { flex: 1 1 auto; }
-.info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; }
-.info-auto-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; flex: 0 0 auto; margin-top: 8px; font-size: 11px; color: <?= $themeCSS['muted'] ?>; }
-.info-auto-note .file-info-status { margin-left: auto; text-align: right; }
+.info-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; justify-content: flex-end; align-items: center; flex-wrap: nowrap; min-width: 0; }
+.info-tabs .file-info-status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.info-tabs .info-tab { flex: 0 0 auto; }
 .info-tab { background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 20px; padding: 6px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: <?= $themeCSS['text'] ?>; opacity: 0.7; transition: all 0.2s; font-family: inherit; }
 .info-tab:hover { opacity: 1; background: <?= $themeCSS['hover'] ?>; }
 .info-tab.active { opacity: 1; color: <?= $themeCSS['accentText'] ?>; background: <?= $themeCSS['card'] ?>; border-color: <?= $themeCSS['primary'] ?>; }
@@ -279,6 +279,7 @@ if (!$canViewInfo) {
             document.querySelectorAll('#section-info .info-tab, #section-info .info-page').forEach(function (x) { x.classList.remove('active'); });
             b.classList.add('active');
             document.getElementById(b.dataset.p).classList.add('active');
+            if (window.infoStatusRefresh) window.infoStatusRefresh();
         };
     });
 
@@ -297,15 +298,28 @@ if (!$canViewInfo) {
         return String(template).replace(/%[sd]/g, function () { return i < args.length ? args[i++] : ''; });
     }
 
+    // Уведомление об обновлении относится только к «Структуре проекта»: на других вкладках скрыто, при возврате показывается снова
+    let lastStatus = '';
+    function structureActive() {
+        const p = document.getElementById('infoStructure');
+        return !!(p && p.classList.contains('active'));
+    }
+    function showStatus() {
+        const el = document.getElementById('fileInfoStatus');
+        if (el) el.style.display = (lastStatus && structureActive()) ? 'inline-block' : 'none';
+    }
+    window.infoStatusRefresh = showStatus;
     function setStatus(text, cls, hideAfterMs) {
         const el = document.getElementById('fileInfoStatus');
         if (!el) return;
         clearTimeout(hideTimer);
         el.textContent = text;
         el.className = 'file-info-status ' + (cls || '');
-        el.style.display = text ? 'inline-block' : 'none';
+        el.title = text;
+        lastStatus = text;
+        showStatus();
         if (text && hideAfterMs) {
-            hideTimer = setTimeout(function () { el.style.display = 'none'; }, hideAfterMs);
+            hideTimer = setTimeout(function () { lastStatus = ''; showStatus(); }, hideAfterMs);
         }
     }
 
