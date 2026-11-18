@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.3.1
+// ВЕРСИЯ: 6.3.2
 // ДАТА: 2026-11-18
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP — настройки, проверка связи, вход доменных пользователей, импорт, журнал
 // @description: Integrations section: Active Directory / LDAP — settings, connection test, domain login, user import, sync log
@@ -157,7 +157,8 @@ $permOptions = [
     <!-- ===== Пользователи каталога ===== -->
         <div class="sec-sub" data-sub="users">
         <div class="settings-card">
-            <div class="settings-card-title">👥 <?= __('ldap_users_title') ?> <span class="sec-badge" id="ldUsersCount">0</span></div>
+            <div class="settings-card-title" style="display: flex; align-items: center; gap: 10px; min-height: 28px;">👥 <?= __('ldap_users_title') ?> <span class="sec-badge" id="ldUsersCount">0</span>
+                <span id="ldUsersMsg" class="sec-msg" style="margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; font-weight: 400;"></span></div>
             <div class="sec-row">
                 <input type="text" id="ldQuery" class="form-control" placeholder="<?= __('ldap_search_ph') ?>" autocomplete="off" oninput="ldSearchLive()">
                 <?php if ($ldCanEdit): ?>
@@ -165,7 +166,6 @@ $permOptions = [
                 <button type="button" class="sec-btn" onclick="ldSync()">🔄 <?= __('ldap_sync_now') ?></button>
                 <?php endif; ?>
             </div>
-            <div id="ldUsersMsg" class="sec-msg" style="margin: 0 0 8px;"></div>
             <div class="sec-scroll sec-tall">
                 <table class="sec-table">
                     <thead><tr><th style="width: 28px;"><input type="checkbox" id="ldAll" onchange="ldToggleAll(this)"></th><th><?= __('ldap_col_login') ?></th><th><?= __('ldap_col_name') ?></th><th><?= __('ldap_col_email') ?></th><th><?= __('ldap_col_groups') ?></th><th><?= __('ldap_col_state') ?></th></tr></thead>
