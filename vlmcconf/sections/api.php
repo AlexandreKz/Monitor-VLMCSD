@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.0.2
+// ВЕРСИЯ: 6.0.3
 // ДАТА: 2026-11-18
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
@@ -46,9 +46,7 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
     <div class="sec-tab-content active" data-tab="keys">
         <div class="settings-card">
             <div class="settings-card-title">🔑 <?= __('api_keys_title') ?> <span class="sec-badge" id="apiKeyCount"><?= count($apiKeys) ?></span></div>
-            <?php if (!$apiSet['enabled']): ?>
-            <div class="sec-note warn"><?= __('api_disabled_note') ?></div>
-            <?php endif; ?>
+            <div class="sec-note warn" id="apiDisabledNote" style="<?= $apiSet['enabled'] ? 'display: none;' : '' ?>"><?= __('api_disabled_note') ?></div>
             <div class="sec-row">
                 <span><?= __('api_base_url') ?>:</span>
                 <span class="sec-code" style="margin: 0; flex: 1 1 300px;" id="apiBaseUrl"></span>
@@ -225,7 +223,10 @@ function apiDelete(id) {
 function apiSaveSettings() {
     secPost({ ajax: 'api_save_settings', enabled: document.getElementById('apiEnabled').checked ? '1' : '0',
               rate_limit: document.getElementById('apiRate').value, cors_origins: document.getElementById('apiCors').value })
-        .then(d => secMsg('apiSetMsg', !!d.success, d.message || ''))
+        .then(d => {
+            secMsg('apiSetMsg', !!d.success, d.message || '');
+            if (d.success) document.getElementById('apiDisabledNote').style.display = document.getElementById('apiEnabled').checked ? 'none' : '';   // предупреждение на вкладке «Ключи»
+        })
         .catch(() => secMsg('apiSetMsg', false, <?= json_encode(__('msg_save_error')) ?>));
 }
 
