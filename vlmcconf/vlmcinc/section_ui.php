@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/section_ui.php
-// ВЕРСИЯ: 1.3.0
+// ВЕРСИЯ: 1.3.1
 // ДАТА: 2026-11-18
 // @description: Общие стили и скрипты новых разделов («Доступ и защита», «API», «Интеграции»): вкладки, таблицы, сообщения
 // ============================================
@@ -39,6 +39,7 @@ function vlmcSectionUi($themeCSS) {
 .sec-row .form-control.sec-narrow { flex: 0 0 110px; min-width: 90px; width: 110px; }
 .sec-hint { margin: 6px 0 0; font-size: 11px; color: <?= $themeCSS['muted'] ?>; line-height: 1.45; }
 .sec-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; border: 1px solid <?= $themeCSS['border'] ?>; white-space: nowrap; }
+.sec-badge:empty { display: none; }
 .sec-badge.ok { color: <?= $themeCSS['okText'] ?>; border-color: <?= $themeCSS['okText'] ?>; }
 .sec-badge.err { color: <?= $themeCSS['dangerText'] ?>; border-color: <?= $themeCSS['dangerText'] ?>; }
 .sec-badge.warn { color: <?= $themeCSS['warning'] ?>; border-color: <?= $themeCSS['warning'] ?>; }
