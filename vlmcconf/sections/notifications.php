@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.7.0
+// ВЕРСИЯ: 3.6.1
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -38,27 +38,7 @@ if (!function_exists('ntfLum')) {
     function ntfOn($bg) {   // текст на цветной плашке: белый или тёмный — что контрастнее
         return ntfContrast('#ffffff', $bg) >= ntfContrast('#111111', $bg) ? '#ffffff' : '#111111';
     }
-    function ntfMute($hex, $sat = 0.55, $light = 0.9) {   // приглушённый вариант цвета: меньше насыщенность, чуть темнее
-        $h = ltrim((string)$hex, '#');
-        if (strlen($h) === 3) { $h = $h[0] . $h[0] . $h[1] . $h[1] . $h[2] . $h[2]; }
-        if (!preg_match('/^[0-9a-f]{6}$/i', $h)) { return $hex; }
-        $r = hexdec(substr($h, 0, 2)) / 255; $g = hexdec(substr($h, 2, 2)) / 255; $b = hexdec(substr($h, 4, 2)) / 255;
-        $mx = max($r, $g, $b); $mn = min($r, $g, $b); $l = ($mx + $mn) / 2; $d = $mx - $mn;
-        if ($d == 0) { $hh = 0; $ss = 0; }
-        else {
-            $ss = $l > 0.5 ? $d / (2 - $mx - $mn) : $d / ($mx + $mn);
-            if ($mx == $r) { $hh = fmod((($g - $b) / $d), 6); } elseif ($mx == $g) { $hh = ($b - $r) / $d + 2; } else { $hh = ($r - $g) / $d + 4; }
-            $hh /= 6; if ($hh < 0) { $hh += 1; }
-        }
-        $ss = min(1, $ss * $sat); $l = min(1, $l * $light);
-        $q = $l < 0.5 ? $l * (1 + $ss) : $l + $ss - $l * $ss; $p = 2 * $l - $q;
-        $f = function ($t) use ($p, $q) { if ($t < 0) { $t += 1; } if ($t > 1) { $t -= 1; } if ($t < 1/6) { return $p + ($q - $p) * 6 * $t; } if ($t < 1/2) { return $q; } if ($t < 2/3) { return $p + ($q - $p) * (2/3 - $t) * 6; } return $p; };
-        $o = $ss == 0 ? [$l, $l, $l] : [$f($hh + 1/3), $f($hh), $f($hh - 1/3)];
-        return sprintf('#%02x%02x%02x', round($o[0] * 255), round($o[1] * 255), round($o[2] * 255));
-    }
 }
-$ntfNew = ntfMute($themeCSS['primary']);
-$ntfNewHover = ntfMute($themeCSS['primary'], 0.7, 1.0);
 $ntfBgs = [$themeCSS['card'], $themeCSS['input'], $themeCSS['bg']];
 $ntfMuted = ntfReadable('#8aa0bb', $ntfBgs, $themeCSS['text']);
 $ntfDanger = ntfReadable($themeCSS['danger'], $ntfBgs, $themeCSS['text']);
@@ -102,11 +82,11 @@ $ntfT['saveError'] = __('msg_save_error');
     </div>
 
     <div id="ntfRules" class="ntf-page">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-new" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfRulesTable"></table></div>
     </div>
     <div id="ntfChannels" class="ntf-page active">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-new" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfChannelsTable"></table></div>
     </div>
     <div id="ntfHistory" class="ntf-page">
@@ -153,8 +133,6 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-flat.danger:hover:not(:disabled) { border-color: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['danger'] ?>; }
 .ntf-prim { box-sizing: border-box; background: <?= $themeCSS['primary'] ?>; color: <?= ntfOn($themeCSS['primary']) ?>; border: 1px solid <?= $themeCSS['primary'] ?>; border-radius: 6px; padding: 0 18px; height: 30px; font-size: 12px; cursor: pointer; font-family: inherit; }
 .ntf-prim:disabled { opacity: 0.5; cursor: default; }
-.ntf-new { box-sizing: border-box; background: <?= $ntfNew ?>; color: <?= ntfOn($ntfNew) ?>; border: 1px solid <?= $ntfNew ?>; border-radius: 6px; padding: 0 18px; height: 30px; font-size: 12px; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s; }
-.ntf-new:hover { background: <?= $ntfNewHover ?>; border-color: <?= $ntfNewHover ?>; }
 .ntf-num { -moz-appearance: textfield; appearance: textfield; }
 .ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ntf-ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
