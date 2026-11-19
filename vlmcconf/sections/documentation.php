@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.6
+// ВЕРСИЯ: 6.0.7
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -2758,13 +2758,12 @@ function getFullDownloadHtml() {
             flex-shrink: 0;
             align-items: center;
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: 1fr auto;
             gap: 16px;
         }
         
-        .head-mid { display: flex; align-items: center; gap: 18px; }
-        .head-sep { color: #5b7389; font-size: 26px; font-weight: 300; line-height: 1; }
-        .head-right { justify-self: end; }
+                .head-sep { color: #5b7389; font-size: 26px; font-weight: 300; line-height: 1; }
+        .head-right { display: flex; align-items: center; gap: 14px; justify-self: end; }
         
         h1 {
             font-size: 20px;
@@ -2943,7 +2942,7 @@ function getFullDownloadHtml() {
         @media (max-width: 768px) {
             body { padding: 10px; }
             .header { padding: 10px 14px; grid-template-columns: 1fr; justify-items: start; gap: 8px; }
-            .head-right { justify-self: start; }
+            .head-right { justify-self: start; flex-wrap: wrap; }
             .doc-content { margin: 0 6px 6px 6px; padding: 16px; }
             footer { padding: 12px 20px; }
             .code-block { font-size: 11px; }
@@ -2958,17 +2957,16 @@ function getFullDownloadHtml() {
         <h1>📦 KMS Monitor</h1>
         <div class="version">Версия ' . VLMC_VERSION . ' | Полное руководство по развёртыванию | ' . VLMC_DATE . '</div>
       </div>
-        <div class="head-mid">
-            <span class="head-sep">|</span>
+        <div class="head-right">
             <div class="lang-tabs">
                 <button class="tab-btn active" data-tab="inst"></button>
                 <button class="tab-btn" data-tab="desc"></button>
             </div>
             <span class="head-sep">|</span>
-        </div>
-        <div class="lang-tabs head-right">
+            <div class="lang-tabs">
             <button class="lang-btn active" data-lang="ru">🇷🇺 Русский</button>
             <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+            </div>
         </div>
     </div>
     
