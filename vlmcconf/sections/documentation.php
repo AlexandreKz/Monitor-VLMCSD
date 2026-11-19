@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.4
+// ВЕРСИЯ: 6.0.5
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -2734,15 +2734,14 @@ function getFullDownloadHtml() {
         body {
             background: #1a2634;
             font-family: \'Segoe UI\', \'Inter\', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            padding: 20px;
+            padding: 10px;
             color: #e1e9f0;
             line-height: 1.6;
             height: 100%;
         }
         
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            margin: 0;
             background: #1f2e3c;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
@@ -2754,35 +2753,33 @@ function getFullDownloadHtml() {
         }
         
         .header {
-            padding: 24px 30px 0 30px;
+            padding: 12px 20px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
         
         h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            line-height: 1.2;
             color: #fff;
             border-left: 4px solid #3b82f6;
-            padding-left: 20px;
+            padding-left: 12px;
         }
         
         .version {
             color: #8aa0bb;
-            margin-bottom: 20px;
-            padding-left: 24px;
-            font-size: 14px;
-        }
-        
-        .tabs-wrapper {
-            padding: 0 30px;
-            flex-shrink: 0;
+            padding-left: 16px;
+            font-size: 13px;
         }
         
         .lang-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
         }
         
         .lang-btn {
@@ -2812,7 +2809,7 @@ function getFullDownloadHtml() {
             border-radius: 12px;
             padding: 20px;
             border: 1px solid #33485d;
-            margin: 0 30px 20px 30px;
+            margin: 0 10px 10px 10px;
             overflow-y: auto;
             flex: 1;
         }
@@ -2929,9 +2926,8 @@ function getFullDownloadHtml() {
         
         @media (max-width: 768px) {
             body { padding: 10px; }
-            .header { padding: 16px 20px 0 20px; }
-            .tabs-wrapper { padding: 0 20px; }
-            .doc-content { margin: 0 20px 16px 20px; padding: 16px; }
+            .header { padding: 10px 14px; }
+            .doc-content { margin: 0 6px 6px 6px; padding: 16px; }
             footer { padding: 12px 20px; }
             .code-block { font-size: 11px; }
             .lang-btn { padding: 6px 12px; font-size: 12px; }
@@ -2941,11 +2937,10 @@ function getFullDownloadHtml() {
 <body>
 <div class="container">
     <div class="header">
+      <div>
         <h1>📦 KMS Monitor</h1>
         <div class="version">Версия ' . VLMC_VERSION . ' | Полное руководство по развёртыванию | ' . VLMC_DATE . '</div>
-    </div>
-    
-    <div class="tabs-wrapper">
+      </div>
         <div class="lang-tabs">
             <button class="lang-btn active" data-lang="ru">🇷🇺 Русский</button>
             <button class="lang-btn" data-lang="en">🇬🇧 English</button>
