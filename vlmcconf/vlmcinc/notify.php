@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.3.0
+// ВЕРСИЯ: 3.4.1
 // ДАТА: 2026-11-19
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -85,8 +85,18 @@ function notifyDefaultRules() {
         $mk('d_failed_logins', 'Безопасность — серия неудачных входов', ['failed_logins'], 30),
         $mk('d_access_denied', 'Безопасность — отказ в доступе', ['access_denied'], 30),
         $mk('d_users', 'Безопасность — изменения пользователей', ['user_added', 'user_deleted', 'user_updated', 'password_changed'], 0),
+        $mk('d_api_keys', 'Безопасность — ключи API и доступ к панели', ['api_key_created', 'api_key_deleted', 'panel_access_changed'], 0),
+        $mk('d_suspicious', 'Безопасность — подозрительная активность устройств', ['multi_ip_device', 'multi_device_ip', 'new_country'], 60),
         $mk('d_audit_cleared', 'Журнал событий очищен', ['audit_cleared'], 0),
+        $mk('d_panel_changes', 'Изменения в панели — устройства и группы', ['device_added', 'device_deleted', 'devices_moved', 'group_renamed', 'group_deleted', 'log_cleared', 'config_reset'], 0),
         $mk('d_update', 'Обновления — новая версия панели', ['update_available'], 60),
+        $mk('d_update_done', 'Обновления — панель обновлена или ошибка', ['update_installed', 'update_failed'], 0),
+        $mk('d_new_device', 'Устройства — новые в логе', ['new_device'], 60),
+        $mk('d_inactive', 'Устройства — давно не появлялись', ['device_inactive'], 1440),
+        $mk('d_service', 'Служба KMS — остановлена или восстановлена', ['service_stopped', 'service_restored'], 0),
+        $mk('d_log_state', 'Служба KMS — лог не обновляется, слишком большой, мало места', ['log_stale', 'log_big', 'disk_low'], 360),
+        $mk('d_tasks', 'Фоновые задачи — сбой', ['task_failed'], 60),
+        $mk('d_ldap', 'Интеграции — AD/LDAP недоступен или запись не принята', ['ldap_down', 'ldap_restored', 'ldap_account_failed'], 60),
     ];
 }
 
@@ -94,16 +104,37 @@ function notifyDefaultRules() {
 function notifyLoad() {
     $f = notifyFile();
     $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null;
-    $d = ['ver' => 3, 'channels' => [], 'rules' => null, 'seq' => 0];
+    $d = ['ver' => 3, 'channels' => [], 'rules' => null, 'seq' => 0, 'seeded' => []];
     if (is_array($j) && (int)($j['ver'] ?? 0) >= 3) {
         // файл старой модели (без метки ver) не читаем: правила-шаблоны создаются заново
         $d['channels'] = array_values(array_filter((array)($j['channels'] ?? []), 'is_array'));
         $d['rules'] = isset($j['rules']) && is_array($j['rules']) ? array_values(array_filter($j['rules'], 'is_array')) : null;
         $d['seq'] = (int)($j['seq'] ?? 0);
+        $d['seeded'] = isset($j['seeded']) && is_array($j['seeded']) ? array_values($j['seeded']) : null;
     }
+    $defaults = notifyDefaultRules();
     if ($d['rules'] === null) {
-        $d['rules'] = notifyDefaultRules();
+        $d['rules'] = $defaults;
+        $d['seeded'] = array_column($defaults, 'id');
+        return $d;
     }
+    if ($d['seeded'] === null) {
+        // файл создан до появления метки: считаем «посеянными» исходные пять правил
+        $d['seeded'] = ['d_failed_logins', 'd_access_denied', 'd_users', 'd_audit_cleared', 'd_update'];
+    }
+    // новые правила-шаблоны добавляются один раз; удалённые администратором не возвращаются
+    $have = array_column($d['rules'], 'id');
+    foreach ($defaults as $r) {
+        if (!in_array($r['id'], $d['seeded'], true) && !in_array($r['id'], $have, true)) {
+            $d['rules'][] = $r;
+        }
+        if (!in_array($r['id'], $d['seeded'], true)) { $d['seeded'][] = $r['id']; }
+    }
+    // переименование «Журнал действий» → «Журнал событий» в сохранённых шаблонах
+    foreach ($d['rules'] as &$rr) {
+        if (($rr['id'] ?? '') === 'd_audit_cleared' && ($rr['name'] ?? '') === 'Журнал действий очищен') { $rr['name'] = 'Журнал событий очищен'; }
+    }
+    unset($rr);
     return $d;
 }
 
@@ -591,6 +622,28 @@ function notifyParseDetails($d) {
     return $o;
 }
 
+/** Группа переименована: в фильтрах всех правил старое имя заменяется новым. */
+function notifyRenameGroupInRules($old, $new) {
+    if ($old === '' || $new === '' || $old === $new) { return; }
+    try {
+        notifyMutate(function (&$s) use ($old, $new) {
+            $changed = false;
+            foreach ($s['rules'] as &$r) {
+                $g = array_values((array)($r['groups'] ?? []));
+                if (in_array($old, $g, true)) {
+                    $g = array_values(array_unique(array_map(function ($x) use ($old, $new) { return $x === $old ? $new : $x; }, $g)));
+                    $r['groups'] = $g;
+                    $changed = true;
+                }
+            }
+            unset($r);
+            return $changed ? true : false;
+        });
+    } catch (\Throwable $e) {
+        // уведомления не должны ломать переименование
+    }
+}
+
 /** Вызывается из журнала событий для каждой записи: переводит её в события уведомлений. */
 function notifyOnAudit(array $e) {
     $a = (string)($e['a'] ?? '');
@@ -620,7 +673,11 @@ function notifyOnAudit(array $e) {
             if ($ok) { notifyEmit('devices_moved', 'Устройства перемещены в группу: ' . ($p['target_group'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['target_group'] ?? '']); }
             return;
         case 'rename_group':
-            if ($ok) { notifyEmit('group_renamed', 'Группа переименована: ' . ($p['old_name'] ?? '') . ' → ' . ($p['new_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['old_name'] ?? '']); }
+            if ($ok) {
+                // фильтры правил хранят имена групп: переносим их на новое имя, иначе галочка пропадёт
+                notifyRenameGroupInRules((string)($p['old_name'] ?? ''), (string)($p['new_name'] ?? ''));
+                notifyEmit('group_renamed', 'Группа переименована: ' . ($p['old_name'] ?? '') . ' → ' . ($p['new_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['new_name'] ?? '']);
+            }
             return;
         case 'delete_group':
             if ($ok) { notifyEmit('group_deleted', 'Удалена группа: ' . ($p['group_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['group_name'] ?? '']); }
@@ -633,6 +690,23 @@ function notifyOnAudit(array $e) {
             return;
         case 'perform_update':
             notifyEmit($ok ? 'update_installed' : 'update_failed', $ok ? 'Панель обновлена' : 'Ошибка обновления панели', 'Выполнил: ' . $who . "\n" . $det);
+            return;
+        case 'panel_access_denied':
+            return notifyEmit('access_denied', 'Доступ к панели закрыт ограничением по IP: ' . (string)($e['ip'] ?? ''), $det);
+        case 'api_key_create':
+            if ($ok) { notifyEmit('api_key_created', 'Создан ключ API', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'api_key_delete':
+            if ($ok) { notifyEmit('api_key_deleted', 'Удалён ключ API', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'panel_wl_save':
+            if ($ok) { notifyEmit('panel_access_changed', 'Изменено ограничение доступа к панели по IP', 'Выполнил: ' . $who . "\n" . $det); }
+            return;
+        case 'delete_device':
+            if ($ok) { notifyEmit('device_deleted', 'Удалено устройство: ' . ($p['deviceName'] ?? ($p['name'] ?? '')), 'Выполнил: ' . $who . "\n" . $det, ['device' => $p['deviceName'] ?? ($p['name'] ?? ''), 'group' => $p['deviceGroup'] ?? ($p['group'] ?? '')]); }
+            return;
+        case 'reset_config':
+            if ($ok) { notifyEmit('config_reset', 'Сброшена конфигурация панели', 'Выполнил: ' . $who); }
             return;
         case 'login_locked':
             return notifyEmit('failed_logins', 'Вход заблокирован после неудачных попыток: ' . $who);

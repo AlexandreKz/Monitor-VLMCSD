@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify_events.php
-// ВЕРСИЯ: 1.0.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 1.1.0
+// ДАТА: 2026-11-19
 // @description: Каталог всех событий уведомлений (пункт 27): единый справочник — группа, важность, область (группа/устройство), параметры-пороги, признак «скоро» (нужна фоновая проверка)
 // ============================================
 
@@ -13,11 +13,12 @@ if (basename($_SERVER['PHP_SELF'] ?? '') === 'notify_events.php') {
 
 /**
  * Каталог событий. Названия: локаль notify_ev_<id>, группы: notify_grp_<group>.
- *   group  — раздел в окне правила (security | panel | updates | devices | service)
+ *   group  — раздел в окне правила (security | panel | updates | devices | service | integrations)
  *   sev    — важность: high | mid | low (для оформления и сортировки)
  *   scope  — к чему привязано событие: none | group | device (фильтр «группа/устройство» в правиле)
  *   params — настраиваемые пороги: имя => [по умолчанию, минимум, максимум]
- *   soon   — true: событие появится позже (нужна фоновая проверка по расписанию), в правило пока не выбирается
+ *   soon   — true: событие появится позже, в правило пока не выбирается (сейчас таких нет)
+ *   События группы devices и service (кроме задач) проверяет фоновая задача notify_watch (notify_watch.php)
  */
 function notifyCatalog() {
     static $cat = null;
@@ -31,12 +32,17 @@ function notifyCatalog() {
         'user_added'       => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
         'user_deleted'     => ['group' => 'security', 'sev' => 'high', 'scope' => 'none'],
         'user_updated'     => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
+        'api_key_created'  => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
+        'api_key_deleted'  => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
+        'panel_access_changed' => ['group' => 'security', 'sev' => 'high', 'scope' => 'none'],
         'password_changed' => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
         // Изменения в панели
         'device_added'     => ['group' => 'panel', 'sev' => 'low',  'scope' => 'device'],
         'devices_moved'    => ['group' => 'panel', 'sev' => 'low',  'scope' => 'group'],
         'group_renamed'    => ['group' => 'panel', 'sev' => 'low',  'scope' => 'group'],
         'group_deleted'    => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'group'],
+        'device_deleted'   => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'device'],
+        'config_reset'     => ['group' => 'panel', 'sev' => 'high', 'scope' => 'none'],
         'log_cleared'      => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'none'],
         'audit_cleared'    => ['group' => 'panel', 'sev' => 'high', 'scope' => 'none'],
         // Обновления
@@ -44,20 +50,27 @@ function notifyCatalog() {
         'update_installed' => ['group' => 'updates', 'sev' => 'low',  'scope' => 'none'],
         'update_failed'    => ['group' => 'updates', 'sev' => 'mid',  'scope' => 'none'],
         // Устройства (фоновая проверка)
-        'new_device'       => ['group' => 'devices', 'sev' => 'low',  'scope' => 'device', 'soon' => true],
-        'device_inactive'  => ['group' => 'devices', 'sev' => 'low',  'scope' => 'device', 'soon' => true, 'params' => ['days' => [7, 1, 365]]],
-        'multi_ip_device'  => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'device', 'soon' => true, 'params' => ['ip_count' => [4, 2, 100]]],
-        'multi_device_ip'  => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'none',   'soon' => true, 'params' => ['device_count' => [5, 2, 1000]]],
-        'new_country'      => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'device', 'soon' => true],
+        'new_device'       => ['group' => 'devices', 'sev' => 'low',  'scope' => 'device'],
+        'device_inactive'  => ['group' => 'devices', 'sev' => 'low',  'scope' => 'device', 'params' => ['days' => [7, 1, 365]]],
+        'multi_ip_device'  => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'device', 'params' => ['ip_count' => [4, 2, 100]]],
+        'multi_device_ip'  => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'none', 'params' => ['device_count' => [5, 2, 1000]]],
+        'new_country'      => ['group' => 'devices', 'sev' => 'mid',  'scope' => 'none'],
         // Служба и система (фоновая проверка)
-        'service_stopped'  => ['group' => 'service', 'sev' => 'high', 'scope' => 'none', 'soon' => true],
-        'log_stale'        => ['group' => 'service', 'sev' => 'mid',  'scope' => 'none', 'soon' => true, 'params' => ['minutes' => [60, 5, 10080]]],
-        'log_big'          => ['group' => 'service', 'sev' => 'low',  'scope' => 'none', 'soon' => true, 'params' => ['megabytes' => [500, 10, 100000]]],
+        'service_stopped'  => ['group' => 'service', 'sev' => 'high', 'scope' => 'none'],
+        'service_restored' => ['group' => 'service', 'sev' => 'low',  'scope' => 'none'],
+        'log_stale'        => ['group' => 'service', 'sev' => 'mid',  'scope' => 'none', 'params' => ['minutes' => [60, 5, 10080]]],
+        'log_big'          => ['group' => 'service', 'sev' => 'low',  'scope' => 'none', 'params' => ['megabytes' => [500, 10, 100000]]],
+        'disk_low'         => ['group' => 'service', 'sev' => 'mid',  'scope' => 'none', 'params' => ['free_mb' => [200, 10, 1000000]]],
+        'task_failed'      => ['group' => 'service', 'sev' => 'mid',  'scope' => 'none'],
+        // Интеграции
+        'ldap_down'           => ['group' => 'integrations', 'sev' => 'high', 'scope' => 'none'],
+        'ldap_restored'       => ['group' => 'integrations', 'sev' => 'low',  'scope' => 'none'],
+        'ldap_account_failed' => ['group' => 'integrations', 'sev' => 'mid',  'scope' => 'none'],
     ];
     return $cat;
 }
 
 /** Порядок групп в окне правила. */
 function notifyEventGroups() {
-    return ['security', 'panel', 'updates', 'devices', 'service'];
+    return ['security', 'panel', 'updates', 'devices', 'service', 'integrations'];
 }

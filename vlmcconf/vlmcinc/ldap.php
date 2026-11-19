@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ldap.php
-// ВЕРСИЯ: 1.4.1
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 1.4.2
+// ДАТА: 2026-11-19
 // @description: Интеграция с Active Directory / LDAP (п. 26): настройки, проверка связи, вход доменных пользователей,
 //               поиск и импорт пользователей, журнал синхронизации
 // ============================================
@@ -694,8 +694,41 @@ function ldapAccountsLogText(array $accounts) {
 
 function ldapStatusStore($ok, $text, array $accounts = []) {
     $file = ldapStatusFile();
+    $prev = ldapStatusRead();
     config_lock($file);
     save_config($file, ['ok' => (bool)$ok, 'time' => time(), 'text' => mb_substr((string)$text, 0, 300), 'accounts' => array_values($accounts)]);
+    ldapNotifyChange($prev, (bool)$ok, (string)$text, $accounts);
+}
+
+/** Уведомления о смене состояния: связь пропала / вернулась, служебная запись перестала приниматься. */
+function ldapNotifyChange($prev, $ok, $text, array $accounts) {
+    try {
+        require_once __DIR__ . '/notify.php';
+        $bad = function (array $list) {
+            $o = [];
+            foreach ($list as $a) { if (empty($a['ok'])) { $o[] = (string)($a['user'] ?? ''); } }
+            return $o;
+        };
+        if ($prev === null) {
+            $prevOk = true;
+            $prevBad = [];
+        } else {
+            $prevOk = $prev['ok'];
+            $prevBad = $bad($prev['accounts']);
+        }
+        if (!$ok && $prevOk) {
+            notifyEmit('ldap_down', 'AD/LDAP недоступен', $text);
+        } elseif ($ok && !$prevOk && $prev !== null) {
+            notifyEmit('ldap_restored', 'AD/LDAP снова доступен');
+        }
+        $nowBad = $bad($accounts);
+        $new = array_values(array_diff($nowBad, $prevBad));
+        if ($ok && $new) {
+            notifyEmit('ldap_account_failed', 'AD/LDAP: служебная запись не принята', implode(', ', $new));
+        }
+    } catch (\Throwable $e) {
+        // уведомления не должны ломать проверку
+    }
 }
 
 function ldapStatusReset() {

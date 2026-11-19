@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.24
+// ВЕРСИЯ: 5.15.25
 // ДАТА: 2026-11-18
 // @description: English translations
 // ============================================
@@ -956,8 +956,8 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_f_filter_devices' => 'Devices',
     'notify_f_filter_hint' => 'Nothing selected — the rule applies to all groups and devices.',
     'notify_f_params' => 'Thresholds',
-    'notify_f_throttle' => 'No more often than once per (min)',
-    'notify_f_throttle_hint' => '0 — unlimited',
+    'notify_f_throttle' => 'Interval between notifications, min',
+    'notify_f_throttle_hint' => 'At most one notification per this period; 0 — unlimited',
     'notify_f_quiet' => 'Quiet hours',
     'notify_f_quiet_from' => 'from',
     'notify_f_quiet_to' => 'to',
@@ -1790,5 +1790,19 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'ldap_role_backup' => 'backup',
     'ldap_acc_ok_short' => 'accepted',
     'ldap_acc_fail_short' => 'rejected',
+    'notify_grp_integrations' => 'Integrations',
+    'notify_ev_api_key_created' => 'API key created',
+    'notify_ev_api_key_deleted' => 'API key deleted',
+    'notify_ev_panel_access_changed' => 'Panel IP restriction changed',
+    'notify_ev_device_deleted' => 'Device deleted',
+    'notify_ev_config_reset' => 'Panel configuration reset',
+    'notify_ev_service_restored' => 'KMS service is running again',
+    'notify_ev_disk_low' => 'Low disk space for panel data',
+    'notify_ev_task_failed' => 'Background task failed',
+    'notify_ev_ldap_down' => 'AD/LDAP unavailable',
+    'notify_ev_ldap_restored' => 'AD/LDAP available again',
+    'notify_ev_ldap_account_failed' => 'AD/LDAP service account rejected',
+    'notify_p_free_mb' => 'Free space below, MB',
+    'sched_t_notify' => '🔔 Notification events check',
 ];
 ?>

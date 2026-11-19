@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.15.24
+// ВЕРСИЯ: 5.15.25
 // ДАТА: 2026-11-18
 // @description: Русские переводы интерфейса
 // ============================================
@@ -958,8 +958,8 @@ return [
     'notify_f_filter_devices' => 'Устройства',
     'notify_f_filter_hint' => 'Ничего не выбрано — правило действует для любых групп и устройств.',
     'notify_f_params' => 'Пороги',
-    'notify_f_throttle' => 'Не чаще, раз в (мин)',
-    'notify_f_throttle_hint' => '0 — без ограничений',
+    'notify_f_throttle' => 'Интервал между уведомлениями, мин',
+    'notify_f_throttle_hint' => 'Не чаще одного уведомления за этот срок; 0 — без ограничений',
     'notify_f_quiet' => 'Тихие часы',
     'notify_f_quiet_from' => 'с',
     'notify_f_quiet_to' => 'по',
@@ -1792,5 +1792,19 @@ return [
     'ldap_role_backup' => 'резервная',
     'ldap_acc_ok_short' => 'принята',
     'ldap_acc_fail_short' => 'отклонена',
+    'notify_grp_integrations' => 'Интеграции',
+    'notify_ev_api_key_created' => 'Создан ключ API',
+    'notify_ev_api_key_deleted' => 'Удалён ключ API',
+    'notify_ev_panel_access_changed' => 'Изменено ограничение доступа к панели по IP',
+    'notify_ev_device_deleted' => 'Удалено устройство',
+    'notify_ev_config_reset' => 'Сброшена конфигурация панели',
+    'notify_ev_service_restored' => 'Служба KMS снова работает',
+    'notify_ev_disk_low' => 'Мало места на диске с данными',
+    'notify_ev_task_failed' => 'Сбой фоновой задачи',
+    'notify_ev_ldap_down' => 'AD/LDAP недоступен',
+    'notify_ev_ldap_restored' => 'AD/LDAP снова доступен',
+    'notify_ev_ldap_account_failed' => 'Служебная запись AD/LDAP не принята',
+    'notify_p_free_mb' => 'Свободно меньше, МБ',
+    'sched_t_notify' => '🔔 Проверка событий уведомлений',
 ];
 ?>

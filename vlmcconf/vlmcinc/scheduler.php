@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/scheduler.php
-// ВЕРСИЯ: 1.0.1
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 1.1.0
+// ДАТА: 2026-11-19
 // @description: Единый планировщик фоновых задач: список задач, запуск просроченных (из браузера и из консоли cron.php),
 //               состояние и история запусков для вкладки «Фоновые» в «Журнале событий»
 // @description: Single background task scheduler: task list, running due tasks (from the browser and from cron.php), state and run history
@@ -99,6 +99,15 @@ function schedTasks() {
         },
     ];
 
+    // Проверка событий уведомлений: устройства, служба KMS, лог, место на диске (только если есть подписчики)
+    require_once __DIR__ . '/notify_watch.php';
+    $tasks['notify_watch'] = [
+        'label'    => __('sched_t_notify'),
+        'interval' => NOTIFY_WATCH_INTERVAL,
+        'enabled'  => notifyWatchWanted(),
+        'run'      => function () { return notifyWatchRun(); },
+    ];
+
     // Удаление записей журнала старше срока хранения (раз в сутки)
     require_once __DIR__ . '/audit.php';
     $tasks['audit_prune'] = [
@@ -159,6 +168,11 @@ function schedRun($via = 'web', $only = null) {
             $text = mb_substr($e->getMessage(), 0, 200);
         }
         $ms = (int)round((microtime(true) - $t0) * 1000);
+        if (!$ok && ($state['tasks'][$id]['ok'] ?? true)) {
+            // сбой задачи (первый после успешного запуска) — в уведомления
+            require_once __DIR__ . '/notify.php';
+            notifyEmit('task_failed', 'Сбой фоновой задачи: ' . strip_tags((string)$t['label']), (string)$text);
+        }
         $state['tasks'][$id] = ['time' => time(), 'ok' => (bool)$ok, 'text' => (string)$text, 'ms' => $ms, 'via' => $via];
         schedHistoryAdd($id, $ok, $text, $via, $ms);
         $ran[$id] = ['ok' => (bool)$ok, 'text' => (string)$text, 'ms' => $ms];
