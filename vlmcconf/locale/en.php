@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.30
+// ВЕРСИЯ: 5.15.31
 // ДАТА: 2026-11-19
 // @description: English translations
 // ============================================
@@ -282,7 +282,7 @@ return [
 	'tools_tab_project' => 'Project Management',
 	'tools_tab_log' => 'Log Management',
 	'tools_tab_cache' => 'Cache Management',
-	'tools_tab_update' => 'Обновление',
+	'tools_tab_update' => 'Update',
 	    
     // Permissions
     'permissions_tools' => '🛠️ Tools',
