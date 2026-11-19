@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.5.4
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 5.6.0
+// ДАТА: 2026-11-19
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
 
@@ -34,7 +34,7 @@ $docWebRu = <<<'HTML_WEB_RU'
         <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
 less install.sh
 sudo bash install.sh</pre></div>
-        <p>Полезные ключи: <code>--domain example.com</code> (виртуальный хост и сертификат Let's Encrypt), <code>--dir</code> (папка установки, по умолчанию /var/www/html), <code>--release 6.1.0</code> (конкретная версия), <code>--branch main</code> (ранний доступ), <code>--kms-log /var/log/vlmcsd.log</code> (права на лог и ссылка), <code>--dry-run</code> (только показать действия). Справка: <code>bash install.sh --help</code>.</p>
+        <p>Полезные ключи: <code>--domain example.com</code> (виртуальный хост и сертификат Let's Encrypt), <code>--dir</code> (папка установки, по умолчанию /var/www/html), <code>--data-dir</code> (папка данных вне веб-папки, по умолчанию /var/lib/vlmc-monitor), <code>--email</code> (адрес для Let's Encrypt), <code>--release 6.1.0</code> (конкретная версия), <code>--branch main</code> (ранний доступ), <code>--kms-log /var/log/vlmcsd.log</code> (права на лог и ссылка), <code>--no-cron</code> (не создавать задание проверки обновлений), <code>--dry-run</code> (только показать действия). Справка: <code>bash install.sh --help</code>.</p>
         <div class="note">💡 Повторный запуск безопасен: файлы панели обновятся, а настройки, пользователи и данные останутся. После установки перейдите к этапу «Первый вход в панель управления». Если вы ставите вручную, пропустите этот блок и следуйте этапам ниже.</div>
     </div>
     
@@ -153,6 +153,7 @@ sudo systemctl status vlmcsd</pre></div>
 sudo apt install apache2 php8.5 php8.5-curl php8.5-common php8.5-mbstring libapache2-mod-php8.5</pre></div>
         
         <div class="note">💡 <strong>Примечание:</strong> Расширения <code>json</code> и <code>session</code> встроены в PHP, отдельно устанавливать не нужно.</div>
+        <div class="note">💡 <strong>Для входа через AD/LDAP</strong> нужно расширение <code>ldap</code>: <code>sudo apt install php8.5-ldap</code> и перезапуск Apache. Без него раздел AD/LDAP покажет предупреждение, остальная панель работает. Расширение <code>ftp</code> (для хранилищ FTP/FTPS в Cloud Storage) обычно входит в <code>php8.5-common</code>.</div>
     </div>
     
     <!-- Этап 5: Настройка Apache и включение mod_rewrite -->
@@ -395,6 +396,15 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="note">⚠️ Если вы вносили в файлы панели собственные правки, ранний доступ предложит заменить их версией из репозитория: сначала загрузите свои правки в репозиторий.</div>
     </div>
     
+    <!-- Фоновые задачи -->
+    <div class="section-card">
+        <div class="section-title"><span>⏱️</span> Фоновые задачи</div>
+        <p>Панель сама выполняет периодические задачи: проверку обновлений, проверку подключения к AD/LDAP (раз в 12 часов), проверки для уведомлений (раз в 5 минут: новые устройства, состояние службы KMS, лог, место на диске) и удаление старых записей журнала событий (раз в сутки). Без настройки они выполняются только когда кто-то открывает панель, поэтому уведомления могут приходить с задержкой.</p>
+        <p>Чтобы задачи шли без захода в панель, добавьте запуск по расписанию. Готовая команда для вашего сервера показана в «Журнал событий → Фоновые задачи → Запуск по расписанию ОС». Для Ubuntu это задание в <code>/etc/cron.d</code>, вида:</p>
+        <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
+        <p>В том же блоке видно, когда задача запускалась последний раз, чем закончилась, и есть кнопка «Запустить сейчас». Установщик создаёт только проверку обновлений (<code>update_check.php</code>), задание для <code>cron.php</code> добавляется отдельно.</p>
+    </div>
+
     <!-- Журнал событий -->
     <div class="section-card">
         <div class="section-title"><span>📜</span> Журнал событий</div>
@@ -421,6 +431,8 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 40px;">    ├── 📄 login.php</div>
             <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
             <div style="margin-left: 40px;">    ├── 📄 update_check.php — проверка обновлений по расписанию (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 cron.php — фоновые задачи по расписанию ОС (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 api.php — REST API (только чтение)</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
@@ -435,6 +447,12 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 20px;">├── 📄 audit.log — журнал событий</div>
             <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — каналы, правила и история уведомлений, ключ шифрования</div>
             <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — состояние проверки обновлений, токен GitHub</div>
+            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — API keys (hashes only) and rate counters</div>
+            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — background task state and history</div>
+            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — AD/LDAP state and log, webhook state</div>
+            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — ключи API (только хеши) и счётчики лимитов</div>
+            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — состояние и история фоновых задач</div>
+            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — состояние и журнал AD/LDAP, состояние вебхуков</div>
             <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — журналы изменений и служебные блокировки</div>
             <div style="margin-left: 20px;">└── 📁 backups/ — резервные копии настроек, пользователей и обновлений</div>
         </div>
@@ -465,7 +483,7 @@ $docWebEn = <<<'HTML_WEB_EN'
         <div class="code-block"><pre>curl -fsSLO https://raw.githubusercontent.com/AlexandreKz/Monitor-VLMCSD/main/install.sh
 less install.sh
 sudo bash install.sh</pre></div>
-        <p>Useful options: <code>--domain example.com</code> (virtual host and Let's Encrypt certificate), <code>--dir</code> (install folder, default /var/www/html), <code>--release 6.1.0</code> (specific version), <code>--branch main</code> (early access), <code>--kms-log /var/log/vlmcsd.log</code> (log permissions and link), <code>--dry-run</code> (only show actions). Help: <code>bash install.sh --help</code>.</p>
+        <p>Useful options: <code>--domain example.com</code> (virtual host and Let's Encrypt certificate), <code>--dir</code> (install folder, default /var/www/html), <code>--data-dir</code> (data folder outside the web root, default /var/lib/vlmc-monitor), <code>--email</code> (address for Let's Encrypt), <code>--release 6.1.0</code> (specific version), <code>--branch main</code> (early access), <code>--kms-log /var/log/vlmcsd.log</code> (log permissions and link), <code>--no-cron</code> (do not create the scheduled update check), <code>--dry-run</code> (only show actions). Help: <code>bash install.sh --help</code>.</p>
         <div class="note">💡 Running it again is safe: panel files are updated while settings, users and data are kept. After installation go to the “First login to control panel” step. If you install manually, skip this block and follow the steps below.</div>
     </div>
     
@@ -584,6 +602,7 @@ sudo systemctl status vlmcsd</pre></div>
 sudo apt install apache2 php8.5 php8.5-curl php8.5-common php8.5-mbstring libapache2-mod-php8.5</pre></div>
         
         <div class="note">💡 <strong>Note:</strong> The <code>json</code> and <code>session</code> extensions are built into PHP, no separate installation required.</div>
+        <div class="note">💡 <strong>For AD/LDAP sign-in</strong> the <code>ldap</code> extension is required: <code>sudo apt install php8.5-ldap</code> and restart Apache. Without it the AD/LDAP section shows a warning; the rest of the panel works. The <code>ftp</code> extension (for FTP/FTPS storages in Cloud Storage) is usually part of <code>php8.5-common</code>.</div>
     </div>
     
     <!-- Step 5: Configure Apache and enable mod_rewrite -->
@@ -826,6 +845,15 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
     </div>
     
+    <!-- Background tasks -->
+    <div class="section-card">
+        <div class="section-title"><span>⏱️</span> Background tasks</div>
+        <p>The panel runs periodic tasks itself: update check, AD/LDAP connection check (every 12 hours), notification checks (every 5 minutes: new devices, KMS service state, log, disk space) and removal of old event log entries (daily). Without setup they run only when someone opens the panel, so notifications may be delayed.</p>
+        <p>To run tasks without opening the panel, add a scheduled job. A ready command for your server is shown in “Event log → Background tasks → Run by OS scheduler”. On Ubuntu it is a job in <code>/etc/cron.d</code>, like:</p>
+        <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
+        <p>The same block shows when each task last ran and how it ended, with a “Run now” button. The installer creates only the update check (<code>update_check.php</code>); the job for <code>cron.php</code> is added separately.</p>
+    </div>
+
     <!-- Event log -->
     <div class="section-card">
         <div class="section-title"><span>📜</span> Event log</div>
@@ -852,6 +880,8 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 40px;">    ├── 📄 login.php</div>
             <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
             <div style="margin-left: 40px;">    ├── 📄 update_check.php — scheduled update check (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 cron.php — background tasks by the OS scheduler (cron)</div>
+            <div style="margin-left: 40px;">    ├── 📄 api.php — REST API (read-only)</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
             <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
@@ -1204,7 +1234,8 @@ renderDocumentation();
 }
 
 .doc-content .section-title {
-    font-size: 22px;
+    justify-content: flex-start;
+    font-size: 20px;
     font-weight: 600;
     margin-bottom: 20px;
     color: <?= $themeCSS['accentText'] ?>;
@@ -1214,6 +1245,8 @@ renderDocumentation();
     border-bottom: 1px solid <?= $themeCSS['border'] ?>;
     padding-bottom: 12px;
 }
+
+.doc-content .section-title span { font-size: 22px; line-height: 1; }
 
 .doc-content .section-title span {
     font-size: 26px;
