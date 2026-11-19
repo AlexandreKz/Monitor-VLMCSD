@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.4.0
+// ВЕРСИЯ: 3.4.1
 // ДАТА: 2026-11-19
 // @description: Секция «Журнал событий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
@@ -272,9 +272,9 @@ window.addEventListener('vlmc-sched-done', function () { if (document.querySelec
 .audit-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 340px; }
 .audit-md { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); }
 .audit-md.open { display: flex; }
-.audit-md-box { width: 760px; max-width: 92%; max-height: 82vh; display: flex; flex-direction: column; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 2px solid <?= $themeCSS['primary'] ?>; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.audit-md-box { width: 760px; max-width: 92%; max-height: 82vh; display: flex; flex-direction: column; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 2px solid #06b6d4; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 .audit-md-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; }
-.audit-md-head h2 { margin: 0; font-size: 16px; font-weight: 600; color: <?= $themeCSS['accentText'] ?>; }
+.audit-md-head h2 { margin: 0; font-size: 16px; font-weight: 600; color: #06b6d4; }
 .audit-md-x { cursor: pointer; font-size: 22px; line-height: 1; color: <?= $themeCSS['muted'] ?>; }
 .audit-md-x:hover { color: <?= $themeCSS['text'] ?>; }
 .audit-md-meta { font-size: 12px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 8px; }

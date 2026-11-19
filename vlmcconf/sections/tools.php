@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/tools.php
-// ВЕРСИЯ: 3.3.4
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 3.3.5
+// ДАТА: 2026-11-19
 // @description: Секция "Инструменты" с вкладками (управление логом, кэш, проект)
 // @description: Tools section with tabs (log management, cache, project)
 // ============================================
@@ -197,7 +197,7 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 <!-- Модальное окно подтверждения очистки лога -->
 <div id="clearLogConfirmModal" class="tools-modal" style="display: none;">
-    <div class="tools-modal-content">
+    <div class="tools-modal-content mc-danger">
         <div class="tools-modal-header">
             <h2>⚠️ <?= __('security_clear_confirm_title') ?></h2>
             <span class="tools-modal-close" onclick="closeClearLogModal()">&times;</span>
@@ -215,7 +215,7 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 
 <!-- Модальные окна (кэш) -->
 <div id="toolsConfirmModal" class="tools-modal" style="display: none;">
-    <div class="tools-modal-content">
+    <div class="tools-modal-content" style="--mc:#f59e0b;--mt:#f59e0b">
         <div class="tools-modal-header"><h2>⚠️ <?= __('tools_cache_confirm_title') ?></h2><span class="tools-modal-close" onclick="closeToolsConfirmModal()">&times;</span></div>
         <div class="tools-modal-body"><p><?= __('tools_cache_confirm_warning') ?></p><p class="tools-modal-estimate"><?= __('tools_cache_estimate') ?></p></div>
         <div class="tools-modal-footer"><button class="btn btn-secondary" onclick="closeToolsConfirmModal()">❌ <?= __('tools_cache_confirm_no') ?></button><button class="btn btn-primary" onclick="startToolsRefreshCache()">✅ <?= __('tools_cache_confirm_yes') ?></button></div>
@@ -223,7 +223,7 @@ if (hasPermission($currentUserPermissions, PERM_TOOLS_EDIT)) {
 </div>
 
 <div id="toolsResultModal" class="tools-modal" style="display: none;">
-    <div class="tools-modal-content">
+    <div class="tools-modal-content mc-ok">
         <div class="tools-modal-header"><h2>✅ <?= __('tools_cache_result_title') ?></h2><span class="tools-modal-close" onclick="closeToolsResultModal()">&times;</span></div>
         <div class="tools-modal-body"><p id="resultMessage"><?= __('tools_cache_complete') ?></p><p class="tools-modal-estimate" id="resultDetails"></p></div>
         <div class="tools-modal-footer"><button class="btn btn-primary" onclick="closeToolsResultModal()"><?= __('tools_cache_result_ok') ?></button></div>
@@ -311,9 +311,13 @@ input[type="date"]:disabled {
 
 /* ===== Модальные окна ===== */
 .tools-modal { position: fixed; z-index: 100000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; }
-.tools-modal-content { background: <?= $themeCSS['card'] ?>; border-radius: 12px; width: 450px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); color: <?= $themeCSS['text'] ?>; animation: modalFadeIn 0.3s; }
+.tools-modal-content { background: <?= $themeCSS['card'] ?>; border-radius: 12px; width: 450px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); color: <?= $themeCSS['text'] ?>; animation: modalFadeIn 0.3s; border: 2px solid var(--mc, <?= $themeCSS['primary'] ?>); }
+/* Цвет важности окна: рамка и заголовок (по умолчанию — цвет темы) */
+.mc-danger { --mc: <?= $themeCSS['danger'] ?>; --mt: <?= $themeCSS['danger'] ?>; }
+.mc-warn { --mc: <?= $themeCSS['warning'] ?>; --mt: <?= $themeCSS['warning'] ?>; }
+.mc-ok { --mc: <?= $themeCSS['success'] ?>; --mt: <?= $themeCSS['success'] ?>; }
 .tools-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; }
-.tools-modal-header h2 { font-size: 18px; font-weight: 600; margin: 0; }
+.tools-modal-header h2 { font-size: 18px; font-weight: 600; margin: 0; color: var(--mt, <?= $themeCSS['accentText'] ?>); }
 .tools-modal-close { color: <?= $themeCSS['muted'] ?>; font-size: 24px; font-weight: bold; cursor: pointer; line-height: 1; }
 .tools-modal-body { padding: 20px; }
 .tools-modal-estimate { font-size: 12px; color: <?= $themeCSS['muted'] ?>; background: <?= $themeCSS['input'] ?>; padding: 8px; border-radius: 6px; margin-top: 10px; }

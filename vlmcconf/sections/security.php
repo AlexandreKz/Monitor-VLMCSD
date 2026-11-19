@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.6
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 6.0.7
+// ДАТА: 2026-11-19
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
 
@@ -579,9 +579,9 @@ document.addEventListener('DOMContentLoaded', function () { secTabRestore('secti
 
 <!-- Модальное окно добавления IP в белый список -->
 <div id="addWhitelistIpModal" class="modal" style="display: none; z-index: 100000;">
-    <div class="modal-content" style="width: 450px; max-width: 90%;">
+    <div class="modal-content" style="width: 450px; max-width: 90%; border-color: #22c55e;">
         <div class="modal-header">
-            <h2><?= __('whitelist_add_ip_title') ?></h2>
+            <h2 style="color: #22c55e;"><?= __('whitelist_add_ip_title') ?></h2>
             <span class="modal-close" onclick="closeAddWhitelistIpModal()">&times;</span>
         </div>
         <div class="modal-body">

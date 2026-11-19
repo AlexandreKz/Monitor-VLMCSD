@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.8.0
+// ВЕРСИЯ: 3.8.1
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -132,7 +132,10 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-num { -moz-appearance: textfield; appearance: textfield; }
 .ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ntf-ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.ntf-mod { background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: 880px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.ntf-mod { background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 2px solid var(--mc, <?= $themeCSS['primary'] ?>); border-radius: 10px; width: 880px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.ntf-mod.ntf-nar { --mc: #f59e0b; --mt: #f59e0b; }
+.ntf-mod.ntf-fitmod { --mc: #6366f1; --mt: #6366f1; }
+.ntf-mh > span:first-child { color: var(--mt, <?= $themeCSS['accentText'] ?>); }
 .ntf-mh { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; font-size: 15px; font-weight: 600; }
 .ntf-x { background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; opacity: .7; }
 .ntf-x:hover { opacity: 1; }

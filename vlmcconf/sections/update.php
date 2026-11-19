@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.7.2
+// ВЕРСИЯ: 5.7.3
 // ДАТА: 2026-11-19
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
@@ -172,7 +172,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
     <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ОБНОВЛЕНИЯ      -->
     <!-- ============================================ -->
     <div id="updateConfirmModal" class="tools-modal" style="display: none;">
-        <div class="tools-modal-content">
+        <div class="tools-modal-content mc-danger">
             <div class="tools-modal-header">
                 <h2>⚠️ <?= __('update_confirm_title') ?></h2>
                 <span class="tools-modal-close" onclick="closeUpdateConfirmModal()">&times;</span>

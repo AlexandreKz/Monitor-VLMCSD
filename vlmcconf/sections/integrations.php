@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/integrations.php
-// ВЕРСИЯ: 6.5.2
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 6.5.3
+// ДАТА: 2026-11-19
 // @description: Раздел «Интеграции» (п. 26): Active Directory / LDAP, Cloud Storage, Webhook — настройки, проверка, журнал событий
 // @description: Integrations section: Active Directory / LDAP, Cloud Storage, Webhook — settings, tests, event log
 // ============================================
@@ -259,8 +259,8 @@ $permOptions = [
 .ld-chips .ld-none { font-size: 12px; color: <?= $themeCSS['muted'] ?>; }
 .ld-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 10000; }
 .ld-overlay.open { display: flex; }
-.ld-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(640px, 94vw); max-height: 86vh; display: flex; flex-direction: column; padding: 16px 18px; }
-.ld-modal h3 { margin: 0 0 10px; font-size: 15px; }
+.ld-modal { background: <?= $themeCSS['card'] ?>; border: 2px solid var(--mc, <?= $themeCSS['primary'] ?>); border-radius: 10px; width: min(640px, 94vw); max-height: 86vh; display: flex; flex-direction: column; padding: 16px 18px; }
+.ld-modal h3 { margin: 0 0 10px; font-size: 15px; color: var(--mt, <?= $themeCSS['accentText'] ?>); }
 .ld-list { overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; margin: 10px 0; min-height: 120px; flex: 1 1 auto; }
 .ld-item { display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; cursor: pointer; font-size: 13px; }
 .ld-item:last-child { border-bottom: none; }
@@ -275,7 +275,7 @@ $permOptions = [
 .ld-bk button:hover { color: <?= $themeCSS['dangerText'] ?>; }
 </style>
 <div id="ldGroupsOverlay" class="ld-overlay" onclick="if (event.target === this) ldGroupsClose()">
-    <div class="ld-modal">
+    <div class="ld-modal" style="--mc:#0ea5e9;--mt:#0ea5e9">
         <h3>📂 <?= __('ldap_groups_title') ?></h3>
         <div style="display: flex; gap: 8px;">
             <input type="text" id="ldGroupsQuery" class="form-control" placeholder="<?= htmlspecialchars(__('ldap_groups_search')) ?>" onkeydown="if (event.key === 'Enter') ldGroupsLoad()">
@@ -304,7 +304,7 @@ $permOptions = [
 @media (max-width: 560px) { .ix-grid { grid-template-columns: 1fr; } }
 </style>
 <div id="whOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('whOverlay')">
-    <div class="ld-modal">
+    <div class="ld-modal" style="--mc:#8b5cf6;--mt:#8b5cf6">
         <h3>🔗 <?= __('int_wh_edit') ?></h3>
         <div class="ix-grid">
             <div><label><?= __('wh_field_name') ?></label><input type="text" id="whName" class="form-control" maxlength="60"></div>
@@ -343,7 +343,7 @@ $permOptions = [
 </div>
 
 <div id="clOverlay" class="ld-overlay" onclick="if (event.target === this) ixClose('clOverlay')">
-    <div class="ld-modal">
+    <div class="ld-modal" style="--mc:#14b8a6;--mt:#14b8a6">
         <h3>☁️ <?= __('int_tab_cloud') ?></h3>
         <div class="ix-grid">
             <div><label><?= __('cl_field_name') ?></label><input type="text" id="clName" class="form-control" maxlength="60"></div>

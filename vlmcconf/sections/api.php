@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/api.php
-// ВЕРСИЯ: 6.7.10
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 6.7.11
+// ДАТА: 2026-11-19
 // @description: Раздел «API» (п. 25): ключи доступа, настройки и лимит запросов, документация (OpenAPI)
 // @description: API section: access keys, settings and rate limit, documentation (OpenAPI)
 // ============================================
@@ -190,8 +190,8 @@ $apiOrigins = implode("\n", $apiSet['cors_origins']);
 .api-codebox .sec-code { padding-right: 44px; }
 .api-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 10000; }
 .api-ov.open { display: flex; }
-.api-modal { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: visible; padding: 16px 18px; }
-.api-modal h3 { margin: 0 0 12px; font-size: 15px; }
+.api-modal { background: <?= $themeCSS['card'] ?>; border: 2px solid <?= $themeCSS['danger'] ?>; border-radius: 10px; width: min(560px, 94vw); max-height: 86vh; overflow: visible; padding: 16px 18px; }
+.api-modal h3 { margin: 0 0 12px; font-size: 15px; color: <?= $themeCSS['danger'] ?>; }
 .api-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .api-ep { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
 .api-ep-head { display: flex; align-items: center; gap: 14px; padding: 13px 16px; cursor: pointer; background: <?= $themeCSS['card'] ?>; }

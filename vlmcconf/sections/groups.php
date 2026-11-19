@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/groups.php
-// ВЕРСИЯ: 3.6.2
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 3.6.3
+// ДАТА: 2026-11-19
 // @description: Секция "Группы" с модальным окном (редактирование имени, иконки, цвета, удаление)
 // ============================================
 
@@ -266,7 +266,7 @@ $fullEmojiList = get_emoji_list();
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    border: 1px solid <?= $themeCSS['border'] ?>;
+    border: 2px solid <?= $themeCSS['primary'] ?>;
 }
 
 .emoji-modal-header {
@@ -280,7 +280,7 @@ $fullEmojiList = get_emoji_list();
 .emoji-modal-header h3 {
     margin: 0;
     font-size: 16px;
-    color: <?= $themeCSS['text'] ?>;
+    color: <?= $themeCSS['accentText'] ?>;
 }
 
 .emoji-modal-close {
