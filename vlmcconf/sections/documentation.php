@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.1
+// ВЕРСИЯ: 6.0.2
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -3066,7 +3066,7 @@ renderDocumentation();
 
 /* Меню и содержимое */
 .doc-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
-.doc-nav { flex: none; width: 240px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 12px; padding: 8px; background: <?= $themeCSS['card'] ?>; }
+.doc-nav { flex: none; width: 240px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 12px; padding: 8px; background: <?= $themeCSS['input'] ?>; }
 .doc-nav a { display: block; padding: 7px 10px; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 14px; cursor: pointer; text-decoration: none; }
 .doc-nav a:hover { background: <?= $themeCSS['hover'] ?>; }
 .doc-nav a.on { background: <?= $themeCSS['primary'] ?>33; font-weight: 600; color: <?= $themeCSS['accentText'] ?>; }
@@ -3076,8 +3076,9 @@ renderDocumentation();
     min-height: 0;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 20px;
-    background: <?= $themeCSS['card'] ?>;
+    padding: 8px;
+    background: <?= $themeCSS['input'] ?>;
+    border: 1px solid <?= $themeCSS['border'] ?>;
     border-radius: 12px;
 }
 
