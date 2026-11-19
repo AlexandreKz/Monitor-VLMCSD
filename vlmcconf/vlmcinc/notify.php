@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.2.1
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 3.3.0
+// ДАТА: 2026-11-19
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
 
@@ -177,6 +177,41 @@ function notifyAddress($s) {
     return preg_match('/<([^<>\s]+)>/', (string)$s, $m) ? $m[1] : trim((string)$s);
 }
 
+/**
+ * Отправитель письма: [имя, адрес] или null, если адрес определить нельзя.
+ * Пусто — адрес берётся из логина; «Имя» без адреса — имя отправителя, адрес из логина;
+ * «адрес» и «Имя <адрес>» — как введено.
+ */
+function notifyFromParse($from, $login) {
+    $from = trim((string)$from);
+    $login = trim((string)$login);
+    $loginOk = $login !== '' && filter_var($login, FILTER_VALIDATE_EMAIL);
+    if ($from === '') {
+        return $loginOk ? ['', $login] : null;
+    }
+    if (preg_match('/^(.*?)\s*<([^<>\s]+)>$/u', $from, $m)) {
+        return filter_var($m[2], FILTER_VALIDATE_EMAIL) ? [trim($m[1], " \t\"'"), $m[2]] : null;
+    }
+    if (filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        return ['', $from];
+    }
+    return ($loginOk && strpos($from, '@') === false) ? [trim($from, " \t\"'"), $login] : null;
+}
+
+/** Заголовок From: имя (при необходимости в кодировке UTF-8) и адрес. */
+function notifyFromHeader(array $p) {
+    $name = notifyClean($p[0], 100);
+    if ($name === '') {
+        return $p[1];
+    }
+    if (!preg_match('/^[\x20-\x7E]+$/', $name)) {
+        $name = '=?UTF-8?B?' . base64_encode($name) . '?=';
+    } else {
+        $name = '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $name) . '"';
+    }
+    return $name . ' <' . $p[1] . '>';
+}
+
 /** Список адресов из строки (запятая, точка с запятой, пробел, перевод строки). */
 function notifySplitAddresses($s) {
     return array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', (string)$s))));
@@ -209,7 +244,7 @@ function notifyChannelBuild(array $in, $old) {
         $to = notifySplitAddresses($data['to'] ?? '');
         if ($e['host'] === '' || !preg_match('/^[A-Za-z0-9.\-]+$/', $e['host'])) { return [null, 'notify_err_host']; }
         if ($e['port'] < 1 || $e['port'] > 65535) { return [null, 'notify_err_port']; }
-        if (!filter_var(notifyAddress($e['from']), FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_from']; }
+        if (notifyFromParse($e['from'], $e['user']) === null) { return [null, 'notify_err_from']; }
         if (!$to || count($to) > 20) { return [null, 'notify_err_to']; }
         foreach ($to as $a) { if (!filter_var($a, FILTER_VALIDATE_EMAIL)) { return [null, 'notify_err_to']; } }
         $e['to'] = implode(', ', $to);
@@ -345,14 +380,17 @@ function notifySendEmail(array $c, $subject, $body) {
             notifySmtpCmd($fp, base64_encode($c['user']), [334]);
             notifySmtpCmd($fp, base64_encode(notifyDecrypt($c['pass'])), [235]);
         }
-        $from = notifyAddress($c['from']);
-        notifySmtpCmd($fp, 'MAIL FROM:<' . $from . '>', [250]);
+        $fromP = notifyFromParse($c['from'], $c['user']);
+        if ($fromP === null) {
+            throw new Exception(__('notify_err_from'));
+        }
+        notifySmtpCmd($fp, 'MAIL FROM:<' . $fromP[1] . '>', [250]);
         $rcpt = array_filter(array_map('trim', explode(',', $c['to'])));
         foreach ($rcpt as $r) {
             notifySmtpCmd($fp, 'RCPT TO:<' . $r . '>', [250, 251]);
         }
         notifySmtpCmd($fp, 'DATA', [354]);
-        $fromHdr = notifyClean($c['from'], 200);
+        $fromHdr = notifyFromHeader($fromP);
         $msg = 'Date: ' . date('r') . "\r\n"
             . 'From: ' . $fromHdr . "\r\n"
             . 'To: ' . implode(', ', $rcpt) . "\r\n"

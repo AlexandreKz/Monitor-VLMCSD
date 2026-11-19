@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.4.1
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 3.4.2
+// ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
 
@@ -434,7 +434,9 @@ $ntfT['saveError'] = __('msg_save_error');
         const g1 = el('div', 'ntf-grid2'); g1.appendChild(field(T.f_host, host)); g1.appendChild(field(T.f_port, port)); g1.appendChild(field(T.f_secure, sec));
         const user = input('text', e.user), pass = input('password', ''); pass.placeholder = e.has_pass ? T.secret_set : '';
         const g2 = el('div', 'ntf-grid2'); g2.appendChild(field(T.f_user, user)); g2.appendChild(field(T.f_pass, pass));
-        const from = input('text', e.from); from.placeholder = 'KMS Monitor <monitor@example.com>';
+        const from = input('text', e.from);
+        const fromPh = () => { from.placeholder = user.value.trim() || 'monitor@example.com'; };
+        fromPh(); user.addEventListener('input', fromPh);
         const to = input('text', e.to); to.placeholder = 'name@example.com, other@example.com';
         em.appendChild(g1); em.appendChild(g2); em.appendChild(field(T.f_from, from)); em.appendChild(field(T.f_to, to)); em.appendChild(el('div', 'ntf-hint', T.f_to_hint));
 
