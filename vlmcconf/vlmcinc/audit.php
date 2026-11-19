@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/audit.php
-// ВЕРСИЯ: 2.5.4
+// ВЕРСИЯ: 2.6.0
 // ДАТА: 2026-11-19
 // @description: Журнал событий пользователей панели: запись (с изменениями «было → стало»), срок хранения, очистка, фильтры, поиск, сводка по пользователю, активность по часам и дням
 // ============================================
@@ -24,11 +24,12 @@ function auditAjaxActions() {
         'backup_log', 'clear_log', 'clear_geo_cache', 'refresh_geo_cache', 'clear_emoji_cache', 'refresh_emoji_cache',
         'export_project', 'perform_update', 'save_update_settings', 'save_github_token',
         'add_user', 'update_user', 'delete_user', 'change_user_password',
-        'rename_group', 'delete_group', 'save_group_changes', 'add_device', 'mass_move_devices',
+        'rename_group', 'delete_group', 'save_group_changes', 'add_device', 'mass_move_devices', 'mass_delete_devices', 'mass_comment_devices',
         'add_whitelist_ip', 'remove_whitelist_ip',
         'save_audit_settings', 'save_privacy_settings', 'save_session_settings', 'clear_audit',
         'panel_wl_save', 'fw_save_settings', 'fw_block', 'fw_unblock', 'fw_apply',
         'panel_wl_save', 'fw_save_settings', 'fw_block', 'fw_unblock', 'fw_apply',
+        'tfa_enable', 'tfa_disable', 'tfa_recovery', 'tfa_reset',
         'api_save_settings', 'api_key_create', 'api_key_toggle', 'api_key_delete',
         'ldap_save_settings', 'ldap_test', 'ldap_import', 'ldap_sync',
         'notify_channel_save', 'notify_channel_delete', 'notify_channel_test', 'notify_rule_save', 'notify_rule_delete', 'notify_rule_toggle'
@@ -266,9 +267,12 @@ function auditDiff(array $before, array $after) {
     }
     foreach ($ub as $name => $rec) {
         if (!isset($ua[$name])) { continue; }
+        if (!empty($ua[$name]['totp']) !== !empty($rec['totp'])) {
+            $lines[] = 'users.' . $name . ': 2FA ' . (!empty($rec['totp']) ? 'включена' : 'отключена');
+        }
         foreach ($rec as $field => $val) {
             $old = $ua[$name][$field] ?? null;
-            if ($old === $val) { continue; }
+            if ($old === $val || $field === 'totp') { continue; }
             if ($field === 'password_hash') {
                 $lines[] = 'users.' . $name . ': пароль изменён';
             } else {

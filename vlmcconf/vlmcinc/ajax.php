@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/ajax.php
-// ВЕРСИЯ: 3.19.0
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 3.20.0
+// ДАТА: 2026-11-19
 // @description: Все AJAX обработчики с проверкой прав
 // ============================================
 
@@ -45,6 +45,7 @@ function ajaxActionPermissions() {
         'get_activity'          => 0,
         'get_device_activity'   => 0,
         'get_report'            => 0,
+        'get_analytics'         => 0,
         'export_report'         => 0,
         'preview_theme'         => 0,
         'geo_resolve_portion'   => 0,
@@ -142,6 +143,11 @@ function ajaxActionPermissions() {
         'update_user'           => PERM_USERS_EDIT,
         'delete_user'           => PERM_USERS_EDIT,
         'change_user_password'  => PERM_USERS_EDIT,
+        'tfa_begin'             => 0,   // двухфакторная проверка своей учётной записи (пункт 34)
+        'tfa_enable'            => 0,
+        'tfa_disable'           => 0,
+        'tfa_recovery'          => 0,
+        'tfa_reset'             => PERM_USERS_EDIT,   // сброс чужой двухфакторной проверки (пользователь потерял телефон)
 
         // Группы и устройства
         'rename_group'          => PERM_GROUPS_EDIT,
@@ -149,6 +155,8 @@ function ajaxActionPermissions() {
         'save_group_changes'    => PERM_GROUPS_EDIT,
         'add_device'            => PERM_DEVICES_EDIT,
         'mass_move_devices'     => PERM_DEVICES_EDIT,
+        'mass_delete_devices'   => PERM_DEVICES_EDIT,
+        'mass_comment_devices'  => PERM_DEVICES_EDIT,
 
         // Белый список IP
         'get_whitelist_ips'     => PERM_IP_WHITELIST,
@@ -336,7 +344,7 @@ if (isset($_POST['ajax'])) {
     
     // Действия, меняющие конфиг: блокировка и свежее чтение (параллельные запросы не должны терять изменения друг друга)
     if (isset($configFile)
-        && in_array($_POST['ajax'], ['add_device', 'add_whitelist_ip', 'remove_whitelist_ip', 'mass_move_devices', 'rename_group', 'delete_group', 'save_group_changes'], true)) {
+        && in_array($_POST['ajax'], ['add_device', 'add_whitelist_ip', 'remove_whitelist_ip', 'mass_move_devices', 'mass_delete_devices', 'mass_comment_devices', 'rename_group', 'delete_group', 'save_group_changes'], true)) {
         if (!config_refresh($config, $configFile)) {
             echo json_encode(['success' => false, 'message' => __('msg_save_error')], JSON_UNESCAPED_UNICODE);
             exit;
@@ -414,10 +422,19 @@ if (isset($_POST['ajax'])) {
         exit;
     }
 
+    // Расширенная аналитика (вкладка «Аналитика»): запросы по часам, дням и месяцам, топ устройств, страны
+    if ($_POST['ajax'] === 'get_analytics') {
+        require_once __DIR__ . '/analytics_adv.php';
+        $period = (int)($_POST['period'] ?? 30);
+        echo json_encode(['success' => true] + analyticsBuild($GLOBALS['fullLogPath'], $period), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit;
+    }
+
     // Экспорт таблицы отчёта в XLSX / PDF (данные приходят с клиента: выгружается ровно то, что на экране)
     if ($_POST['ajax'] === 'export_report') {
         require_once __DIR__ . '/export.php';
-        $fmt = (($_POST['format'] ?? '') === 'pdf') ? 'pdf' : 'xlsx';
+        $fmt = (string)($_POST['format'] ?? '');
+        $fmt = in_array($fmt, ['pdf', 'csv'], true) ? $fmt : 'xlsx';
         $payload = json_decode((string)($_POST['data'] ?? ''), true);
         $d = is_array($payload)
             ? exportNormalize($payload['title'] ?? '', $payload['headers'] ?? null, $payload['types'] ?? null, $payload['rows'] ?? null)
@@ -427,7 +444,7 @@ if (isset($_POST['ajax'])) {
             exit;
         }
         try {
-            $bin = ($fmt === 'pdf') ? exportPdf($d) : exportXlsx($d);
+            $bin = ($fmt === 'pdf') ? exportPdf($d) : (($fmt === 'csv') ? exportCsv($d) : exportXlsx($d));
         } catch (Throwable $e) {
             echo json_encode(['success' => false, 'error' => 'export_failed']);
             exit;
@@ -435,7 +452,7 @@ if (isset($_POST['ajax'])) {
         echo json_encode([
             'success'  => true,
             'filename' => 'report-' . exportSafeName($payload['name'] ?? 'report') . '-' . date('Y-m-d') . '.' . $fmt,
-            'mime'     => $fmt === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'mime'     => $fmt === 'pdf' ? 'application/pdf' : ($fmt === 'csv' ? 'text/csv;charset=utf-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
             'data'     => base64_encode($bin)
         ]);
         exit;
@@ -570,8 +587,11 @@ if (isset($_POST['ajax'])) {
         require_once __DIR__ . '/users.php';
         try {
             $users = getAllUsers();
+            require_once __DIR__ . '/totp.php';
             foreach ($users as &$user) {
                 unset($user['password_hash']);
+                $user['tfa'] = totpIsEnabled($user);   // секрет и коды восстановления наружу не отдаются
+                unset($user['totp']);
             }
             echo json_encode(['success' => true, 'users' => $users]);
         } catch (Exception $e) {
@@ -637,6 +657,113 @@ if (isset($_POST['ajax'])) {
         exit;
     }
     
+    // ============================================
+    // Двухфакторная проверка (пункт 34): включение, отключение, коды восстановления, сброс администратором
+    // ============================================
+    if (in_array($_POST['ajax'], ['tfa_begin', 'tfa_enable', 'tfa_disable', 'tfa_recovery', 'tfa_reset'], true)) {
+        require_once __DIR__ . '/users.php';
+        require_once __DIR__ . '/totp.php';
+        require_once __DIR__ . '/login_limiter.php';
+        $tfaAct = $_POST['ajax'];
+        $tfaOut = function ($ok, $msgKey, array $extra = []) {
+            echo json_encode(['success' => $ok, 'message' => $msgKey === '' ? '' : __($msgKey)] + $extra, JSON_UNESCAPED_UNICODE);
+            exit;
+        };
+
+        if ($tfaAct === 'tfa_reset') {
+            $targetId = (int)($_POST['user_id'] ?? 0);
+            $target = $targetId > 0 ? getUserById($targetId) : null;
+            if (!$target) {
+                $tfaOut(false, 'msg_invalid_data');
+            }
+            if ((int)$target['id'] === (int)($_SESSION['vlmc_user_id'] ?? 0)) {
+                $tfaOut(false, 'tfa_err_reset_self');
+            }
+            if (!totpIsEnabled($target)) {
+                $tfaOut(false, 'tfa_err_not_enabled');
+            }
+            $tfaOut(totpDisable($targetId), 'tfa_reset_done');
+        }
+
+        $meId = (int)($_SESSION['vlmc_user_id'] ?? 0);
+        $me = $meId > 0 ? getUserById($meId) : null;
+        if (!$me || ($me['source'] ?? 'local') !== 'local') {
+            $tfaOut(false, 'tfa_err_local_only');   // доменные пользователи входят через AD, там своя защита
+        }
+        $meName = (string)$me['username'];
+
+        // Пароль нужен для отключения и для новых кодов восстановления: чужая открытая сессия их не получит
+        $tfaCheckPassword = function () use ($me, $meName, $tfaOut) {
+            $lock = loginLimiterCheck($meName);
+            if ($lock > 0) {
+                $tfaOut(false, 'login_too_many_attempts_short');
+            }
+            if (!password_verify((string)($_POST['tfa_pass'] ?? ''), (string)$me['password_hash'])) {
+                loginLimiterFail($meName);
+                $tfaOut(false, 'tfa_err_password');
+            }
+        };
+
+        // Сессия к этому месту уже закрыта на запись: открываем её на миг, чтобы сохранить/убрать данные настройки
+        $tfaSetup = function ($key, $val) {
+            if (session_status() === PHP_SESSION_NONE) {
+                vlmcSessionStart();
+            }
+            if ($val === null) {
+                unset($_SESSION[$key]);
+            } else {
+                $_SESSION[$key] = $val;
+            }
+            session_write_close();
+        };
+
+        if ($tfaAct === 'tfa_begin') {
+            if (totpIsEnabled($me)) {
+                $tfaOut(false, 'tfa_err_already');
+            }
+            $secret = totpNewSecret();
+            $tfaSetup('tfa_setup', ['secret' => $secret, 'time' => time(), 'tries' => 0, 'user' => $meId]);
+            $tfaOut(true, '', ['secret' => $secret, 'uri' => totpUri($secret, $meName)]);
+        }
+
+        if ($tfaAct === 'tfa_enable') {
+            $setup = $_SESSION['tfa_setup'] ?? null;
+            if (!is_array($setup) || (int)($setup['user'] ?? 0) !== $meId || time() - (int)($setup['time'] ?? 0) > 900) {
+                $tfaSetup('tfa_setup', null);
+                $tfaOut(false, 'tfa_err_setup_expired');
+            }
+            if ((int)$setup['tries'] >= 5) {
+                $tfaSetup('tfa_setup', null);
+                $tfaOut(false, 'tfa_err_too_many');
+            }
+            $setup['tries'] = (int)$setup['tries'] + 1;
+            $tfaSetup('tfa_setup', $setup);
+            $codes = totpEnable($meId, $setup['secret'], (string)($_POST['tfa_token'] ?? ''));
+            if ($codes === null) {
+                $tfaOut(false, 'tfa_err_code');
+            }
+            $tfaSetup('tfa_setup', null);
+            $tfaOut(true, 'tfa_enabled_done', ['recovery' => $codes]);
+        }
+
+        if ($tfaAct === 'tfa_disable') {
+            if (!totpIsEnabled($me)) {
+                $tfaOut(false, 'tfa_err_not_enabled');
+            }
+            $tfaCheckPassword();
+            $tfaOut(totpDisable($meId), 'tfa_disabled_done');
+        }
+
+        if ($tfaAct === 'tfa_recovery') {
+            if (!totpIsEnabled($me)) {
+                $tfaOut(false, 'tfa_err_not_enabled');
+            }
+            $tfaCheckPassword();
+            $codes = totpRegenerateRecovery($meId);
+            $tfaOut($codes !== null, $codes !== null ? 'tfa_recovery_done' : 'msg_save_error', $codes !== null ? ['recovery' => $codes] : []);
+        }
+    }
+
     // ============================================
     // AJAX: Добавление устройства (с проверкой прав)
     // ============================================
@@ -1359,6 +1486,101 @@ if (isset($_POST['ajax'])) {
 		exit;
 	}
 	
+	// Массовое удаление устройств (пункт 36)
+	if ($_POST['ajax'] === 'mass_delete_devices') {
+		if (!check_permission(PERM_DEVICES_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		$deviceNames = json_decode($_POST['device_names'] ?? '[]', true);
+		if (!is_array($deviceNames) || !$deviceNames) {
+			echo json_encode(['success' => false, 'message' => __('devices_no_selected')]);
+			exit;
+		}
+		$deviceNames = array_map('strval', $deviceNames);
+		$configFile = vlmcConfigFile();
+		$config = config_read($configFile)['config'];
+		$removed = 0;
+		foreach ($config['devices'] as $group => $devices) {
+			$keep = [];
+			foreach ($devices as $device) {
+				if (in_array($device['name'], $deviceNames, true)) {
+					$removed++;
+				} else {
+					$keep[] = $device;
+				}
+			}
+			$config['devices'][$group] = $keep;
+		}
+		if ($removed === 0) {
+			echo json_encode(['success' => false, 'message' => __('devices_no_selected')]);
+			exit;
+		}
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		save_config($configFile, $config);
+		echo json_encode(['success' => true, 'message' => sprintf(__('devices_mass_deleted'), $removed)]);
+		exit;
+	}
+
+	// Массовая смена комментария (пункт 36): mode = set | append | clear
+	if ($_POST['ajax'] === 'mass_comment_devices') {
+		if (!check_permission(PERM_DEVICES_EDIT)) {
+			echo json_encode(['success' => false, 'message' => __('access_denied')]);
+			exit;
+		}
+		$deviceNames = json_decode($_POST['device_names'] ?? '[]', true);
+		$mode = (string)($_POST['mode'] ?? 'set');
+		$text = trim((string)($_POST['comment'] ?? ''));
+		if (function_exists('mb_substr')) {
+			$text = mb_substr($text, 0, 200, 'UTF-8');
+		} else {
+			$text = substr($text, 0, 200);
+		}
+		if (!is_array($deviceNames) || !$deviceNames) {
+			echo json_encode(['success' => false, 'message' => __('devices_no_selected')]);
+			exit;
+		}
+		if (!in_array($mode, ['set', 'append', 'clear'], true) || ($mode !== 'clear' && $text === '')) {
+			echo json_encode(['success' => false, 'message' => __('devices_comment_empty')]);
+			exit;
+		}
+		$deviceNames = array_map('strval', $deviceNames);
+		$configFile = vlmcConfigFile();
+		$config = config_read($configFile)['config'];
+		$changed = 0;
+		foreach ($config['devices'] as $group => $devices) {
+			foreach ($devices as $key => $device) {
+				if (!in_array($device['name'], $deviceNames, true)) {
+					continue;
+				}
+				$old = (string)($device['comment'] ?? '');
+				if ($mode === 'clear') {
+					$new = '';
+				} elseif ($mode === 'append') {
+					$new = $old === '' ? $text : $old . '; ' . $text;
+				} else {
+					$new = $text;
+				}
+				if (function_exists('mb_substr')) {
+					$new = mb_substr($new, 0, 200, 'UTF-8');
+				}
+				if ($new !== $old) {
+					$config['devices'][$group][$key]['comment'] = $new;
+					$config['devices'][$group][$key]['edited'] = date('Y-m-d H:i:s');
+				}
+				$changed++;
+			}
+		}
+		if ($changed === 0) {
+			echo json_encode(['success' => false, 'message' => __('devices_no_selected')]);
+			exit;
+		}
+		$config['last_modified'] = date('Y-m-d H:i:s');
+		save_config($configFile, $config);
+		echo json_encode(['success' => true, 'message' => sprintf(__('devices_mass_commented'), $changed)]);
+		exit;
+	}
+
 // ============================================
 // AJAX: Уведомления (пункт 27): каналы, правила, тест канала, история (право PERM_NOTIFY_EDIT проверяет таблица прав)
 // ============================================

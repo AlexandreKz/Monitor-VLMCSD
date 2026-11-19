@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/login.php
-// ВЕРСИЯ: 4.3.0
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 4.4.0
+// ДАТА: 2026-11-19
 // @description: Страница авторизации с поддержкой AD (локальная + доменная)
 // ============================================
 require_once __DIR__ . '/vlmcinc/csrf.php';
@@ -14,6 +14,7 @@ require_once __DIR__ . '/vlmcinc/users.php';
 require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/login_limiter.php';
 require_once __DIR__ . '/vlmcinc/audit.php';
+require_once __DIR__ . '/vlmcinc/totp.php';
 
 // ============================================
 // ЗАЩИТА ОТ ПРЯМОГО ДОСТУПА К КОНФИГУРАЦИОННЫМ ФАЙЛАМ
@@ -78,6 +79,7 @@ if (vlmcIsLoggedIn()) {
 
 $error = '';
 $changePasswordMode = false;
+$tfaMode = false;   // второй шаг входа: код из приложения (пункт 34)
 $username = '';
 
 // Обработка смены пароля
@@ -130,6 +132,66 @@ if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
 }
 
 // ============================================
+// ВТОРОЙ ШАГ ВХОДА: код двухфакторной проверки (пункт 34)
+// Допустим ТОЛЬКО сразу после верного пароля (в сессии лежит pending_2fa, не старше 5 минут).
+// Неверные коды считаются в том же лимите, что и неверные пароли (5 за 15 минут).
+// ============================================
+if (isset($_POST['action']) && $_POST['action'] === 'cancel_2fa') {
+    unset($_SESSION['pending_2fa'], $_SESSION['pending_2fa_time']);
+}
+if (isset($_POST['action']) && $_POST['action'] === 'verify_2fa') {
+    $pendingId = $_SESSION['pending_2fa'] ?? null;
+    $pendingAge = time() - (int)($_SESSION['pending_2fa_time'] ?? 0);
+    $tfaUser = ($pendingId !== null && $pendingAge <= 300) ? getUserById($pendingId) : null;
+
+    if (!$tfaUser || !totpIsEnabled($tfaUser)) {
+        unset($_SESSION['pending_2fa'], $_SESSION['pending_2fa_time']);
+        $error = __('tfa_login_expired');
+    } else {
+        $username = $tfaUser['username'];
+        $lockedFor = loginLimiterCheck($username);
+        if ($lockedFor > 0) {
+            http_response_code(429);
+            header('Retry-After: ' . $lockedFor);
+            $error = sprintf(__('login_too_many_attempts'), (int)ceil($lockedFor / 60));
+            auditLog('login_locked', '2FA', 'denied', $username);
+            $tfaMode = true;
+        } else {
+            $how = totpCheckLogin($tfaUser['id'], $_POST['tfa_code'] ?? '');
+            if ($how === false) {
+                loginLimiterFail($username);
+                $error = __('tfa_login_bad_code');
+                auditLog('login_failed', '2FA', 'error', $username);
+                $tfaMode = true;
+            } else {
+                loginLimiterSuccess($username);
+                unset($_SESSION['pending_2fa'], $_SESSION['pending_2fa_time']);
+                $user = getUserById($tfaUser['id']);
+                $detail = '2FA' . ($how === 'recovery' ? ' (код восстановления, осталось ' . totpRecoveryLeft($user) . ')' : '');
+                if (!empty($user['must_change_password'])) {
+                    session_regenerate_id(true);
+                    $_SESSION['pending_user'] = $user['id'];
+                    $_SESSION['pending_time'] = time();
+                    $changePasswordMode = true;
+                    $error = '';
+                } else {
+                    vlmcLoginSessionRefresh();
+                    $_SESSION['vlmc_admin'] = true;
+                    $_SESSION['vlmc_user_id'] = $user['id'];
+                    $_SESSION['vlmc_username'] = $user['username'];
+                    $_SESSION['vlmc_permissions'] = $user['permissions'];
+                    $_SESSION['vlmc_login_time'] = time();
+                    updateLastLogin($user['username']);
+                    auditLog('login', $detail, 'ok', $user['username']);
+                    header('Location: vlmcconf.php');
+                    exit;
+                }
+            }
+        }
+    }
+}
+
+// ============================================
 // ОБЫЧНАЯ АВТОРИЗАЦИЯ (локальная + AD)
 // ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
@@ -145,7 +207,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
         header('Retry-After: ' . $lockedFor);
         $error = sprintf(__('login_too_many_attempts'), (int)ceil($lockedFor / 60));
         auditLog('login_locked', '', 'denied', $username);
-    } elseif (authenticate_user($username, $password)) {
+    } elseif (($passOk = authenticate_user($username, $password)) && totpIsEnabled($tfaPre = getUserByUsername($username))) {
+        // Пароль верный, но у пользователя включена двухфакторная проверка: вход ещё не выполнен, нужен код.
+        // Счётчик неудач не сбрасываем: подбор кодов ограничивается так же, как подбор паролей.
+        session_regenerate_id(true);
+        $_SESSION['pending_2fa'] = $tfaPre['id'];
+        $_SESSION['pending_2fa_time'] = time();
+        $username = $tfaPre['username'];
+        $tfaMode = true;
+    } elseif ($passOk) {
         $user = getUserByUsername($username);
         loginLimiterSuccess($username);
         
@@ -410,7 +480,7 @@ if (empty($error)) {
     <div class="login-container">
         <div class="logo">
             <h1>⚙️ KMS MONITOR</h1>
-            <span><?= $changePasswordMode ? __('change_password_title') : __('control_panel') ?></span>
+            <span><?= $changePasswordMode ? __('change_password_title') : ($tfaMode ? __('tfa_login_title') : __('control_panel')) ?></span>
             <?php if (!$changePasswordMode && ($config['integrations']['ad']['enabled'] ?? false) && ($config['integrations']['ad']['auth_enabled'] ?? false)): ?>
             <div class="ad-badge">🔐 AD authentication enabled</div>
             <?php endif; ?>
@@ -450,6 +520,24 @@ if (empty($error)) {
                 </div>
                 
                 <button type="submit">🔓 <?= __('set_password_and_login') ?></button>
+            </form>
+        <?php elseif ($tfaMode): ?>
+            <form method="POST" action="">
+                <input type="hidden" name="action" value="verify_2fa">
+                <div class="form-group">
+                    <label><?= __('user_label') ?></label>
+                    <input type="text" value="<?= htmlspecialchars($username) ?>" disabled class="disabled-input">
+                </div>
+                <div class="form-group">
+                    <label><?= __('tfa_login_label') ?></label>
+                    <input type="text" name="tfa_code" id="tfaCode" placeholder="<?= htmlspecialchars(__('tfa_login_placeholder')) ?>" required autofocus autocomplete="one-time-code" inputmode="text" spellcheck="false" style="text-align:center; letter-spacing:3px; font-size:18px;">
+                    <div class="password-hint">🔐 <?= __('tfa_login_hint') ?></div>
+                </div>
+                <button type="submit">🔓 <?= __('tfa_login_button') ?></button>
+            </form>
+            <form method="POST" action="" style="margin-top:10px;">
+                <input type="hidden" name="action" value="cancel_2fa">
+                <button type="submit" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:#9fb3c8;">← <?= __('tfa_login_cancel') ?></button>
             </form>
         <?php else: ?>
             <form method="POST" action="">

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/export.php
-// ВЕРСИЯ: 1.0.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 1.1.0
+// ДАТА: 2026-11-19
 // @description: Экспорт таблицы отчёта в XLSX и PDF без внешних библиотек.
 //               XLSX: ZIP пишется вручную (без расширения zip). PDF: вручную, со встроенным шрифтом
 //               DejaVu Sans (vlmcinc/fonts, поддерживает кириллицу), заголовок отчёта + таблица.
@@ -70,6 +70,26 @@ function exportZipStore(array $files) {
         $count++;
     }
     return $out . $central . pack('VvvvvVVv', 0x06054b50, 0, 0, $count, $count, strlen($central), strlen($out), 0);
+}
+
+/** CSV: UTF-8 с BOM (Excel открывает кириллицу), разделитель «;», защита от формул (=, +, -, @ в начале ячейки). */
+function exportCsv(array $d) {
+    $cell = function ($v, $isNum) {
+        $v = (string)$v;
+        if (!$isNum && $v !== '' && strpos("=+-@\t\r", $v[0]) !== false) {
+            $v = "'" . $v;
+        }
+        return '"' . str_replace('"', '""', $v) . '"';
+    };
+    $out = "\xEF\xBB\xBF" . implode(';', array_map(function ($h) use ($cell) { return $cell($h, false); }, $d['headers'])) . "\r\n";
+    foreach ($d['rows'] as $row) {
+        $line = [];
+        foreach ($row as $i => $v) {
+            $line[] = $cell($v, ($d['types'][$i] ?? '') === 'num');
+        }
+        $out .= implode(';', $line) . "\r\n";
+    }
+    return $out;
 }
 
 function exportXmlEscape($s) {

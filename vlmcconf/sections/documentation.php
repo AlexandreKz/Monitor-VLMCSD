@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.7
+// ВЕРСИЯ: 6.1.0
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -784,6 +784,8 @@ $docDesc = [
 <li><strong>Неизвестные устройства.</strong> Устройства, которые обращаются к серверу, но не добавлены в панель: имя, число запросов, последний IP, первый и последний запрос. Кнопка ➕ («Добавить в известные») открывает окно «Добавить устройство»: имя, группа и комментарий. Без входа в панель вместо кнопки стоит замок 🔒.</li>
 <li><strong>Переключатель языка</strong> (русский и английский) и значок «Настройки», который ведёт в панель управления.</li>
 </ul>
+<h2>Подсказки</h2>
+<p>У кнопок, вкладок, полей и пунктов меню в панели и на главной странице есть всплывающие подсказки: наведите курсор (или перейдите на элемент клавишей Tab), и через долю секунды появится короткое пояснение. Подсказка скрывается при клике, прокрутке или нажатии клавиши.</p>
 <h2>Скрытие IP-адресов</h2>
 <p>Если в «Безопасность → Пользователи → Скрытие IP-адресов» включена настройка «Скрывать IP-адреса от неавторизованных», то без входа в панель адреса в логе и в списке неизвестных устройств заменяются размытой заглушкой. Настоящие адреса при этом в страницу не попадают. Блок «Подозрительные IP» остаётся открытым.</p>
 <h2>Геолокация</h2>
@@ -862,18 +864,24 @@ HTML
 <p>Добавить устройство можно и с главной страницы кнопкой ➕ в списке неизвестных устройств.</p>
 <h2>Список всех устройств</h2>
 <ul>
-<li><strong>Фильтр</strong> по группе («Все группы» или конкретная).</li>
-<li><strong>Сортировка:</strong> по имени, по группе, по дате добавления (старые сначала или новые сначала).</li>
-<li>Счётчик «Показано N из M».</li>
+<li><strong>Поиск</strong> — строка над списком ищет по имени и по комментарию. Крестик в строке очищает поиск.</li>
+<li><strong>Группа</strong> («Все группы» или конкретная).</li>
+<li><strong>Добавлено:</strong> за всё время, сегодня, за 7, 30, 90 дней, давно (старше 90 дней, старше года).</li>
+<li><strong>Активность</strong> (по последнему обращению в логе): за всё время, активные за 7 или 30 дней, неактивные 30 или 90 дней, не обращались никогда.</li>
+<li><strong>Сортировка:</strong> по имени, по группе, по дате добавления, по последней активности, по числу запросов.</li>
+<li>Кнопка «Сбросить» возвращает все фильтры в исходное положение.</li>
+<li>Счётчик «Показано N из M». В каждой строке видны группа, дата добавления, последняя активность и число запросов.</li>
 <li>У каждого устройства кнопки редактирования (имя, группа, комментарий) и удаления.</li>
 </ul>
-<h2>Массовое перемещение</h2>
+<h2>Массовые действия</h2>
 <ol>
-<li>Отметьте устройства флажками или нажмите «Выделить всё» («Снять всё»).</li>
-<li>Выберите целевую группу в списке «Переместить в…».</li>
-<li>Нажмите «Переместить» и подтвердите. Счётчик «Выбрано: N» показывает число отмеченных устройств.</li>
+<li>Отметьте устройства флажками или нажмите «Выделить всё»: выделятся только устройства, видимые при текущем поиске и фильтрах.</li>
+<li>Выберите действие: «Переместить», «Комментарий» или «Удалить». Кнопки доступны, когда что-то выбрано. Счётчик «Выбрано: N» показывает число отмеченных устройств.</li>
+<li><strong>Переместить</strong> — выбрать целевую группу. Комментарии и дата добавления сохраняются.</li>
+<li><strong>Комментарий</strong> — «Заменить», «Дописать» в конец или «Очистить» (до 200 символов).</li>
+<li><strong>Удалить</strong> — подтверждение в отдельном окне, действие необратимо.</li>
 </ol>
-<p>Перемещение сохраняет комментарии и дату добавления устройств.</p>
+<p>Список обновляется на месте, без перезагрузки страницы.</p>
 <h2>Журнал и уведомления</h2>
 <p>Добавление, изменение, перемещение и удаление пишутся в «Журнал событий». Для них есть события уведомлений: «Добавлено устройство», «Изменено устройство», «Устройства перемещены в группу», «Удалено устройство». Устройства, которые появились в логе, но не добавлены в панель, отслеживает отдельное событие «Новое устройство в логе» (фоновая проверка).</p>
 HTML
@@ -902,6 +910,19 @@ HTML
 </ul>
 <h3>Требования к паролю</h3>
 <p>Минимум 8 символов, заглавные и строчные буквы, цифры и спецсимволы. При первом входе под <code>root</code>/<code>root</code> панель требует сменить пароль.</p>
+<h3>Двухфакторная аутентификация</h3>
+<p>Карточка «Двухфакторная аутентификация» справа есть у каждого локального пользователя (доменные входят через AD и её не используют). При входе, кроме пароля, нужен 6-значный код из приложения-аутентификатора (Google Authenticator, Microsoft Authenticator, Aegis и другие).</p>
+<ol>
+<li>Нажмите «Включить»: откроется окно с QR-кодом и ключом для ручного ввода.</li>
+<li>Отсканируйте QR-код в приложении (или введите ключ) и впишите 6-значный код, нажмите «Подтвердить и включить».</li>
+<li>Панель покажет 8 кодов восстановления один раз. Сохраните их (копировать или скачать .txt). Каждый код подходит для одного входа, если телефона нет под рукой.</li>
+</ol>
+<ul>
+<li>«Новые коды восстановления» и «Отключить» требуют текущий пароль. Старые коды после выпуска новых перестают действовать.</li>
+<li>На экране входа после пароля появляется поле «Код из приложения»; код действует один раз. После нескольких неверных кодов вход временно закрывается.</li>
+<li>Администратор с правом редактирования пользователей видит значок «2FA» у пользователей и может сбросить 2FA кнопкой ♻️, если у человека пропал телефон. Свою 2FA сбросить так нельзя.</li>
+<li>Включение, отключение, новые коды и сброс пишутся в «Журнал событий»; секреты и коды туда не попадают.</li>
+</ul>
 <h3>Таймаут входа</h3>
 <p>Через сколько минут без действий вход завершается: от 5 до 1440 (24 часа), по умолчанию 30. Применяется сразу, уже вошедшие пользователи продолжают работу с новым значением.</p>
 <h3>Скрытие IP-адресов</h3>
@@ -1466,6 +1487,16 @@ HTML
 <li><strong>Общая активность</strong> — график запросов по периодам. Переключатель «Дни», «Недели», «Месяцы».</li>
 <li><strong>По устройству</strong> — тот же график для выбранного устройства.</li>
 </ul>
+<h2>Вкладка «Аналитика»</h2>
+<p>Графики и карта по логу за выбранный период: «7 дней», «30 дней», «90 дней», «Год», «Всё время».</p>
+<ul>
+<li><strong>Карточки:</strong> запросов, устройств, IP-адресов, в среднем в день, пик активности (час и самый загруженный день).</li>
+<li><strong>Запросы по дням</strong> — график динамики. <strong>По часам суток</strong> и <strong>по дням недели</strong> — когда активность выше всего. <strong>По месяцам</strong> — столбцы за каждый месяц.</li>
+<li><strong>Топ-10 устройств</strong> по числу запросов.</li>
+<li><strong>География обращений</strong> — карта мира: чем больше пузырь, тем больше запросов из страны; рядом список стран. Страны берутся из кэша геолокации (его можно обновить в «Инструменты → Кэш»), адреса без страны на карту не попадают.</li>
+<li><strong>Экспорт</strong> текущего периода: «CSV», «XLSX» и «PDF».</li>
+<li>У столбцов, точек и пузырей есть подсказки: наведите курсор, чтобы увидеть точные значения.</li>
+</ul>
 <h2>Вкладка «Отчёты»</h2>
 <p>Выберите «Отчёт», при необходимости укажите параметр и нажмите «Показать». Под таблицей кнопки «XLSX» и «PDF» для выгрузки результата.</p>
 <table>
@@ -1754,6 +1785,8 @@ HTML
 <li><strong>Unknown devices.</strong> Devices that contact the server but are not added to the panel: name, number of requests, last IP, first and last request. The ➕ button opens the “Add device” window: name, group and comment. Without logging in, a 🔒 lock is shown instead of the button.</li>
 <li><strong>Language switch</strong> (Russian and English) and the “Settings” icon that leads to the control panel.</li>
 </ul>
+<h2>Tooltips</h2>
+<p>Buttons, tabs, fields and menu items in the panel and on the main page have tooltips: hover (or focus the element with Tab) and a short explanation appears after a moment. A tooltip hides on click, scroll or key press.</p>
 <h2>Hiding IP addresses</h2>
 <p>If “Hide IP addresses from unauthorized visitors” is enabled in “Security → Users”, addresses in the log and in the unknown devices list are replaced with a blurred placeholder for visitors who are not logged in. Real addresses are not sent to the page at all. The “Suspicious IPs” block stays open.</p>
 <h2>Geolocation</h2>
@@ -1832,18 +1865,24 @@ HTML
 <p>A device can also be added from the main page with the ➕ button in the unknown devices list.</p>
 <h2>All Devices</h2>
 <ul>
-<li><strong>Filter</strong> by group (all groups or a specific one).</li>
-<li><strong>Sort:</strong> by name, by group, by added date (oldest first or newest first).</li>
-<li>The “Showing N of M” counter.</li>
+<li><strong>Search</strong> — the field above the list searches by name and by comment. The cross clears it.</li>
+<li><strong>Group</strong> (all groups or a specific one).</li>
+<li><strong>Added:</strong> any time, today, last 7, 30, 90 days, older than 90 days, older than a year.</li>
+<li><strong>Activity</strong> (by the last request in the log): any, active in 7 or 30 days, inactive for 30 or 90 days, never seen.</li>
+<li><strong>Sort:</strong> by name, by group, by added date, by last activity, by number of requests.</li>
+<li>The “Reset” button returns all filters to their defaults.</li>
+<li>The “Showing N of M” counter. Each row shows the group, added date, last activity and number of requests.</li>
 <li>Each device has edit (name, group, comment) and delete buttons.</li>
 </ul>
-<h2>Bulk move</h2>
+<h2>Bulk actions</h2>
 <ol>
-<li>Tick devices or press “Select all”.</li>
-<li>Choose the target group in the move list.</li>
-<li>Press “Move” and confirm. The “Selected: N” counter shows how many devices are ticked.</li>
+<li>Tick devices or press “Select all”: only the devices visible under the current search and filters are selected.</li>
+<li>Choose an action: “Move”, “Comment” or “Delete”. The buttons are enabled when something is selected. The “Selected: N” counter shows how many devices are ticked.</li>
+<li><strong>Move</strong> — choose the target group. Comments and added dates are kept.</li>
+<li><strong>Comment</strong> — “Replace”, “Append” to the end or “Clear” (up to 200 characters).</li>
+<li><strong>Delete</strong> — confirmed in a separate window, cannot be undone.</li>
 </ol>
-<p>Moving keeps device comments and added dates.</p>
+<p>The list updates in place, without reloading the page.</p>
 <h2>Log and notifications</h2>
 <p>Adding, editing, moving and deleting are written to the “Event log”. Notification events exist for them: “Device added”, “Device edited”, “Devices moved to a group”, “Device deleted”. Devices that appear in the log but are not added to the panel are tracked by a separate event, “New device in the log” (background check).</p>
 HTML
@@ -1872,6 +1911,19 @@ HTML
 </ul>
 <h3>Password requirements</h3>
 <p>At least 8 characters, uppercase and lowercase letters, digits and special characters. On the first login as <code>root</code>/<code>root</code> the panel requires a password change.</p>
+<h3>Two-factor authentication</h3>
+<p>The “Two-factor authentication” card on the right is available to every local user (domain users sign in through AD and do not use it). Besides the password, sign-in needs a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, Aegis and others).</p>
+<ol>
+<li>Press “Enable”: a window with a QR code and a key for manual entry opens.</li>
+<li>Scan the QR code in the app (or type the key), enter the 6-digit code and press “Confirm and enable”.</li>
+<li>The panel shows 8 recovery codes once. Save them (copy or download .txt). Each code works for one sign-in if the phone is not at hand.</li>
+</ol>
+<ul>
+<li>“New recovery codes” and “Disable” require the current password. Old codes stop working once new ones are issued.</li>
+<li>After the password, the sign-in page asks for the “Code from the app”; a code works once. After several wrong codes sign-in is temporarily blocked.</li>
+<li>An administrator with the user-editing right sees a “2FA” badge next to users and can reset 2FA with the ♻️ button if someone loses the phone. You cannot reset your own 2FA this way.</li>
+<li>Enabling, disabling, new codes and resets are written to the “Event log”; secrets and codes are not.</li>
+</ul>
 <h3>Login timeout</h3>
 <p>How many minutes without activity before the session ends: from 5 to 1440 (24 hours), default 30. Applied immediately; users who are already logged in continue with the new value.</p>
 <h3>IP address privacy</h3>
@@ -2435,6 +2487,16 @@ HTML
 <li><strong>Top IP addresses</strong> and <strong>Top countries</strong> — the most frequent request sources. The country is determined by IP and taken from the geolocation cache (it can be cleared and refreshed in “Tools → Cache Management”). If there is no data, “No IP data available” or “No country data available” is shown.</li>
 <li><strong>Overall activity</strong> — a chart of requests by period. The switch is “Days”, “Weeks”, “Months”.</li>
 <li><strong>By device</strong> — the same chart for a selected device.</li>
+</ul>
+<h2>“Analytics” tab</h2>
+<p>Charts and a map built from the log for the chosen period: “7 days”, “30 days”, “90 days”, “Year”, “All time”.</p>
+<ul>
+<li><strong>Cards:</strong> requests, devices, IP addresses, daily average, peak activity (hour and busiest day).</li>
+<li><strong>Requests by day</strong> — the trend chart. <strong>By hour of day</strong> and <strong>by weekday</strong> — when activity is highest. <strong>By month</strong> — a bar for each month.</li>
+<li><strong>Top 10 devices</strong> by number of requests.</li>
+<li><strong>Request geography</strong> — a world map: the bigger the bubble, the more requests from the country; a country list sits beside it. Countries come from the geolocation cache (it can be refreshed in “Tools → Cache”); addresses without a country are not on the map.</li>
+<li><strong>Export</strong> of the current period: “CSV”, “XLSX” and “PDF”.</li>
+<li>Bars, points and bubbles have tooltips: hover to see exact values.</li>
 </ul>
 <h2>“Reports” tab</h2>
 <p>Choose a “Report”, enter a parameter if needed and press “Show”. Under the table are the “XLSX” and “PDF” buttons for exporting the result.</p>

@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/stats.php
-// ВЕРСИЯ: 3.4.3
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 3.5.0
+// ДАТА: 2026-11-19
 // @description: Секция "Статистика и отчёты": вкладки «Статистика» и «Отчёты»
 // ============================================
 
@@ -58,6 +58,7 @@ $totalGroups = count($groupStats);
         <div class="stats-pages">
             <button type="button" class="stats-page-btn active" data-page="overview" onclick="switchStatsPage('overview')">📊 <?= __('stats_tab_overview') ?></button>
             <button type="button" class="stats-page-btn" data-page="reports" onclick="switchStatsPage('reports')">📑 <?= __('stats_tab_reports') ?></button>
+            <button type="button" class="stats-page-btn" data-page="analytics" onclick="switchStatsPage('analytics')">📈 <?= __('stats_tab_analytics') ?></button>
         </div>
     </div>
 
@@ -245,6 +246,8 @@ $totalGroups = count($groupStats);
             <div id="reportResult" class="report-result"></div>
         </div>
     </div>
+
+    <?php require_once __DIR__ . '/../vlmcinc/analytics_adv.php'; require __DIR__ . '/stats_analytics.php'; ?>
 </div>
 
 <style>
@@ -1181,7 +1184,9 @@ function updateStatChart(data) {
         document.querySelectorAll('.stats-page-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.page === page); });
         $('statsPageOverview').classList.toggle('active', page === 'overview');
         $('statsPageReports').classList.toggle('active', page === 'reports');
+        $('statsPageAnalytics').classList.toggle('active', page === 'analytics');
         closeAll();
+        if (page === 'analytics' && window.statsAnalyticsOpen) { window.statsAnalyticsOpen(); }
         if (page === 'reports') { loadLists(); setTimeout(fitReports, 0); }
     };
 

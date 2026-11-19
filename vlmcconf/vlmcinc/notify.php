@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.6.0
+// ВЕРСИЯ: 3.6.1
 // ДАТА: 2026-11-19
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -689,6 +689,12 @@ function notifyOnAudit(array $e) {
             return;
         case 'mass_move_devices':
             if ($ok) { notifyEmit('devices_moved', 'Устройства перемещены в группу: ' . ($p['target_group'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['target_group'] ?? '']); }
+            return;
+        case 'mass_delete_devices':
+            if ($ok) {
+                $n = count((array)json_decode((string)($p['device_names'] ?? '[]'), true));
+                notifyEmit('device_deleted', 'Удалено устройств: ' . $n, 'Выполнил: ' . $who);
+            }
             return;
         case 'save_group_changes':
         case 'rename_group':

@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/security.php
-// ВЕРСИЯ: 6.0.7
+// ВЕРСИЯ: 6.1.0
 // ДАТА: 2026-11-19
 // @description: Секция "Безопасность" (вкладки «Пользователи», «Доступ и IP», Firewall) — управление пользователями, не подозрительные IP, ограничение доступа к панели, блокировка IP, скрытие IP от неавторизованных и таймаут входа (только администратор)
 // ============================================
@@ -103,6 +103,7 @@ const PERM_NOTIFY_EDIT = <?= PERM_NOTIFY_EDIT ?>;
         
         <!-- ПРАВАЯ КОЛОНКА: таймаут входа и скрытие IP (только администратор) -->
         <div class="security-side-column">
+			<?php require __DIR__ . '/security_2fa.php'; ?>
 			<?php if ($isFullAdmin): ?>
 			<!-- Таймаут входа (только администратор) -->
 			<div class="settings-card privacy-card">
@@ -1175,7 +1176,7 @@ function renderUsers(users) {
         
         html += `
             <div style="display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 0.8fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed <?= $themeCSS['border'] ?>; align-items: center; font-size: 12px;">
-                <span><strong>${escapeHtml(user.username)}</strong></span>
+                <span><strong>${escapeHtml(user.username)}</strong>${user.tfa ? ' <span class="sec-badge ok" data-tip="<?= htmlspecialchars(__('tip_tfa_user_badge'), ENT_QUOTES) ?>">🔐 2FA</span>' : ''}</span>
                 <span style="font-size: 10px;">${escapeHtml(roleDisplay)}</span>
                 <span style="font-size: 10px;">${user.created || '—'}</span>
                 <span>
@@ -1183,6 +1184,7 @@ function renderUsers(users) {
                         <?php if ($canEditUsers): ?>
                         <button class="sec-ico blue" onclick="editUser(${user.id}, '${escapeHtml(user.username)}', ${user.permissions})" title="<?= __('edit') ?>">✎</button>
                         <button class="sec-ico warn" onclick="showChangePasswordModal(${user.id}, '${escapeHtml(user.username)}')" title="<?= __('change_password') ?>">🔑</button>
+                        ${user.tfa ? `<button class="sec-ico warn" onclick="tfaAskReset(${user.id}, '${escapeHtml(user.username)}')" data-tip="<?= htmlspecialchars(__('tip_tfa_reset'), ENT_QUOTES) ?>">♻️</button>` : ''}
                         <button class="sec-ico danger" onclick="deleteUser(${user.id})" title="<?= __('delete') ?>">✕</button>
                         <?php endif; ?>
                     `}

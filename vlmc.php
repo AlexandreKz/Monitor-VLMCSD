@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmc.php
-// ВЕРСИЯ: 5.7.0
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 5.8.0
+// ДАТА: 2026-11-19
 // @description: Главный файл мониторинга KMS сервера (убраны CIDR, добавлено копирование IP)
 // @description: Main KMS server monitoring file (removed CIDR, added IP copy)
 // ============================================
@@ -40,6 +40,7 @@ require_once __DIR__ . '/vlmcconf/vlmcloghandler.php';
 require_once __DIR__ . '/vlmcconf/vlmcinc/config.php';
 require_once __DIR__ . '/vlmcconf/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcconf/flags.php';
+require_once __DIR__ . '/vlmcconf/vlmcinc/tooltips.php';
 
 // ============================================
 // ЗАГРУЗКА КОНФИГУРАЦИИ
@@ -818,6 +819,7 @@ $initialLog = processLog($logFile, $devices, $deviceComments, $groups, $groupCol
         ::-webkit-scrollbar-thumb:hover { background: <?= $themeCSS['primary'] ?>; }
         @media (max-width: 768px) { .version-badge .tooltip-text { width: 180px; font-size: 10px; padding: 8px 10px; } }
     </style>
+    <?php vlmcTipsAssets($themeCSS); ?>
 </head>
 <body>
     <div class="top-panel">

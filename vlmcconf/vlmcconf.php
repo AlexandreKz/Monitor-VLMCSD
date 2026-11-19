@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcconf/vlmcconf.php
-// ВЕРСИЯ: 5.20.0
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 5.21.0
+// ДАТА: 2026-11-19
 // @description: Панель управления настройками монитора
 // ============================================
 
@@ -60,6 +60,7 @@ require_once __DIR__ . '/vlmcinc/structure.php';
 require_once __DIR__ . '/vlmcinc/auth.php';
 require_once __DIR__ . '/vlmcinc/analytics.php';
 require_once __DIR__ . '/vlmcinc/users.php';
+require_once __DIR__ . '/vlmcinc/tooltips.php';
 require_once __DIR__ . '/vlmcinc/geo_cache.php';
 require_once __DIR__ . '/vlmcinc/log_cache.php';
 require_once __DIR__ . '/vlmcinc/emoji_manager.php';
@@ -670,6 +671,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     <meta charset="UTF-8">
     <title>KMS Monitor • <?= __('menu_settings') ?></title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <?php vlmcTipsAssets($themeCSS); ?>
     <style>
         /* ============================================ */
         /* ВЕСЬ CSS ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ */
