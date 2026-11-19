@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.7.3
+// ВЕРСИЯ: 3.8.0
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -167,6 +167,9 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin: 0; }
 .ntf-chk.dis { opacity: .5; cursor: default; }
 .ntf-box { border: 1px solid <?= $themeCSS['border'] ?>; background: <?= $themeCSS['bg'] ?>; border-radius: 6px; padding: 8px 10px; max-height: 150px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 12px; }
+.ntf-mod.ntf-nar { width: 560px; }
+.ntf-row3 { display: grid; grid-template-columns: minmax(0, 1fr) 90px 150px; gap: 12px; }
+.ntf-row-nt { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 12px; }
 .ntf-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .ntf-inl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ntf-time { width: 96px; cursor: pointer; }
@@ -282,6 +285,7 @@ $ntfT['saveError'] = __('msg_save_error');
         document.addEventListener('keydown', onKey);
         h.appendChild(btn('ntf-x', '✕', close));
         const b = el('div', 'ntf-mb'); b.appendChild(body);
+        if (body.classList.contains('ntf-chan')) { md.classList.add('ntf-nar'); }
         if (body.classList.contains('ntf-fit')) { b.classList.add('ntf-fit'); md.classList.add('ntf-fitmod'); }
         const f = el('div', 'ntf-mf'); footer.forEach(function (n) { f.appendChild(n); });
         md.appendChild(h); md.appendChild(b); md.appendChild(f); ov.appendChild(md);
@@ -452,20 +456,19 @@ $ntfT['saveError'] = __('msg_save_error');
     function openChannel(ch) {
         const isNew = !ch;
         const c = ch || { name: '', type: 'email', enabled: true, email: { host: '', port: 587, secure: 'tls', user: '', from: '', to: '', has_pass: false }, telegram: { chat: '', has_token: false, proxy: '' } };
-        const body = el('div');
+        const body = el('div', 'ntf-chan');
         const name = input('text', c.name); name.maxLength = 60;
-        body.appendChild(field(T.f_name, name));
         const type = el('select', 'form-control');
         type.appendChild(new Option('✉️ Email', 'email')); type.appendChild(new Option('✈️ Telegram', 'telegram')); type.appendChild(new Option('🏢 Битрикс24', 'bitrix24'));
         type.value = c.type; type.disabled = !isNew;
-        body.appendChild(field(T.f_type, type));
+        const nt = el('div', 'ntf-row-nt'); nt.appendChild(field(T.f_name, name)); nt.appendChild(field(T.f_type, type)); body.appendChild(nt);
 
         const em = el('div'), tg = el('div'), bx = el('div');
         const e = c.email || { host: '', port: 587, secure: 'tls', user: '', from: '', to: '', has_pass: false };
         const host = input('text', e.host), port = input('number', e.port, 'ntf-num'), sec = el('select', 'form-control');
         sec.appendChild(new Option(T.f_secure_tls, 'tls')); sec.appendChild(new Option(T.f_secure_ssl, 'ssl')); sec.appendChild(new Option(T.f_secure_none, 'none')); sec.value = e.secure || 'tls';
         port.min = 1; port.max = 65535;
-        const g1 = el('div', 'ntf-grid2'); g1.appendChild(field(T.f_host, host)); g1.appendChild(field(T.f_port, port)); g1.appendChild(field(T.f_secure, sec));
+        const g1 = el('div', 'ntf-row3'); g1.appendChild(field(T.f_host, host)); g1.appendChild(field(T.f_port, port)); g1.appendChild(field(T.f_secure, sec));
         const user = input('text', e.user), pass = input('password', ''); pass.placeholder = e.has_pass ? T.secret_set : '';
         const g2 = el('div', 'ntf-grid2'); g2.appendChild(field(T.f_user, user)); g2.appendChild(field(T.f_pass, pass));
         const from = input('text', e.from);
