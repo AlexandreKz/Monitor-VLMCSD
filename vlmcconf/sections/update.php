@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/update.php
-// ВЕРСИЯ: 5.7.1
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 5.7.2
+// ДАТА: 2026-11-19
 // @description: Секция обновления проекта: каналы release/early, автопроверка, установка (интерфейс + вызовы Updater через ajax.php)
 // @description: Project update section: release/early channels, auto-check, install (interface + Updater calls via ajax.php)
 // ============================================
@@ -112,7 +112,7 @@ $updI18n = [
             <!-- Токен GitHub (необязательно): лимит запросов к API 5000/ч вместо 60/ч -->
             <div class="upd-col">
                 <div class="upd-col-title" title="<?= htmlspecialchars(__('update_token_hint')) ?>">🔑 <?= __('update_token_label') ?> <span class="upd-i">ⓘ</span></div>
-                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-height: 32px;">
                     <input type="password" id="githubToken" class="form-control" style="flex: 1; min-width: 150px;" autocomplete="new-password" spellcheck="false" placeholder="<?= htmlspecialchars(__('update_token_placeholder')) ?>">
                     <button class="btn btn-primary" id="saveTokenBtn" style="padding: 6px 12px; font-size: 11px;">💾</button>
                     <button class="btn btn-danger" id="clearTokenBtn" style="padding: 6px 12px; font-size: 11px;" title="<?= htmlspecialchars(__('update_token_clear')) ?>">🗑️</button>
@@ -122,14 +122,14 @@ $updI18n = [
             <!-- Автоматическая проверка: не чаще раза в 6 часов, сохраняется сразу -->
             <div class="upd-col">
                 <div class="upd-col-title" title="<?= htmlspecialchars(__('update_auto_check_hint')) ?>">🔄 <?= __('update_auto_check_label') ?> <span class="upd-i">ⓘ</span></div>
-                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 6px;">
-                    <input type="checkbox" id="autoCheckEnabled" <?= $updSettings['auto_check'] ? 'checked' : '' ?>> <?= __('update_auto_check_on') ?>
-                </label>
-                <select id="autoCheckInterval" class="form-control" style="width: 100%;">
+                <select id="autoCheckInterval" class="form-control" style="width: 100%; box-sizing: border-box; height: 32px; margin: 0;">
                     <?php foreach ([6, 12, 24, 72] as $hours): ?>
                     <option value="<?= $hours ?>" <?= $updSettings['interval'] === $hours ? 'selected' : '' ?>><?= sprintf(__('update_auto_check_every'), $hours) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 8px;">
+                    <input type="checkbox" id="autoCheckEnabled" <?= $updSettings['auto_check'] ? 'checked' : '' ?>> <?= __('update_auto_check_on') ?>
+                </label>
                 <div id="autoSavedMsg" style="visibility: hidden; min-height: 16px; font-size: 12px; margin-top: 4px;"></div>
             </div>
             <div class="upd-col">
@@ -217,7 +217,7 @@ openssl.cafile = "<?= htmlspecialchars($sslInfo['openssl_cafile']) ?>" <?= $sslI
 @media (max-width: 1000px) { .upd-extra-row { grid-template-columns: 1fr; } .update-channels { grid-template-columns: 1fr !important; } }
 .upd-col { background: <?= $themeCSS['card'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 10px; min-width: 0; }
 .upd-i { color: <?= $themeCSS['muted'] ?>; font-weight: 400; cursor: help; }
-.upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.upd-col-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .upd-hint { font-size: 11px; color: <?= $themeCSS['muted'] ?>; margin-top: 6px; line-height: 1.4; }
 .upd-dev-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: <?= $themeCSS['muted'] ?>; margin: 2px 12px 0 0; }
 .update-channel-card .uc-title { font-weight: 600; margin-bottom: 6px; }
