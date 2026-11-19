@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.4.2
+// ВЕРСИЯ: 3.5.1
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -59,7 +59,7 @@ foreach (notifyCatalog() as $e) {
 }
 $ntfKeys = ['rule_new', 'channel_new', 'rules_empty', 'channels_empty', 'col_name', 'col_events', 'col_channels', 'col_freq', 'col_quiet', 'col_status',
     'col_type', 'col_target', 'col_time', 'col_rule', 'col_event', 'col_result', 'no_channels', 'unlimited', 'every_min', 'st_on', 'st_off',
-    'rule_title_new', 'rule_title_edit', 'ch_title_new', 'ch_title_edit', 'f_name', 'f_events', 'f_channels', 'f_channels_none', 'f_filter', 'f_filter_groups',
+    'rule_title_new', 'rule_title_edit', 'ch_title_new', 'ch_title_edit', 'f_name', 'f_events', 'ev_search', 'f_channels', 'f_channels_none', 'f_filter', 'f_filter_groups',
     'f_filter_devices', 'f_filter_hint', 'f_params', 'f_throttle', 'f_throttle_hint', 'f_quiet', 'f_quiet_from', 'f_quiet_to', 'f_active', 'soon',
     'f_type', 'f_host', 'f_port', 'f_secure', 'f_secure_tls', 'f_secure_ssl', 'f_secure_none', 'f_user', 'f_pass', 'f_from', 'f_to', 'f_to_hint',
     'f_token', 'f_chat', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'err_no_channels', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
@@ -151,7 +151,19 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-f { margin-bottom: 14px; }
 .ntf-sec .ntf-f:last-child { margin-bottom: 0; }
 .ntf-l { display: block; font-size: 12px; color: <?= $ntfMuted ?>; margin-bottom: 5px; }
-.ntf-gh { font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: <?= $ntfMuted ?>; }
+.ntf-gh { font-size: 12px; font-weight: 600; margin: 8px 0 4px; color: <?= $ntfMuted ?>; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+.ntf-gh:hover { color: <?= $themeCSS['text'] ?>; }
+.ntf-gh .ntf-car { display: inline-block; width: 10px; font-size: 10px; }
+.ntf-gh .ntf-cnt { font-weight: 600; font-size: 11px; padding: 0 7px; border-radius: 9px; background: <?= $themeCSS['primary'] ?>; color: <?= ntfOn($themeCSS['primary']) ?>; }
+.ntf-mod.ntf-fitmod { height: min(92vh, 860px); }
+.ntf-mb.ntf-fit { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+.ntf-mb.ntf-fit > div { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+.ntf-mb.ntf-fit > div > * { flex: 0 0 auto; }
+.ntf-mb.ntf-fit > div > .ntf-evsec { flex: 1 1 auto; min-height: 150px; display: flex; flex-direction: column; overflow: hidden; }
+.ntf-evh { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.ntf-evh > .ntf-st { margin: 0 !important; }
+.ntf-evq { width: 240px; max-width: 55%; height: 28px; padding: 0 10px; font-size: 12px; }
+.ntf-evsec > .ntf-evlist { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; }
 .ntf-evg { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; }
 .ntf-chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin: 0; }
 .ntf-chk.dis { opacity: .5; cursor: default; }
@@ -271,6 +283,7 @@ $ntfT['saveError'] = __('msg_save_error');
         document.addEventListener('keydown', onKey);
         h.appendChild(btn('ntf-x', '✕', close));
         const b = el('div', 'ntf-mb'); b.appendChild(body);
+        if (body.classList.contains('ntf-fit')) { b.classList.add('ntf-fit'); md.classList.add('ntf-fitmod'); }
         const f = el('div', 'ntf-mf'); footer.forEach(function (n) { f.appendChild(n); });
         md.appendChild(h); md.appendChild(b); md.appendChild(f); ov.appendChild(md);
         ov.addEventListener('mousedown', function (e) { if (e.target === ov) close(); });
@@ -296,18 +309,36 @@ $ntfT['saveError'] = __('msg_save_error');
     function openRule(rule) {
         const isNew = !rule;
         const st = rule ? JSON.parse(JSON.stringify(rule)) : { name: '', events: [], channels: [], groups: [], devices: [], throttle: 30, quiet_enabled: false, quiet_from: '23:00', quiet_to: '07:00', active: true, params: {} };
-        const body = el('div');
+        const body = el('div', 'ntf-fit');
         const name = input('text', st.name); name.maxLength = 80;
         body.appendChild(field(T.f_name, name));
 
         // события по группам
-        const evBox = el('div', 'ntf-sec'); evBox.appendChild(el('div', 'ntf-st', T.f_events)); body.appendChild(evBox);
+        const evSec = el('div', 'ntf-sec ntf-evsec');
+        const evHead = el('div', 'ntf-evh'); evHead.appendChild(el('div', 'ntf-st', T.f_events));
+        const evQ = input('search', '', 'ntf-evq'); evQ.placeholder = T.ev_search; evHead.appendChild(evQ);
+        evSec.appendChild(evHead); body.appendChild(evSec);
+        const evGroups = []; let query = '';
+        const evBox = el('div', 'ntf-evlist'); evSec.appendChild(evBox);
         const order = <?= json_encode(notifyEventGroups()) ?>;
         order.forEach(function (g) {
             const items = D.catalog.filter(function (c) { return c.group === g; });
             if (!items.length) return;
-            evBox.appendChild(el('div', 'ntf-gh', GRP[g] || g));
+            const head = el('div', 'ntf-gh'), car = el('span', 'ntf-car'), cnt = el('span', 'ntf-cnt');
+            head.appendChild(car); head.appendChild(el('span', '', GRP[g] || g)); head.appendChild(cnt);
             const grid = el('div', 'ntf-evg');
+            let open = g === 'security';   // по умолчанию раскрыта только «Безопасность»
+            const labels = [];
+            function paint() {
+                if (query === '') { head.style.display = ''; car.textContent = open ? '▾' : '▸'; grid.style.display = open ? '' : 'none'; labels.forEach(function (l) { l.el.style.display = ''; }); return; }
+                let n = 0;
+                labels.forEach(function (l) { const m = l.name.indexOf(query) >= 0; l.el.style.display = m ? '' : 'none'; if (m) n++; });
+                head.style.display = n ? '' : 'none'; grid.style.display = n ? '' : 'none'; car.textContent = '▾';
+            }
+            evGroups.push(paint);
+            function count() { const n = items.filter(function (c) { return st.events.indexOf(c.id) >= 0; }).length; cnt.textContent = n; cnt.style.display = n ? '' : 'none'; }
+            head.onclick = function () { open = !open; paint(); };
+            evBox.appendChild(head);
             items.forEach(function (c) {
                 const k = check(evName(c.id), st.events.indexOf(c.id) >= 0, c.soon);
                 if (c.soon) { k.label.appendChild(el('span', 'ntf-badge', T.soon)); }
@@ -315,13 +346,16 @@ $ntfT['saveError'] = __('msg_save_error');
                     k.box.onchange = function () {
                         const i = st.events.indexOf(c.id);
                         if (k.box.checked && i < 0) st.events.push(c.id); else if (!k.box.checked && i >= 0) st.events.splice(i, 1);
-                        dyn();
+                        count(); dyn();
                     };
                 }
-                grid.appendChild(k.label);
+                grid.appendChild(k.label); labels.push({ el: k.label, name: evName(c.id).toLowerCase() });
             });
             evBox.appendChild(grid);
+            paint(); count();
         });
+
+        evQ.oninput = function () { query = evQ.value.trim().toLowerCase(); evGroups.forEach(function (f) { f(); }); evBox.scrollTop = 0; };
 
         // каналы
         const chBox = el('div', 'ntf-box');

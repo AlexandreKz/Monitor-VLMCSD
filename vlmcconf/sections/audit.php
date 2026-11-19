@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/audit.php
-// ВЕРСИЯ: 3.3.5
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 3.4.0
+// ДАТА: 2026-11-19
 // @description: Секция «Журнал событий»: фильтры, поиск, изменения «было → стало», сводка по пользователю, активность по часам и дням, срок хранения (компактная строка), очистка (админ)
 // ============================================
 
@@ -38,6 +38,8 @@ $auditI18n = [
     'sumIps'     => __('audit_sum_ips'),
     'sumTop'     => __('audit_sum_top'),
     'filterUser' => __('audit_filter_by_user'),
+    'showFull'   => __('audit_show_full'),
+    'fullTitle'  => __('audit_full_title'),
     'count'      => __('audit_chart_count'),
     'today'      => __('audit_range_today'),
     'days7'      => __('audit_range_7'),
@@ -190,6 +192,13 @@ $auditLang = (($config['language'] ?? 'ru') === 'en') ? 'en' : 'ru';
     </div>
 </div>
 
+<div id="auditMd" class="audit-md">
+    <div class="audit-md-box">
+        <div class="audit-md-head"><h2 id="auditMdTitle"></h2><span class="audit-md-x" id="auditMdX">&times;</span></div>
+        <div class="audit-md-meta" id="auditMdMeta"></div>
+        <pre class="audit-md-body" id="auditMdBody"></pre>
+    </div>
+</div>
 <script>
 var schedStr = {
     never: <?= json_encode(__('sched_never')) ?>, disabled: <?= json_encode(__('sched_disabled')) ?>, run: <?= json_encode(__('sched_run_btn')) ?>, running: <?= json_encode(__('sched_running')) ?>,
@@ -258,6 +267,18 @@ window.addEventListener('vlmc-sched-done', function () { if (document.querySelec
 .audit-table td { padding: 7px 10px; border-top: 1px solid <?= $themeCSS['border'] ?>; vertical-align: top; }
 .audit-table td.audit-time, .audit-table td.audit-ip { white-space: nowrap; font-family: monospace; }
 .audit-table td.audit-details { word-break: break-word; overflow-wrap: anywhere; color: <?= $themeCSS['muted'] ?>; min-width: 260px; }
+.audit-more { display: inline-block; margin-top: 4px; padding: 1px 8px; font-size: 11px; line-height: 16px; cursor: pointer; border-radius: 10px; border: 1px solid <?= $themeCSS['border'] ?>; background: transparent; color: <?= $themeCSS['accentText'] ?>; }
+.audit-more:hover { background: <?= $themeCSS['hover'] ?>; }
+.audit-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 340px; }
+.audit-md { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); }
+.audit-md.open { display: flex; }
+.audit-md-box { width: 760px; max-width: 92%; max-height: 82vh; display: flex; flex-direction: column; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 2px solid <?= $themeCSS['primary'] ?>; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.audit-md-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; }
+.audit-md-head h2 { margin: 0; font-size: 16px; font-weight: 600; color: <?= $themeCSS['accentText'] ?>; }
+.audit-md-x { cursor: pointer; font-size: 22px; line-height: 1; color: <?= $themeCSS['muted'] ?>; }
+.audit-md-x:hover { color: <?= $themeCSS['text'] ?>; }
+.audit-md-meta { font-size: 12px; color: <?= $themeCSS['muted'] ?>; margin-bottom: 8px; }
+.audit-md-body { overflow: auto; margin: 0; padding: 10px 12px; font-family: monospace; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; background: <?= $themeCSS['input'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; }
 .audit-user-link { cursor: pointer; color: <?= $themeCSS['accentText'] ?>; }
 .audit-user-link:hover { text-decoration: underline; }
 .audit-change { font-family: monospace; font-size: 11px; color: <?= $themeCSS['text'] ?>; opacity: 0.85; margin-top: 2px; }
@@ -463,6 +484,17 @@ window.addEventListener('vlmc-sched-done', function () { if (document.querySelec
     window.addEventListener('resize', fitTable);
     window.fitAuditTable = fitTable;
 
+    function openFull(it) {
+        $('auditMdTitle').textContent = I18N.fullTitle;
+        $('auditMdMeta').textContent = [it.time, it.user || '—', it.ip, it.label].join(' · ');
+        $('auditMdBody').textContent = [it.details].concat(it.changes).filter(Boolean).join('\n');
+        $('auditMd').classList.add('open');
+    }
+    function closeFull() { $('auditMd').classList.remove('open'); }
+    $('auditMdX').addEventListener('click', closeFull);
+    $('auditMd').addEventListener('mousedown', function (e) { if (e.target === this) closeFull(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeFull(); });
+
     function render(data) {
         fillSelect($('auditUser'), I18N.allUsers, data.users.map(function (u) { return { value: u, label: u }; }));
         fillSelect($('auditAction'), I18N.allActions, data.actions.map(function (a) { return { value: a.code, label: a.label }; }));
@@ -487,8 +519,23 @@ window.addEventListener('vlmc-sched-done', function () { if (document.querySelec
             tr.appendChild(el('td', 'audit-ip', it.ip));
             tr.appendChild(el('td', '', it.label));
             const tdd = el('td', 'audit-details');
-            if (it.details) tdd.appendChild(el('div', '', it.details));
-            it.changes.forEach(function (c) { tdd.appendChild(el('div', 'audit-change', c)); });
+            const LIM = 3, LEN = 90;
+            let cut = it.changes.length > LIM || (it.details && it.details.length > LEN);
+            if (it.details) {
+                const d = el('div', cut ? 'audit-clip' : '', it.details);
+                if (cut) d.title = it.details;
+                tdd.appendChild(d);
+            }
+            it.changes.slice(0, LIM).forEach(function (c) {
+                if (c.length > LEN) cut = true;
+                tdd.appendChild(el('div', 'audit-change audit-clip', c));
+            });
+            if (cut) {
+                const b = el('button', 'audit-more', I18N.showFull);
+                b.type = 'button';
+                b.onclick = function () { openFull(it); };
+                tdd.appendChild(b);
+            }
             tr.appendChild(tdd);
             const tdr = el('td');
             tdr.appendChild(el('span', 'audit-badge ' + it.result, I18N[it.result] || it.result));

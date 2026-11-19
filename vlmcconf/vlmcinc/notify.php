@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.4.1
+// ВЕРСИЯ: 3.5.0
 // ДАТА: 2026-11-19
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -96,6 +96,7 @@ function notifyDefaultRules() {
         $mk('d_service', 'Служба KMS — остановлена или восстановлена', ['service_stopped', 'service_restored'], 0),
         $mk('d_log_state', 'Служба KMS — лог не обновляется, слишком большой, мало места', ['log_stale', 'log_big', 'disk_low'], 360),
         $mk('d_tasks', 'Фоновые задачи — сбой', ['task_failed'], 60),
+        $mk('d_settings', 'Изменения настроек — панель, файрвол, интеграции', ['settings_changed', 'firewall_changed', 'whitelist_changed', 'log_path_changed', 'project_exported', 'integration_changed', 'ldap_settings_changed'], 0),
         $mk('d_ldap', 'Интеграции — AD/LDAP недоступен или запись не принята', ['ldap_down', 'ldap_restored', 'ldap_account_failed'], 60),
     ];
 }
@@ -644,6 +645,20 @@ function notifyRenameGroupInRules($old, $new) {
     }
 }
 
+/** Название действия журнала для заголовка уведомления. */
+function notifyAuditLabel($a) {
+    return function_exists('auditLabel') ? (string)auditLabel($a) : (string)$a;
+}
+
+/** Текст уведомления по записи журнала: кто выполнил, параметры и изменения «было → стало». */
+function notifyAuditBody(array $e, $who) {
+    $t = 'Выполнил: ' . $who;
+    $d = (string)($e['d'] ?? '');
+    if ($d !== '') { $t .= "\n" . $d; }
+    foreach (array_slice((array)($e['c'] ?? []), 0, 10) as $c) { $t .= "\n" . $c; }
+    return $t;
+}
+
 /** Вызывается из журнала событий для каждой записи: переводит её в события уведомлений. */
 function notifyOnAudit(array $e) {
     $a = (string)($e['a'] ?? '');
@@ -672,8 +687,9 @@ function notifyOnAudit(array $e) {
         case 'mass_move_devices':
             if ($ok) { notifyEmit('devices_moved', 'Устройства перемещены в группу: ' . ($p['target_group'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['target_group'] ?? '']); }
             return;
+        case 'save_group_changes':
         case 'rename_group':
-            if ($ok) {
+            if ($ok && (string)($p['old_name'] ?? '') !== (string)($p['new_name'] ?? '')) {
                 // фильтры правил хранят имена групп: переносим их на новое имя, иначе галочка пропадёт
                 notifyRenameGroupInRules((string)($p['old_name'] ?? ''), (string)($p['new_name'] ?? ''));
                 notifyEmit('group_renamed', 'Группа переименована: ' . ($p['old_name'] ?? '') . ' → ' . ($p['new_name'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['new_name'] ?? '']);
@@ -707,6 +723,40 @@ function notifyOnAudit(array $e) {
             return;
         case 'reset_config':
             if ($ok) { notifyEmit('config_reset', 'Сброшена конфигурация панели', 'Выполнил: ' . $who); }
+            return;
+        case 'login':
+            if ($ok) { notifyEmit('login_success', 'Вход в панель: ' . $who, $det); }
+            return;
+        case 'fw_save_settings': case 'fw_block': case 'fw_unblock': case 'fw_apply':
+            if ($ok) { notifyEmit('firewall_changed', 'Файрвол: ' . notifyAuditLabel($a), notifyAuditBody($e, $who)); }
+            return;
+        case 'add_whitelist_ip': case 'remove_whitelist_ip':
+            if ($ok) { notifyEmit('whitelist_changed', 'Список разрешённых IP: ' . notifyAuditLabel($a), notifyAuditBody($e, $who)); }
+            return;
+        case 'save_session_settings': case 'save_privacy_settings': case 'save_audit_settings': case 'save_update_settings':
+        case 'save_github_token': case 'api_save_settings': case 'notify_channel_save': case 'notify_channel_delete':
+        case 'notify_rule_save': case 'notify_rule_delete':
+            if ($ok) { notifyEmit('settings_changed', 'Изменены настройки: ' . notifyAuditLabel($a), notifyAuditBody($e, $who)); }
+            return;
+        case 'add_group':
+            if ($ok) { notifyEmit('group_created', 'Создана группа: ' . ($p['groupName'] ?? ''), 'Выполнил: ' . $who, ['group' => $p['groupName'] ?? '']); }
+            return;
+        case 'edit_device':
+            if ($ok) { notifyEmit('device_edited', 'Изменено устройство: ' . ($p['oldName'] ?? '') . (($p['newName'] ?? '') !== ($p['oldName'] ?? '') ? ' → ' . ($p['newName'] ?? '') : ''), notifyAuditBody($e, $who), ['device' => $p['newName'] ?? '', 'group' => $p['newGroup'] ?? '']); }
+            return;
+        case 'save_log_path':
+            if ($ok) { notifyEmit('log_path_changed', 'Изменён путь к журналу KMS', notifyAuditBody($e, $who)); }
+            return;
+        case 'export_project':
+            if ($ok) { notifyEmit('project_exported', 'Выгружен проект панели', 'Выполнил: ' . $who); }
+            return;
+        case 'webhook_save': case 'webhook_delete': case 'webhook_toggle':
+        case 'cloud_save': case 'cloud_delete': case 'cloud_toggle':
+        case 'ms_save': case 'ms_delete':
+            if ($ok) { notifyEmit('integration_changed', 'Интеграция: ' . notifyAuditLabel($a), notifyAuditBody($e, $who)); }
+            return;
+        case 'ldap_save_settings':
+            if ($ok) { notifyEmit('ldap_settings_changed', 'Изменены настройки AD/LDAP', notifyAuditBody($e, $who)); }
             return;
         case 'login_locked':
             return notifyEmit('failed_logins', 'Вход заблокирован после неудачных попыток: ' . $who);
@@ -744,7 +794,7 @@ function notifyFailedLogin(array $e) {
 /** Об обновлении: один раз на версию (релиз) или коммит (ветка main). */
 function notifyOnUpdateCheck(array $state) {
     try {
-        foreach (['release', 'main'] as $ch) {
+        foreach (['release', 'early'] as $ch) {
             $r = $state[$ch] ?? null;
             if (!is_array($r) || empty($r['success']) || empty($r['available'])) { continue; }
             $mark = $ch . ':' . (string)($ch === 'release' ? ($r['version'] ?? '') : ($r['commit'] ?? ''));
@@ -754,7 +804,7 @@ function notifyOnUpdateCheck(array $state) {
                 return true;
             });
             if ($fresh) {
-                $what = $ch === 'release' ? 'релиз ' . ($r['version'] ?? '') : 'ранний доступ (main)';
+                $what = $ch === 'release' ? 'релиз ' . ($r['version'] ?? '') : 'ранний доступ (' . substr((string)($r['commit'] ?? ''), 0, 7) . ')';
                 notifyEmit('update_available', 'Доступно обновление панели: ' . $what,
                     'Файлов к установке: ' . ((int)($r['new_count'] ?? 0) + (int)($r['changed_count'] ?? 0)));
             }

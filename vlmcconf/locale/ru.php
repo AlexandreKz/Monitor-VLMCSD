@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/ru.php
-// ВЕРСИЯ: 5.15.25
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 5.15.28
+// ДАТА: 2026-11-19
 // @description: Русские переводы интерфейса
 // ============================================
 
@@ -1806,5 +1806,18 @@ return [
     'notify_ev_ldap_account_failed' => 'Служебная запись AD/LDAP не принята',
     'notify_p_free_mb' => 'Свободно меньше, МБ',
     'sched_t_notify' => '🔔 Проверка событий уведомлений',
+    'audit_show_full' => 'Показать полностью',
+    'audit_full_title' => 'Подробности записи',
+    'notify_ev_login_success' => 'Успешный вход в панель',
+    'notify_ev_firewall_changed' => 'Изменён файрвол (блокировка IP, настройки)',
+    'notify_ev_whitelist_changed' => 'Изменён список разрешённых IP',
+    'notify_ev_settings_changed' => 'Изменены настройки панели (сессии, приватность, журнал, обновления, API, уведомления)',
+    'notify_ev_group_created' => 'Создана группа',
+    'notify_ev_device_edited' => 'Изменено устройство',
+    'notify_ev_log_path_changed' => 'Изменён путь к журналу KMS',
+    'notify_ev_project_exported' => 'Выгружен проект (резервная копия панели)',
+    'notify_ev_integration_changed' => 'Изменена интеграция (вебхук, облако, сервер)',
+    'notify_ev_ldap_settings_changed' => 'Изменены настройки AD/LDAP',
+    'notify_ev_search' => 'Поиск по событиям',
 ];
 ?>

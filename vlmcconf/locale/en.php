@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.25
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 5.15.28
+// ДАТА: 2026-11-19
 // @description: English translations
 // ============================================
 
@@ -1804,5 +1804,18 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_ev_ldap_account_failed' => 'AD/LDAP service account rejected',
     'notify_p_free_mb' => 'Free space below, MB',
     'sched_t_notify' => '🔔 Notification events check',
+    'audit_show_full' => 'Show full',
+    'audit_full_title' => 'Record details',
+    'notify_ev_login_success' => 'Successful panel sign-in',
+    'notify_ev_firewall_changed' => 'Firewall changed (IP block, settings)',
+    'notify_ev_whitelist_changed' => 'Allowed IP list changed',
+    'notify_ev_settings_changed' => 'Panel settings changed (sessions, privacy, journal, updates, API, notifications)',
+    'notify_ev_group_created' => 'Group created',
+    'notify_ev_device_edited' => 'Device edited',
+    'notify_ev_log_path_changed' => 'KMS log path changed',
+    'notify_ev_project_exported' => 'Project exported (panel backup)',
+    'notify_ev_integration_changed' => 'Integration changed (webhook, cloud, server)',
+    'notify_ev_ldap_settings_changed' => 'AD/LDAP settings changed',
+    'notify_ev_search' => 'Search events',
 ];
 ?>

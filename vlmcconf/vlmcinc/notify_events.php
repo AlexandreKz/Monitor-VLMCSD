@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify_events.php
-// ВЕРСИЯ: 1.1.0
+// ВЕРСИЯ: 1.2.0
 // ДАТА: 2026-11-19
 // @description: Каталог всех событий уведомлений (пункт 27): единый справочник — группа, важность, область (группа/устройство), параметры-пороги, признак «скоро» (нужна фоновая проверка)
 // ============================================
@@ -36,6 +36,10 @@ function notifyCatalog() {
         'api_key_deleted'  => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
         'panel_access_changed' => ['group' => 'security', 'sev' => 'high', 'scope' => 'none'],
         'password_changed' => ['group' => 'security', 'sev' => 'mid',  'scope' => 'none'],
+        'login_success' => ['group' => 'security', 'sev' => 'low', 'scope' => 'none'],
+        'firewall_changed' => ['group' => 'security', 'sev' => 'high', 'scope' => 'none'],
+        'whitelist_changed' => ['group' => 'security', 'sev' => 'mid', 'scope' => 'none'],
+        'settings_changed' => ['group' => 'security', 'sev' => 'mid', 'scope' => 'none'],
         // Изменения в панели
         'device_added'     => ['group' => 'panel', 'sev' => 'low',  'scope' => 'device'],
         'devices_moved'    => ['group' => 'panel', 'sev' => 'low',  'scope' => 'group'],
@@ -43,6 +47,10 @@ function notifyCatalog() {
         'group_deleted'    => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'group'],
         'device_deleted'   => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'device'],
         'config_reset'     => ['group' => 'panel', 'sev' => 'high', 'scope' => 'none'],
+        'group_created' => ['group' => 'panel', 'sev' => 'low', 'scope' => 'group'],
+        'device_edited' => ['group' => 'panel', 'sev' => 'low', 'scope' => 'device'],
+        'log_path_changed' => ['group' => 'panel', 'sev' => 'mid', 'scope' => 'none'],
+        'project_exported' => ['group' => 'panel', 'sev' => 'high', 'scope' => 'none'],
         'log_cleared'      => ['group' => 'panel', 'sev' => 'mid',  'scope' => 'none'],
         'audit_cleared'    => ['group' => 'panel', 'sev' => 'high', 'scope' => 'none'],
         // Обновления
@@ -66,6 +74,8 @@ function notifyCatalog() {
         'ldap_down'           => ['group' => 'integrations', 'sev' => 'high', 'scope' => 'none'],
         'ldap_restored'       => ['group' => 'integrations', 'sev' => 'low',  'scope' => 'none'],
         'ldap_account_failed' => ['group' => 'integrations', 'sev' => 'mid',  'scope' => 'none'],
+        'integration_changed' => ['group' => 'integrations', 'sev' => 'mid', 'scope' => 'none'],
+        'ldap_settings_changed' => ['group' => 'integrations', 'sev' => 'mid', 'scope' => 'none'],
     ];
     return $cat;
 }
