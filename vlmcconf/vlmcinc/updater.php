@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/updater.php
-// ВЕРСИЯ: 3.3.1
-// ДАТА: 2026-11-18
+// ВЕРСИЯ: 3.3.2
+// ДАТА: 2026-11-19
 // @description: Обновление проекта с GitHub: каналы release/early, проверка по git-SHA, автопроверка, установка с откатом
 // @description: Project update from GitHub: release/early channels, git-SHA comparison, auto-check, install with rollback
 // ============================================
@@ -25,7 +25,7 @@ class Updater {
     /** Пути репозитория, которые не обновляются (папки pic/ и screen/ — по решению владельца проекта). */
     private $excludes = [
         '.git', '.gitignore', '.gitattributes', '.github', 'README.md', 'LICENSE', 'install.sh',
-        'backups', 'cache', 'screen', 'pic',
+        'backups', 'cache', 'screen', 'pic', 'docs',
         'vlmcconf/cache', 'vlmcconf/backups',
         'vlmcconf/data_dir.local.php', 'vlmcconf/users.json', 'vlmcconf/vlmcconf_config.json'
     ];

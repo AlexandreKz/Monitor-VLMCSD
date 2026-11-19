@@ -1,9 +1,9 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.6.2
+// ВЕРСИЯ: 6.0.0
 // ДАТА: 2026-11-19
-// @description: Секция "Документация" с полной инструкцией по установке
+// @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции, из doc_desc.php), поиск, RU/EN
 // ============================================
 
 if (basename($_SERVER['PHP_SELF']) === 'documentation.php') {
@@ -351,12 +351,8 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         </ul>
         <p>Создайте папку и дайте права веб-серверу (Ubuntu):</p>
         <div class="code-block"><pre>sudo install -d -o www-data -g www-data -m 750 /var/lib/vlmc-monitor</pre></div>
-        <p><strong>Перенос.</strong> При первом открытии панели после создания папки файлы копируются, проверяются и удаляются из старого места (<code>vlmcconf/</code>). Копия «до переноса» остаётся в подпапке <code>backups/</code> новой папки.</p>
         <p>Если папки нет или нет прав на запись, панель продолжает работать по-старому (файлы в <code>vlmcconf/</code>) и показывает предупреждение с готовой командой.</p>
         <p><strong>Свой путь:</strong> переменная окружения <code>VLMC_DATA_DIR</code> (Apache: <code>SetEnv VLMC_DATA_DIR /путь</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /путь</code>) либо файл <code>vlmcconf/data_dir.local.php</code> с содержимым <code>&lt;?php return '/путь/к/папке';</code>. Этого файла нет в репозитории, поэтому обновления панели его не затрагивают.</p>
-        <div class="note">⚠️ <strong>Обновление и откат.</strong> Обновление панели данные не затрагивает: они лежат вне папки проекта. Не возвращайтесь на версию панели, которая не знает о новой папке: она не найдёт <code>users.json</code> в старом месте и создаст нового пользователя <code>root</code>. Для резервной копии сохраняйте папку данных целиком.</div>
-        <p><strong>Резервные копии и журналы.</strong> Перед каждым изменением настроек и списка пользователей панель сохраняет копию <code>vlmcconf_config.json</code> и <code>users.json</code> в <code>backups/config/</code> и <code>backups/users/</code> папки данных (последние 50 каждого). Если файл повреждён, панель восстановит его из последней копии, а повреждённый сохранит рядом (<code>*.broken</code>); если нечего восстанавливать, файл не перезаписывается. Каждое сохранение записывается в <code>config_changes.log</code> и <code>users_changes.log</code> (время, пользователь, действие, число устройств или пользователей до и после; метка <code>SHRINK</code> означает уменьшение). Если <code>users.json</code> пропал, но копии есть, пользователи восстанавливаются из копии; чтобы осознанно сбросить пароль <code>root</code>, удалите <code>users.json</code> и папку <code>backups/users</code>.</p>
-        <div class="note">💡 Каталог <code>vlmcconf/cache</code> пока остаётся на прежнем месте.</div>
     </div>
     
     <!-- SSL -->
@@ -380,80 +376,6 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p><strong>Проверка:</strong> «Инструменты → Обновление → 🌐 Проверить GitHub» должна ответить «GitHub доступен, проверка SSL пройдена». Пока сертификаты не подключены, обновление и определение стран по IP работать не будут: в интерфейсе появится эта же подсказка.</p>
     </div>
     
-    <!-- Обновление панели -->
-    <div class="section-card">
-        <div class="section-title"><span>🔄</span> Обновление панели</div>
-        <p>Источник обновлений один: репозиторий проекта на GitHub. На вкладке «Инструменты → Обновление» выбирается канал:</p>
-        <ul>
-            <li><strong>Релиз (стабильный)</strong> — файлы берутся из тега последнего опубликованного релиза. Обновлением считается только релиз с номером выше установленной версии.</li>
-            <li><strong>Ранний доступ</strong> — файлы из ветки <code>main</code>. Обновление доступно, если в репозитории есть новые или изменённые файлы (сравнение по git-SHA содержимого, а не по размеру).</li>
-        </ul>
-        <p><strong>Автоматическая проверка</strong> проверяет оба канала раз в выбранный интервал (по умолчанию 12 часов), когда администратор с правом «Инструменты: редактирование» открывает панель, и показывает уведомление. Устанавливает обновление только человек. Для проверки по расписанию на сервере:</p>
-        <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>Скрипт <code>update_check.php</code> завершается с кодом 0 (обновлений нет), 10 (есть обновление) или 1 (ошибка проверки).</p>
-        <p><strong>Как идёт установка:</strong> файлы скачиваются во временную папку и сверяются с репозиторием по SHA, затем делается резервная копия заменяемых файлов (в <code>backups/update_…</code> папки данных) и файлы заменяются. Если что-то пошло не так, выполняется откат. Папки <code>pic/</code> и <code>screen/</code>, настройки и данные панели не обновляются, файлы, которых нет в репозитории, не удаляются.</p>
-        <div class="note">🚧 Автоматическая установка и расписание пока в разработке. Уведомления о новой версии настраиваются в разделе «Уведомления».</div>
-        <div class="note">⚠️ Если вы вносили в файлы панели собственные правки, ранний доступ предложит заменить их версией из репозитория: сначала загрузите свои правки в репозиторий.</div>
-    </div>
-    
-    <!-- Фоновые задачи -->
-    <div class="section-card">
-        <div class="section-title"><span>⏱️</span> Фоновые задачи</div>
-        <p>Панель сама выполняет периодические задачи: проверку обновлений, проверку подключения к AD/LDAP (раз в 12 часов), проверки для уведомлений (раз в 5 минут: новые устройства, состояние службы KMS, лог, место на диске) и удаление старых записей журнала событий (раз в сутки). Без настройки они выполняются только когда кто-то открывает панель, поэтому уведомления могут приходить с задержкой.</p>
-        <p>Чтобы задачи шли без захода в панель, добавьте запуск по расписанию. Готовая команда для вашего сервера показана в «Журнал событий → Фоновые задачи → Запуск по расписанию ОС». Для Ubuntu это задание в <code>/etc/cron.d</code>, вида:</p>
-        <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>В том же блоке видно, когда задача запускалась последний раз, чем закончилась, и есть кнопка «Запустить сейчас». Установщик создаёт только проверку обновлений (<code>update_check.php</code>), задание для <code>cron.php</code> добавляется отдельно. Команда в панели записывает тот же файл <code>/etc/cron.d/kms-monitor</code>, что и установщик, и заменяет его: это нормально, потому что <code>cron.php</code> сам выполняет и проверку обновлений.</p>
-    </div>
-
-    <!-- Журнал событий -->
-    <div class="section-card">
-        <div class="section-title"><span>📜</span> Журнал событий</div>
-        <p>Раздел <strong>«Журнал событий»</strong> показывает, кто, что и когда делал в панели: входы и выходы, неудачные попытки входа, изменения пользователей, групп, устройств и настроек, очистку лога и кэшей, обновления, отказы в доступе. Для изменений показываются значения «было → стало» (пароли и токены не записываются). Раздел доступен пользователям с правом «Логи: просмотр».</p>
-        <ul>
-            <li><strong>Фильтры:</strong> пользователь, действие, результат, период; <strong>поиск</strong> по пользователю, IP, действию и описанию.</li>
-            <li>Клик по имени пользователя показывает его историю и сводку (число действий, период активности, IP-адреса).</li>
-            <li>Диаграмма активности по часам и дням; экспорт найденных записей в CSV.</li>
-            <li><strong>Срок хранения:</strong> 30, 90, 180 дней или свой срок (1–365). Старые записи удаляются автоматически. Срок и очистка журнала доступны только администратору.</li>
-        </ul>
-        <p>Журнал хранится в папке данных панели (файл <code>audit.log</code>, права 0600).</p>
-    </div>
-    
-    <!-- Структура проекта -->
-    <div class="section-card">
-        <div class="section-title"><span>📂</span> Структура проекта</div>
-        <div class="file-tree">
-            <div>📁 /var/www/html/</div>
-            <div style="margin-left: 20px;">├── 📄 vlmc.php — главная страница мониторинга</div>
-            <div style="margin-left: 20px;">└── 📁 vlmcconf/ — панель управления</div>
-            <div style="margin-left: 40px;">    ├── 📄 .htaccess — защита служебных файлов</div>
-            <div style="margin-left: 40px;">    ├── 📄 index.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcconf.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 login.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 update_check.php — проверка обновлений по расписанию (cron)</div>
-            <div style="margin-left: 40px;">    ├── 📄 cron.php — фоновые задачи по расписанию ОС (cron)</div>
-            <div style="margin-left: 40px;">    ├── 📄 api.php — REST API (только чтение)</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">    ├── 📁 cache/ — кэш геолокации и лога (создаётся автоматически)</div>
-            <div style="margin-left: 40px;">    ├── 📁 locale/ — языковые файлы</div>
-            <div style="margin-left: 40px;">    ├── 📁 sections/ — секции панели управления</div>
-            <div style="margin-left: 40px;">    └── 📁 vlmcinc/ — вспомогательные библиотеки</div>
-            <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — данные панели (вне веб-папки)</div>
-            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — настройки (создаётся панелью автоматически при первом запуске)</div>
-            <div style="margin-left: 20px;">├── 📄 users.json — пользователи</div>
-            <div style="margin-left: 20px;">├── 📄 audit.log — журнал событий</div>
-            <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — каналы, правила и история уведомлений, ключ шифрования</div>
-            <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — состояние проверки обновлений, токен GitHub</div>
-            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — ключи API (только хеши) и счётчики лимитов</div>
-            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — состояние и история фоновых задач</div>
-            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — состояние и журнал AD/LDAP, состояние вебхуков</div>
-            <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — журналы изменений и служебные блокировки</div>
-            <div style="margin-left: 20px;">└── 📁 backups/ — резервные копии настроек, пользователей и обновлений</div>
-        </div>
-    </div>
 </div>
 HTML_WEB_RU;
 
@@ -797,12 +719,8 @@ sudo find /var/www/html -type d -exec chmod 755 {} \;</pre></div>
         </ul>
         <p>Create the folder and give the web server access (Ubuntu):</p>
         <div class="code-block"><pre>sudo install -d -o www-data -g www-data -m 750 /var/lib/vlmc-monitor</pre></div>
-        <p><strong>Migration.</strong> When the panel is first opened after the folder is created, the files are copied, verified and removed from the old location (<code>vlmcconf/</code>). A pre-migration copy is kept in the <code>backups/</code> subfolder of the new folder.</p>
         <p>If the folder does not exist or is not writable, the panel keeps working the old way (files in <code>vlmcconf/</code>) and shows a warning with a ready-to-run command.</p>
         <p><strong>Custom path:</strong> the <code>VLMC_DATA_DIR</code> environment variable (Apache: <code>SetEnv VLMC_DATA_DIR /path</code>; PHP-FPM: <code>env[VLMC_DATA_DIR] = /path</code>) or the file <code>vlmcconf/data_dir.local.php</code> containing <code>&lt;?php return '/path/to/folder';</code>. This file is not in the repository, so panel updates do not touch it.</p>
-        <div class="note">⚠️ <strong>Updates and rollback.</strong> Updating the panel does not touch the data: it lives outside the project folder. Do not roll back to a panel version that does not know about the new folder: it will not find <code>users.json</code> in the old location and will create a new <code>root</code> user. For backups, save the whole data folder.</div>
-        <p><strong>Backups and logs.</strong> Before every change of the settings and of the user list the panel saves a copy of <code>vlmcconf_config.json</code> and <code>users.json</code> to <code>backups/config/</code> and <code>backups/users/</code> in the data folder (the latest 50 of each). If a file is damaged, the panel restores it from the latest copy and keeps the damaged one next to it (<code>*.broken</code>); if there is nothing to restore from, the file is not overwritten. Every save is recorded in <code>config_changes.log</code> and <code>users_changes.log</code> (time, user, action, number of devices or users before and after; the <code>SHRINK</code> mark means a decrease). If <code>users.json</code> disappears but copies exist, the users are restored from a copy; to deliberately reset the <code>root</code> password, delete <code>users.json</code> and the <code>backups/users</code> folder.</p>
-        <div class="note">💡 The <code>vlmcconf/cache</code> directory stays in its old location for now.</div>
     </div>
     
     <!-- SSL -->
@@ -826,91 +744,39 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p><strong>Check:</strong> "Tools → Update → 🌐 Check GitHub" should answer "GitHub is reachable, SSL verification passed". Until certificates are configured, updates and country lookup by IP will not work: the interface shows this same hint.</p>
     </div>
     
-    <!-- Panel update -->
-    <div class="section-card">
-        <div class="section-title"><span>🔄</span> Panel update</div>
-        <p>There is a single update source: the project repository on GitHub. The channel is chosen on "Tools → Update":</p>
-        <ul>
-            <li><strong>Release (stable)</strong> — files come from the tag of the latest published release. Only a release with a version higher than the installed one counts as an update.</li>
-            <li><strong>Early access</strong> — files from the <code>main</code> branch. An update is available if the repository has new or changed files (compared by git SHA of the content, not by size).</li>
-        </ul>
-        <p><strong>Automatic check</strong> checks both channels at the chosen interval (12 hours by default) when an administrator with the "Tools: edit" right opens the panel and shows a notice. Only a person installs the update. For scheduled checks on the server:</p>
-        <div class="code-block"><pre>0 */6 * * * www-data php /var/www/html/vlmcconf/update_check.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>The <code>update_check.php</code> script exits with code 0 (no updates), 10 (an update is available) or 1 (check error).</p>
-        <p><strong>How installation works:</strong> files are downloaded to a temporary folder and verified against the repository by SHA, then the files being replaced are backed up (to <code>backups/update_…</code> in the data folder) and replaced. If anything goes wrong, the changes are rolled back. The <code>pic/</code> and <code>screen/</code> folders, settings and panel data are not updated; files that are not in the repository are not deleted.</p>
-        <div class="note">🚧 Automatic installation and schedule are still in development. Notifications about a new version are set up in the “Notifications” section.</div>
-        <div class="note">⚠️ If you made your own changes to the panel files, early access will offer to replace them with the repository version: push your changes to the repository first.</div>
-    </div>
-    
-    <!-- Background tasks -->
-    <div class="section-card">
-        <div class="section-title"><span>⏱️</span> Background tasks</div>
-        <p>The panel runs periodic tasks itself: update check, AD/LDAP connection check (every 12 hours), notification checks (every 5 minutes: new devices, KMS service state, log, disk space) and removal of old event log entries (daily). Without setup they run only when someone opens the panel, so notifications may be delayed.</p>
-        <p>To run tasks without opening the panel, add a scheduled job. A ready command for your server is shown in “Event log → Background tasks → Run by OS scheduler”. On Ubuntu it is a job in <code>/etc/cron.d</code>, like:</p>
-        <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>The same block shows when each task last ran and how it ended, with a “Run now” button. The installer creates only the update check (<code>update_check.php</code>); the job for <code>cron.php</code> is added separately. The panel command writes the same <code>/etc/cron.d/kms-monitor</code> file as the installer and replaces it; this is fine because <code>cron.php</code> runs the update check itself.</p>
-    </div>
-
-    <!-- Event log -->
-    <div class="section-card">
-        <div class="section-title"><span>📜</span> Event log</div>
-        <p>The <strong>"Event log"</strong> section shows who did what and when in the panel: logins and logouts, failed login attempts, changes to users, groups, devices and settings, log and cache cleanup, updates, access denials. Changes show "before → after" values (passwords and tokens are never recorded). The section is available to users with the "Logs: view" permission.</p>
-        <ul>
-            <li><strong>Filters:</strong> user, action, result, period; <strong>search</strong> by user, IP, action and details.</li>
-            <li>Clicking a user name shows that user's history and a summary (action count, activity period, IP addresses).</li>
-            <li>Activity chart by hour and day; export of the found records to CSV.</li>
-            <li><strong>Retention:</strong> 30, 90, 180 days or a custom period (1-365). Old records are removed automatically. Only an administrator can change the period or clear the log.</li>
-        </ul>
-        <p>The log is stored in the panel data folder (<code>audit.log</code>, permissions 0600).</p>
-    </div>
-    
-    <!-- Project structure -->
-    <div class="section-card">
-        <div class="section-title"><span>📂</span> Project structure</div>
-        <div class="file-tree">
-            <div>📁 /var/www/html/</div>
-            <div style="margin-left: 20px;">├── 📄 vlmc.php — main monitoring page</div>
-            <div style="margin-left: 20px;">└── 📁 vlmcconf/ — control panel</div>
-            <div style="margin-left: 40px;">    ├── 📄 .htaccess — protection of service files</div>
-            <div style="margin-left: 40px;">    ├── 📄 index.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcconf.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 login.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 logout.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 update_check.php — scheduled update check (cron)</div>
-            <div style="margin-left: 40px;">    ├── 📄 cron.php — background tasks by the OS scheduler (cron)</div>
-            <div style="margin-left: 40px;">    ├── 📄 api.php — REST API (read-only)</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcgeoip.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmcloghandler.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 vlmctheme.php</div>
-            <div style="margin-left: 40px;">    ├── 📄 flags.php</div>
-            <div style="margin-left: 40px;">    ├── 📁 cache/ — geolocation and log cache (auto-created)</div>
-            <div style="margin-left: 40px;">    ├── 📁 locale/ — language files</div>
-            <div style="margin-left: 40px;">    ├── 📁 sections/ — control panel sections</div>
-            <div style="margin-left: 40px;">    └── 📁 vlmcinc/ — helper libraries</div>
-            <div style="margin-top: 10px;">📁 /var/lib/vlmc-monitor/ — panel data (outside the web root)</div>
-            <div style="margin-left: 20px;">├── 📄 vlmcconf_config.json — settings (created by the panel automatically on first run)</div>
-            <div style="margin-left: 20px;">├── 📄 users.json — users</div>
-            <div style="margin-left: 20px;">├── 📄 audit.log — event log</div>
-            <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — notification channels, rules, history and encryption key</div>
-            <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — update check state, GitHub token</div>
-            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — API keys (hashes only) and rate counters</div>
-            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — background task state and history</div>
-            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — AD/LDAP state and log, webhook state</div>
-            <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — change logs and service locks</div>
-            <div style="margin-left: 20px;">└── 📁 backups/ — backups of settings, users and updates</div>
-        </div>
-    </div>
 </div>
 HTML_WEB_EN;
 
 // ============================================
 // ПОЛНЫЙ HTML ДЛЯ СКАЧИВАНИЯ
 // ============================================
+// Описание разделов (сгенерировано из docs/*.md скриптом docs/build_docs.py)
+$docDesc = @include __DIR__ . '/doc_desc.php';
+if (!is_array($docDesc)) {
+    $docDesc = ['ru' => [], 'en' => []];
+}
+
+// Карточки описания разделов для скачиваемого файла
+function docDescPartHtml($lang) {
+    global $docDesc;
+    $items = $docDesc[$lang] ?? [];
+    if (!$items) {
+        return '';
+    }
+    $head = $lang === 'en' ? 'Panel sections and options' : 'Разделы и опции панели';
+    $out = '<div class="section-title" style="margin: 40px 0 20px;"><span>📖</span> ' . $head . '</div>';
+    foreach ($items as $d) {
+        $out .= '<div class="section-card"><div class="section-title"><span>' . $d['icon'] . '</span> '
+            . htmlspecialchars($d['title'], ENT_QUOTES, 'UTF-8') . '</div><div class="doc-desc">' . $d['html'] . '</div></div>';
+    }
+    return $out;
+}
+
 function getFullDownloadHtml() {
     global $docWebRu, $docWebEn;
     
-    $webRuJson = json_encode($docWebRu);
-    $webEnJson = json_encode($docWebEn);
+    $webRuJson = json_encode($docWebRu . docDescPartHtml('ru'));
+    $webEnJson = json_encode($docWebEn . docDescPartHtml('en'));
     
     return '<!DOCTYPE html>
 <html lang="ru">
@@ -1096,6 +962,19 @@ function getFullDownloadHtml() {
             line-height: 1.8;
         }
         
+        .doc-desc { line-height: 1.6; font-size: 14.5px; }
+        .doc-desc h2 { font-size: 17px; margin: 26px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #33485d; color: #e1e9f0; }
+        .doc-desc h2:first-child { margin-top: 0; }
+        .doc-desc h3 { font-size: 15px; margin: 18px 0 6px; }
+        .doc-desc p { margin: 8px 0; }
+        .doc-desc ul, .doc-desc ol { margin: 8px 0; padding-left: 24px; }
+        .doc-desc code { background: #2d3f52; padding: 1px 5px; border-radius: 4px; font-size: 13px; font-family: monospace; }
+        .doc-desc pre { background: #0a0f1a; border: 1px solid #2d3f52; padding: 12px; border-radius: 8px; overflow-x: auto; }
+        .doc-desc pre code { background: none; padding: 0; }
+        .doc-desc table { border-collapse: collapse; margin: 10px 0; display: block; overflow-x: auto; }
+        .doc-desc th, .doc-desc td { border: 1px solid #33485d; padding: 6px 10px; text-align: left; vertical-align: top; }
+        .doc-desc th { background: #1f2e3c; }
+        
         a { color: #3b82f6; text-decoration: none; }
         a:hover { text-decoration: underline; }
         
@@ -1178,53 +1057,92 @@ renderDocumentation();
 ?>
 
 <div id="section-documentation" class="settings-section <?= $activeSection === 'documentation' ? 'active' : '' ?>">
-    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+    <div class="section-title sec-title doc-head">
         <span>📚 <?= __('doc_title') ?></span>
-        <button id="downloadDocBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">📥 <?= __('doc_download') ?></button>
-    </div>
-    
-    <!-- Переключение языка -->
-    <div class="doc-tabs-wrapper" style="flex-shrink: 0; margin-bottom: 15px;">
-        <div class="doc-lang-tabs" style="display: inline-flex; gap: 10px; background: <?= $themeCSS['input'] ?>; padding: 8px 12px; border-radius: 8px;">
-            <button class="doc-lang-btn active" data-lang="ru" style="background: none; border: none; cursor: pointer; font-weight: 600; padding: 4px 12px; border-radius: 6px;">🇷🇺 Русский</button>
-            <span style="color: <?= $themeCSS['border'] ?>;">|</span>
-            <button class="doc-lang-btn" data-lang="en" style="background: none; border: none; cursor: pointer; font-weight: 600; padding: 4px 12px; border-radius: 6px;">🇬🇧 English</button>
+        <div class="sec-tabs">
+            <button type="button" class="sec-tab-btn active" data-doc-tab="inst"></button>
+            <button type="button" class="sec-tab-btn" data-doc-tab="desc"></button>
         </div>
     </div>
-    
-    <!-- Контейнер для содержимого -->
-    <div id="docContent" class="doc-content">
-        <?= $docWebRu ?>
+
+    <div class="doc-toolbar">
+        <div class="doc-search">
+            <svg class="doc-s-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input type="text" id="docSearchInput" class="doc-s-in" autocomplete="off" spellcheck="false">
+            <button type="button" id="docSearchClear" class="doc-s-x" hidden aria-label="clear">✕</button>
+            <kbd class="doc-s-k">/</kbd>
+            <div id="docSearchRes" class="doc-s-res" hidden></div>
+        </div>
+        <div class="doc-langs">
+            <button type="button" class="sec-tab-btn" data-doc-lang="ru"><span class="doc-fl doc-fl-ru"></span> RU</button>
+            <button type="button" class="sec-tab-btn" data-doc-lang="en"><span class="doc-fl doc-fl-gb"></span> EN</button>
+        </div>
+        <button type="button" id="downloadDocBtn" class="sec-btn primary">📥 <?= __('doc_download') ?></button>
+    </div>
+
+    <div class="doc-layout">
+        <nav id="docNav" class="doc-nav"></nav>
+        <div id="docContent" class="doc-content"></div>
     </div>
 </div>
 
 <style>
-.doc-content {
-    background: <?= $themeCSS['card'] ?>;
-    border-radius: 12px;
-    overflow-x: auto;
-    flex: 1;
+#section-documentation.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     min-height: 0;
+}
+
+/* Заголовок: название слева, вкладки справа */
+#section-documentation .doc-head { flex-shrink: 0; }
+
+/* Строка: поиск, язык, «Скачать» */
+.doc-toolbar { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; flex-shrink: 0; }
+.doc-langs { display: flex; gap: 8px; flex: none; }
+.doc-fl { display: inline-block; width: 18px; height: 13px; margin-right: 5px; vertical-align: -2px; border-radius: 2px; background-size: cover; background-position: center; }
+.doc-fl-ru { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 3'%3E%3Crect width='4' height='3' fill='%23fff'/%3E%3Crect y='1' width='4' height='2' fill='%230039a6'/%3E%3Crect y='2' width='4' height='1' fill='%23d52b1e'/%3E%3C/svg%3E"); }
+.doc-fl-gb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 45'%3E%3Crect width='60' height='45' fill='%23012169'/%3E%3Cpath d='M0 0L60 45M60 0L0 45' stroke='%23fff' stroke-width='9'/%3E%3Cpath d='M0 0L60 45M60 0L0 45' stroke='%23c8102e' stroke-width='4'/%3E%3Cpath d='M30 0V45M0 22.5H60' stroke='%23fff' stroke-width='15'/%3E%3Cpath d='M30 0V45M0 22.5H60' stroke='%23c8102e' stroke-width='9'/%3E%3C/svg%3E"); }
+
+/* Поиск */
+.doc-search { position: relative; flex: 1; min-width: 0; }
+.doc-s-in { width: 100%; height: 38px; box-sizing: border-box; padding: 0 64px 0 42px; border-radius: 19px; border: 1px solid <?= $themeCSS['border'] ?>; background: <?= $themeCSS['input'] ?>; color: <?= $themeCSS['text'] ?>; font: inherit; font-size: 14px; outline: none; transition: border-color .15s, box-shadow .15s; }
+.doc-s-in::placeholder { color: <?= $themeCSS['muted'] ?>; }
+.doc-s-in:focus { border-color: <?= $themeCSS['primary'] ?>; box-shadow: 0 0 0 3px <?= $themeCSS['primary'] ?>40; }
+.doc-s-ic { position: absolute; left: 14px; top: 10px; color: <?= $themeCSS['muted'] ?>; pointer-events: none; }
+.doc-search:focus-within .doc-s-ic { color: <?= $themeCSS['primary'] ?>; }
+.doc-s-x { position: absolute; right: 12px; top: 7px; width: 24px; height: 24px; border: 0; border-radius: 50%; background: <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; cursor: pointer; font-size: 11px; line-height: 24px; padding: 0; }
+.doc-s-x:hover { background: <?= $themeCSS['hover'] ?>; }
+.doc-s-k { position: absolute; right: 14px; top: 9px; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 5px; padding: 0 7px; font: 12px/18px ui-monospace, monospace; color: <?= $themeCSS['muted'] ?>; pointer-events: none; }
+.doc-s-x:not([hidden]) ~ .doc-s-k { display: none; }
+.doc-s-res { position: absolute; left: 0; right: 0; top: 46px; z-index: 50; max-height: 420px; overflow-y: auto; border-radius: 12px; border: 1px solid <?= $themeCSS['border'] ?>; background: <?= $themeCSS['card'] ?>; box-shadow: 0 14px 36px rgba(0,0,0,.45); padding: 6px; }
+.doc-s-res[hidden] { display: none; }
+.doc-r { display: block; padding: 9px 12px; border-radius: 8px; cursor: pointer; color: <?= $themeCSS['text'] ?>; }
+.doc-r.sel, .doc-r:hover { background: <?= $themeCSS['hover'] ?>; }
+.doc-r-t { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.doc-r-b { font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 10px; border: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['muted'] ?>; }
+.doc-r-s { margin-top: 3px; font-size: 12.5px; color: <?= $themeCSS['muted'] ?>; line-height: 1.45; }
+.doc-s-none { padding: 14px; text-align: center; color: <?= $themeCSS['muted'] ?>; font-size: 13.5px; }
+.doc-r mark, mark.doc-hl { background: rgba(250,204,21,.4); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* Меню и содержимое */
+.doc-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
+.doc-nav { flex: none; width: 240px; overflow-y: auto; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 12px; padding: 8px; background: <?= $themeCSS['card'] ?>; }
+.doc-nav a { display: block; padding: 7px 10px; border-radius: 6px; color: <?= $themeCSS['text'] ?>; font-size: 14px; cursor: pointer; text-decoration: none; }
+.doc-nav a:hover { background: <?= $themeCSS['hover'] ?>; }
+.doc-nav a.on { background: <?= $themeCSS['primary'] ?>33; font-weight: 600; color: <?= $themeCSS['accentText'] ?>; }
+.doc-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: auto;
     overflow-y: auto;
     padding: 20px;
-}
-
-.doc-tabs-wrapper {
-    flex-shrink: 0;
-    margin-bottom: 15px;
-}
-
-.doc-lang-btn.active {
-    color: <?= $themeCSS['accentText'] ?> !important;
-    background: <?= $themeCSS['card'] ?> !important;
-}
-
-.doc-lang-btn:hover {
-    opacity: 0.8;
     background: <?= $themeCSS['card'] ?>;
+    border-radius: 12px;
 }
 
-/* Стили для внутреннего контента */
+/* Карточки внутри содержимого */
 .doc-content .section-card {
     background: <?= $themeCSS['input'] ?>;
     border-radius: 12px;
@@ -1232,7 +1150,6 @@ renderDocumentation();
     margin-bottom: 25px;
     border: 2px solid <?= $themeCSS['border'] ?>;
 }
-
 .doc-content .section-title {
     justify-content: flex-start;
     font-size: 20px;
@@ -1245,12 +1162,7 @@ renderDocumentation();
     border-bottom: 1px solid <?= $themeCSS['border'] ?>;
     padding-bottom: 12px;
 }
-
-.doc-content .section-title span { font-size: 22px; line-height: 1; }
-
-.doc-content .section-title span {
-    font-size: 26px;
-}
+.doc-content .section-title span { font-size: 26px; line-height: 1; }
 
 .doc-content .code-block {
     background: #0a0f1a;
@@ -1262,143 +1174,252 @@ renderDocumentation();
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
 }
+.doc-content .note { background: <?= $themeCSS['warning'] ?>20; border-left: 4px solid <?= $themeCSS['warning'] ?>; padding: 10px 15px; margin: 12px 0; border-radius: 6px; }
+.doc-content .warning { background: <?= $themeCSS['danger'] ?>20; border-left: 4px solid <?= $themeCSS['danger'] ?>; padding: 10px 15px; margin: 12px 0; border-radius: 6px; }
+.doc-content .success { background: <?= $themeCSS['success'] ?>20; border-left: 4px solid <?= $themeCSS['success'] ?>; padding: 10px 15px; margin: 12px 0; border-radius: 6px; }
+.doc-content .file-tree { background: #0a0f1a; padding: 12px 16px; border-radius: 8px; font-family: monospace; font-size: 12px; line-height: 1.7; }
 
-.doc-content .note {
-    background: <?= $themeCSS['warning'] ?>20;
-    border-left: 4px solid <?= $themeCSS['warning'] ?>;
-    padding: 10px 15px;
-    margin: 12px 0;
-    border-radius: 6px;
-}
+/* Описание разделов (из markdown) */
+.doc-desc { line-height: 1.6; font-size: 14.5px; }
+.doc-desc h2 { font-size: 17px; margin: 26px 0 12px; padding-bottom: 8px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; color: <?= $themeCSS['text'] ?>; }
+.doc-desc h2:first-child { margin-top: 0; }
+.doc-desc h3 { font-size: 15px; margin: 18px 0 6px; color: <?= $themeCSS['text'] ?>; }
+.doc-desc p { margin: 8px 0; }
+.doc-desc ul, .doc-desc ol { margin: 8px 0; padding-left: 24px; }
+.doc-desc li { margin: 3px 0; }
+.doc-desc a { color: <?= $themeCSS['accentText'] ?>; cursor: pointer; }
+.doc-desc code { background: <?= $themeCSS['border'] ?>66; padding: 1px 5px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', Consolas, monospace; }
+.doc-desc pre { background: #0a0f1a; border: 1px solid <?= $themeCSS['border'] ?>; padding: 12px; border-radius: 8px; overflow-x: auto; }
+.doc-desc pre code { background: none; padding: 0; }
+.doc-desc table { border-collapse: collapse; margin: 10px 0; display: block; overflow-x: auto; }
+.doc-desc th, .doc-desc td { border: 1px solid <?= $themeCSS['border'] ?>; padding: 6px 10px; text-align: left; vertical-align: top; }
+.doc-desc th { background: <?= $themeCSS['card'] ?>; }
 
-.doc-content .warning {
-    background: <?= $themeCSS['danger'] ?>20;
-    border-left: 4px solid <?= $themeCSS['danger'] ?>;
-    padding: 10px 15px;
-    margin: 12px 0;
-    border-radius: 6px;
-}
-
-.doc-content .success {
-    background: <?= $themeCSS['success'] ?>20;
-    border-left: 4px solid <?= $themeCSS['success'] ?>;
-    padding: 10px 15px;
-    margin: 12px 0;
-    border-radius: 6px;
-}
-
-.doc-content .file-tree {
-    background: #0a0f1a;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-family: monospace;
-    font-size: 12px;
-    line-height: 1.7;
-}
-
-#section-documentation.active {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-}
-
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-primary {
-    background: <?= $themeCSS['primary'] ?>;
-    color: <?= $themeCSS['onPrimary'] ?>;
-}
-.btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
+@media (max-width: 900px) {
+    .doc-layout { flex-direction: column; }
+    .doc-nav { width: auto; max-height: 160px; }
+    .doc-toolbar { flex-wrap: wrap; }
 }
 </style>
 
 <script>
-// Содержимое для разных языков
-const contentMap = {
-    ru: <?= json_encode($docWebRu) ?>,
-    en: <?= json_encode($docWebEn) ?>
-};
+(function () {
+    var INST_HTML = <?= json_encode(['ru' => $docWebRu, 'en' => $docWebEn]) ?>;
+    var DESC = <?= json_encode($docDesc, JSON_UNESCAPED_UNICODE) ?>;
+    var LABELS = {
+        ru: { inst: '🚀 Установка', desc: '📖 Описание', ph: 'Поиск по документации…', none: 'Ничего не найдено', bInst: 'Установка', bDesc: 'Описание' },
+        en: { inst: '🚀 Installation', desc: '📖 Description', ph: 'Search the documentation…', none: 'Nothing found', bInst: 'Installation', bDesc: 'Description' }
+    };
+    var state = { lang: <?= json_encode(($config['language'] ?? 'ru') === 'en' ? 'en' : 'ru') ?>, tab: 'inst', id: null };
+    var model = null;
 
-let currentLang = 'ru';
+    function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
 
-function renderDocumentation() {
-    const container = document.getElementById('docContent');
-    if (container) {
-        container.innerHTML = contentMap[currentLang];
+    function plain(html) {
+        var d = document.createElement('div');
+        d.innerHTML = html.replace(/<\/(p|li|h2|h3|tr|td|th|div|pre)>/g, '</$1> ');
+        return d.textContent.replace(/\s+/g, ' ');
     }
-    
-    document.querySelectorAll('.doc-lang-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.lang === currentLang) {
-            btn.classList.add('active');
-            btn.style.color = '<?= $themeCSS['primary'] ?>';
-        } else {
-            btn.style.color = '<?= $themeCSS['text'] ?>';
+
+    function build() {
+        model = {};
+        ['ru', 'en'].forEach(function (lang) {
+            var tpl = document.createElement('template');
+            tpl.innerHTML = INST_HTML[lang];
+            var inst = [].map.call(tpl.content.querySelectorAll('.section-card'), function (c, i) {
+                var t = c.querySelector('.section-title'), ic = t.querySelector('span');
+                var icon = ic ? ic.textContent.trim() : '';
+                var title = t.textContent.replace(icon, '').trim();
+                return { id: 'i' + i, icon: icon, title: title, html: c.outerHTML, text: plain(c.outerHTML) };
+            });
+            var desc = (DESC[lang] || []).map(function (d) {
+                var html = '<div class="section-card"><div class="section-title"><span>' + d.icon + '</span> ' + esc(d.title) + '</div><div class="doc-desc">' + d.html + '</div></div>';
+                return { id: d.id, icon: d.icon, title: d.title, html: html, text: d.title + ' ' + plain(d.html) };
+            });
+            model[lang] = { inst: inst, desc: desc };
+        });
+    }
+
+    function items() { return model[state.lang][state.tab]; }
+
+    function renderChrome() {
+        var L = LABELS[state.lang];
+        document.querySelectorAll('[data-doc-tab]').forEach(function (b) {
+            b.textContent = L[b.dataset.docTab];
+            b.classList.toggle('active', b.dataset.docTab === state.tab);
+        });
+        document.querySelectorAll('[data-doc-lang]').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.docLang === state.lang);
+        });
+        document.getElementById('docSearchInput').placeholder = L.ph;
+    }
+
+    function renderNav() {
+        var nav = document.getElementById('docNav');
+        nav.innerHTML = items().map(function (it) {
+            return '<a data-id="' + it.id + '" class="' + (it.id === state.id ? 'on' : '') + '">' + it.icon + ' ' + esc(it.title) + '</a>';
+        }).join('');
+    }
+
+    function show(id, keepScroll) {
+        var list = items();
+        var it = list.filter(function (x) { return x.id === id; })[0] || list[0];
+        if (!it) { return; }
+        state.id = it.id;
+        var box = document.getElementById('docContent');
+        box.innerHTML = it.html;
+        if (!keepScroll) { box.scrollTop = 0; }
+        renderNav();
+        var cur = document.querySelector('#docNav a.on');
+        if (cur && cur.scrollIntoView) { cur.scrollIntoView({ block: 'nearest' }); }
+    }
+
+    function renderAll() { renderChrome(); show(state.id); clearHl(); searchUpdate(); }
+
+    /* ---------- Поиск ---------- */
+    var inp, res, clr, hits = [], sel = -1;
+    function rx(q) {
+        return new RegExp(q.trim().split(/\s+/).filter(Boolean).map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'gi');
+    }
+    function clearHl() {
+        document.querySelectorAll('mark.doc-hl').forEach(function (m) {
+            var p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize();
+        });
+    }
+    function highlight(q) {
+        clearHl();
+        var root = document.getElementById('docContent'), r = rx(q), w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes = [], n;
+        while ((n = w.nextNode())) {
+            if (n.parentNode.closest('pre,script,style')) { continue; }
+            r.lastIndex = 0;
+            if (r.test(n.nodeValue)) { nodes.push(n); }
         }
-    });
-}
-
-// Переключение языка
-document.querySelectorAll('.doc-lang-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        currentLang = this.dataset.lang;
-        renderDocumentation();
-    });
-});
-
-// Скачивание полного документа
-document.getElementById('downloadDocBtn').addEventListener('click', function() {
-    const fullHtml = <?= json_encode(getFullDownloadHtml()) ?>;
-    const blob = new Blob([fullHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `KMS_Monitor_Full_Guide_${new Date().toISOString().slice(0,10)}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-});
-
-// Инициализация при загрузке секции
-document.addEventListener('DOMContentLoaded', function() {
-    const docSection = document.getElementById('section-documentation');
-    if (docSection && docSection.classList.contains('active')) {
-        renderDocumentation();
-    }
-});
-
-// Наблюдатель за активацией секции
-const docObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.attributeName === 'class') {
-            const target = mutation.target;
-            if (target.id === 'section-documentation' && target.classList.contains('active')) {
-                renderDocumentation();
-                docObserver.disconnect();
+        nodes.forEach(function (n) {
+            var f = document.createDocumentFragment(), t = n.nodeValue, i = 0, m;
+            r.lastIndex = 0;
+            while ((m = r.exec(t))) {
+                if (m.index > i) { f.appendChild(document.createTextNode(t.slice(i, m.index))); }
+                var k = document.createElement('mark'); k.className = 'doc-hl'; k.textContent = m[0]; f.appendChild(k);
+                i = m.index + m[0].length;
+                if (m[0].length === 0) { r.lastIndex++; }
             }
-        }
-    });
-});
+            if (i < t.length) { f.appendChild(document.createTextNode(t.slice(i))); }
+            n.parentNode.replaceChild(f, n);
+        });
+        var first = root.querySelector('mark.doc-hl');
+        if (first) { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }
+    function searchUpdate() {
+        var q = inp.value.trim();
+        clr.hidden = !q; sel = -1;
+        if (q.length < 2) { res.hidden = true; hits = []; return; }
+        var r = rx(q), L = LABELS[state.lang];
+        hits = [];
+        ['inst', 'desc'].forEach(function (tab) {
+            model[state.lang][tab].forEach(function (it) {
+                r.lastIndex = 0;
+                var cnt = (it.text.match(r) || []).length;
+                if (!cnt) { return; }
+                r.lastIndex = 0;
+                var m = r.exec(it.text), a = Math.max(0, m.index - 50), b = Math.min(it.text.length, m.index + 110);
+                var snip = (a > 0 ? '…' : '') + it.text.slice(a, b) + (b < it.text.length ? '…' : '');
+                r.lastIndex = 0;
+                hits.push({ tab: tab, id: it.id, title: it.title, snip: snip, score: (r.test(it.title) ? 1000 : 0) + cnt });
+            });
+        });
+        hits.sort(function (x, y) { return y.score - x.score; });
+        hits = hits.slice(0, 12);
+        if (!hits.length) { res.innerHTML = '<div class="doc-s-none">' + L.none + '</div>'; res.hidden = false; return; }
+        var mk = function (s) { return esc(s).replace(rx(q), function (x) { return '<mark>' + x + '</mark>'; }); };
+        res.innerHTML = hits.map(function (h, i) {
+            return '<a class="doc-r" data-i="' + i + '"><div class="doc-r-t">' + mk(h.title) + '<span class="doc-r-b">' + (h.tab === 'inst' ? L.bInst : L.bDesc) + '</span></div><div class="doc-r-s">' + mk(h.snip) + '</div></a>';
+        }).join('');
+        res.hidden = false;
+    }
+    function openHit(i) {
+        var h = hits[i]; if (!h) { return; }
+        state.tab = h.tab; state.id = h.id;
+        renderChrome(); show(h.id);
+        res.hidden = true;
+        highlight(inp.value);
+    }
+    function markSel() {
+        res.querySelectorAll('.doc-r').forEach(function (e, i) { e.classList.toggle('sel', i === sel); });
+        var e = res.querySelector('.doc-r.sel'); if (e) { e.scrollIntoView({ block: 'nearest' }); }
+    }
 
-const docSection = document.getElementById('section-documentation');
-if (docSection) {
-    docObserver.observe(docSection, { attributes: true });
-}
+    /* ---------- Скачивание ---------- */
+    function download() {
+        var fullHtml = <?= json_encode(getFullDownloadHtml()) ?>;
+        var blob = new Blob([fullHtml], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'KMS_Monitor_Full_Guide_' + new Date().toISOString().slice(0, 10) + '.html';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    /* ---------- Запуск ---------- */
+    var started = false;
+    function start() {
+        if (started) { return; }
+        started = true;
+        inp = document.getElementById('docSearchInput');
+        res = document.getElementById('docSearchRes');
+        clr = document.getElementById('docSearchClear');
+        build();
+        renderAll();
+
+        document.querySelectorAll('[data-doc-tab]').forEach(function (b) {
+            b.addEventListener('click', function () { state.tab = b.dataset.docTab; state.id = null; renderAll(); });
+        });
+        document.querySelectorAll('[data-doc-lang]').forEach(function (b) {
+            b.addEventListener('click', function () { state.lang = b.dataset.docLang; state.id = null; renderAll(); });
+        });
+        document.getElementById('docNav').addEventListener('click', function (e) {
+            var a = e.target.closest('a[data-id]');
+            if (a) { clearHl(); show(a.dataset.id); }
+        });
+        document.getElementById('docContent').addEventListener('click', function (e) {
+            var a = e.target.closest('a[data-doc]');
+            if (a) { e.preventDefault(); state.tab = 'desc'; renderChrome(); show(a.dataset.doc); }
+        });
+        inp.addEventListener('input', searchUpdate);
+        inp.addEventListener('focus', searchUpdate);
+        inp.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(hits.length - 1, sel + 1); markSel(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); markSel(); }
+            else if (e.key === 'Enter') { e.preventDefault(); openHit(sel < 0 ? 0 : sel); }
+            else if (e.key === 'Escape') { res.hidden = true; inp.blur(); }
+        });
+        res.addEventListener('mousedown', function (e) {
+            var a = e.target.closest('.doc-r');
+            if (a) { e.preventDefault(); openHit(+a.dataset.i); }
+        });
+        clr.addEventListener('click', function () { inp.value = ''; clearHl(); searchUpdate(); inp.focus(); });
+        document.addEventListener('click', function (e) { if (!e.target.closest('.doc-search')) { res.hidden = true; } });
+        document.addEventListener('keydown', function (e) {
+            var sec = document.getElementById('section-documentation');
+            if (e.key === '/' && sec && sec.classList.contains('active') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+                e.preventDefault(); inp.focus();
+            }
+        });
+        document.getElementById('downloadDocBtn').addEventListener('click', download);
+    }
+
+    var sec = document.getElementById('section-documentation');
+    if (sec) {
+        if (sec.classList.contains('active')) {
+            start();
+        } else {
+            var obs = new MutationObserver(function () {
+                if (sec.classList.contains('active')) { start(); obs.disconnect(); }
+            });
+            obs.observe(sec, { attributes: true, attributeFilter: ['class'] });
+        }
+    }
+})();
 </script>
 <?php
 ?>

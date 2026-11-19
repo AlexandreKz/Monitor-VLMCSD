@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ============================================
 # ФАЙЛ: install.sh
-# ВЕРСИЯ: 1.0.2
-# ДАТА: 2026-11-18
+# ВЕРСИЯ: 1.0.3
+# ДАТА: 2026-11-19
 # @description: Установщик KMS Monitor для Ubuntu 26.04+ (Apache + PHP): пакеты, скачивание с GitHub, папка данных, права
 # ============================================
 #
@@ -38,7 +38,7 @@ CRON_DIR="${CRON_DIR:-/etc/cron.d}"
 LOG_FILE="${LOG_FILE:-/var/log/kms-monitor-install.log}"
 
 # Пути, которые не копируются из репозитория (как в обновлении из панели)
-EXCLUDES=(./.git ./.github ./.gitignore ./.gitattributes ./screen ./pic ./README.md ./LICENSE ./install.sh \
+EXCLUDES=(./.git ./.github ./.gitignore ./.gitattributes ./screen ./pic ./docs ./README.md ./LICENSE ./install.sh \
           ./backups ./cache ./vlmcconf/cache ./vlmcconf/backups ./vlmcconf/data_dir.local.php \
           ./vlmcconf/users.json ./vlmcconf/vlmcconf_config.json)
 
