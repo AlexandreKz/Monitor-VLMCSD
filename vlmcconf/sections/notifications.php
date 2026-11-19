@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.7.1
+// ВЕРСИЯ: 3.7.2
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -13,6 +13,8 @@ if (!canEditNotifications($currentUserPermissions)) {
     return;
 }
 require_once __DIR__ . '/../vlmcinc/notify.php';
+require_once __DIR__ . '/../vlmcinc/section_ui.php';
+vlmcSectionUi($themeCSS);
 
 // Читаемость в любой теме: контраст цвета с фоном не ниже порога, иначе берётся запасной цвет
 if (!function_exists('ntfLum')) {
@@ -82,11 +84,11 @@ $ntfT['saveError'] = __('msg_save_error');
     </div>
 
     <div id="ntfRules" class="ntf-page">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="sec-btn primary" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfRulesTable"></table></div>
     </div>
     <div id="ntfChannels" class="ntf-page active">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="sec-btn primary" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfChannelsTable"></table></div>
     </div>
     <div id="ntfHistory" class="ntf-page">
