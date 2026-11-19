@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.3
+// ВЕРСИЯ: 6.0.4
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -3083,13 +3083,6 @@ renderDocumentation();
 }
 
 /* Карточки внутри содержимого */
-.doc-content .section-card {
-    background: none;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    margin: 0;
-}
 .doc-content .section-title {
     justify-content: flex-start;
     font-size: 20px;
@@ -3170,10 +3163,10 @@ renderDocumentation();
                 var t = c.querySelector('.section-title'), ic = t.querySelector('span');
                 var icon = ic ? ic.textContent.trim() : '';
                 var title = t.textContent.replace(icon, '').trim();
-                return { id: 'i' + i, icon: icon, title: title, html: c.outerHTML, text: plain(c.outerHTML) };
+                return { id: 'i' + i, icon: icon, title: title, html: c.innerHTML, text: plain(c.innerHTML) };
             });
             var desc = (DESC[lang] || []).map(function (d) {
-                var html = '<div class="section-card"><div class="section-title"><span>' + d.icon + '</span> ' + esc(d.title) + '</div><div class="doc-desc">' + d.html + '</div></div>';
+                var html = '<div class="section-title"><span>' + d.icon + '</span> ' + esc(d.title) + '</div><div class="doc-desc">' + d.html + '</div>';
                 return { id: d.id, icon: d.icon, title: d.title, html: html, text: d.title + ' ' + plain(d.html) };
             });
             model[lang] = { inst: inst, desc: desc };
