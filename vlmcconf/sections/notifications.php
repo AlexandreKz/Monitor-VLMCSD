@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.6.0
+// ВЕРСИЯ: 3.6.1
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -82,11 +82,11 @@ $ntfT['saveError'] = __('msg_save_error');
     </div>
 
     <div id="ntfRules" class="ntf-page">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewRule">➕ <?= __('notify_rule_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfRulesTable"></table></div>
     </div>
     <div id="ntfChannels" class="ntf-page active">
-        <div class="ntf-row ntf-top"><button type="button" class="ntf-flat" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
+        <div class="ntf-row ntf-top"><button type="button" class="ntf-prim" id="ntfNewChannel">➕ <?= __('notify_channel_new') ?></button><span class="ntf-msg"></span></div>
         <div class="ntf-wrap"><table class="ntf-table" id="ntfChannelsTable"></table></div>
     </div>
     <div id="ntfHistory" class="ntf-page">
@@ -149,9 +149,9 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-sec { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; }
 .ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
 .ntf-f { margin-bottom: 8px; }
-.ntf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; margin-bottom: 8px; }
-.ntf-row > .ntf-sec { margin-bottom: 0; }
-@media (max-width: 760px) { .ntf-row { grid-template-columns: 1fr; } }
+.ntf-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+.ntf-pair > .ntf-sec { margin-bottom: 0; }
+@media (max-width: 760px) { .ntf-pair { grid-template-columns: 1fr; } }
 .ntf-sec .ntf-f:last-child { margin-bottom: 0; }
 .ntf-l { display: block; font-size: 12px; color: <?= $ntfMuted ?>; margin-bottom: 5px; }
 .ntf-gh { font-size: 12px; font-weight: 600; margin: 8px 0 4px; color: <?= $ntfMuted ?>; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
@@ -361,7 +361,7 @@ $ntfT['saveError'] = __('msg_save_error');
         evQ.oninput = function () { query = evQ.value.trim().toLowerCase(); evGroups.forEach(function (f) { f(); }); evBox.scrollTop = 0; };
 
         // каналы и частота — в одну строку
-        const row = el('div', 'ntf-row'); body.appendChild(row);
+        const row = el('div', 'ntf-pair'); body.appendChild(row);
         const chBox = el('div', 'ntf-box');
         const chSec = el('div', 'ntf-sec');
         if (!D.channels.length) { chBox.appendChild(el('span', 'ntf-hint', T.f_channels_none)); }
