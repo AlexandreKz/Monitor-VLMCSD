@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.7.2
+// ВЕРСИЯ: 3.7.3
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -129,12 +129,6 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-msg { font-size: 13px; }
 .ntf-msg.ok { color: <?= $ntfOk ?>; }
 .ntf-msg.err { color: <?= $ntfDanger ?>; }
-.ntf-flat { box-sizing: border-box; background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 6px; padding: 0 16px; height: 30px; font-size: 12px; line-height: 28px; cursor: pointer; white-space: nowrap; font-family: inherit; transition: border-color .15s, color .15s; }
-.ntf-flat:hover:not(:disabled) { border-color: <?= $themeCSS['primary'] ?>; color: <?= $themeCSS['primary'] ?>; }
-.ntf-flat:disabled { opacity: 0.5; cursor: default; }
-.ntf-flat.danger:hover:not(:disabled) { border-color: <?= $themeCSS['danger'] ?>; color: <?= $themeCSS['danger'] ?>; }
-.ntf-prim { box-sizing: border-box; background: <?= $themeCSS['primary'] ?>; color: <?= ntfOn($themeCSS['primary']) ?>; border: 1px solid <?= $themeCSS['primary'] ?>; border-radius: 6px; padding: 0 18px; height: 30px; font-size: 12px; cursor: pointer; font-family: inherit; }
-.ntf-prim:disabled { opacity: 0.5; cursor: default; }
 .ntf-num { -moz-appearance: textfield; appearance: textfield; }
 .ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ntf-ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -433,7 +427,7 @@ $ntfT['saveError'] = __('msg_save_error');
 
         const msg = el('span', 'ntf-msg');
         let close;
-        const save = btn('ntf-prim', '💾 ' + T.btn_save, function () {
+        const save = btn('sec-btn primary', '💾 ' + T.btn_save, function () {
             const data = { events: st.events, channels: st.channels, groups: st.groups, devices: st.devices, throttle: thr.value, quiet_enabled: qk.box.checked,
                 quiet_from: qf.value, quiet_to: qt.value, active: ak.box.checked, params: st.params };
             save.disabled = true;
@@ -441,9 +435,9 @@ $ntfT['saveError'] = __('msg_save_error');
                 if (d.success) { close(); apply(d); say(pageMsg(), d.message, d.message.indexOf('⚠️') < 0); } else { say(msg, d.message, false); }
             }).catch(function (e) { failMsg(msg, e); }).then(function () { save.disabled = false; });
         });
-        const foot = [save, btn('ntf-flat', T.btn_cancel, function () { close(); })];
+        const foot = [save, btn('sec-btn', T.btn_cancel, function () { close(); })];
         if (!isNew) {
-            foot.push(btn('ntf-flat danger', '🗑️ ' + T.btn_delete, function () {
+            foot.push(btn('sec-btn danger', '🗑️ ' + T.btn_delete, function () {
                 if (!confirm(T.confirm_delete_rule)) return;
                 post({ ajax: 'notify_rule_delete', id: rule.id }).then(function (d) {
                     if (d.success) { close(); apply(d); say(pageMsg(), d.message, true); } else { say(msg, d.message, false); }
@@ -502,22 +496,22 @@ $ntfT['saveError'] = __('msg_save_error');
         }
         const msg = el('span', 'ntf-msg');
         let close;
-        const save = btn('ntf-prim', '💾 ' + T.btn_save, function () {
+        const save = btn('sec-btn primary', '💾 ' + T.btn_save, function () {
             const p = form(); p.ajax = 'notify_channel_save'; save.disabled = true;
             post(p).then(function (d) {
                 if (d.success) { close(); apply(d); say(pageMsg(), d.message, true); } else { say(msg, d.message, false); }
             }).catch(function (x) { failMsg(msg, x); }).then(function () { save.disabled = false; });
         });
-        const test = btn('ntf-flat', '🧪 ' + T.btn_test, function () {
+        const test = btn('sec-btn', '🧪 ' + T.btn_test, function () {
             const p = form(); p.ajax = 'notify_channel_test'; test.disabled = true;
             post(p).then(function (d) {
                 say(msg, d.message, !!d.success);
                 post({ ajax: 'notify_get' }).then(function (v) { if (v.success) { D.history = v.history; renderHistory(); } });
             }).catch(function (x) { failMsg(msg, x); }).then(function () { test.disabled = false; });
         });
-        const foot = [save, test, btn('ntf-flat', T.btn_cancel, function () { close(); })];
+        const foot = [save, test, btn('sec-btn', T.btn_cancel, function () { close(); })];
         if (!isNew) {
-            foot.push(btn('ntf-flat danger', '🗑️ ' + T.btn_delete, function () {
+            foot.push(btn('sec-btn danger', '🗑️ ' + T.btn_delete, function () {
                 if (!confirm(T.confirm_delete_channel)) return;
                 post({ ajax: 'notify_channel_delete', id: ch.id }).then(function (d) {
                     if (d.success) { close(); apply(d); say(pageMsg(), d.message, true); } else { say(msg, d.message, false); }
