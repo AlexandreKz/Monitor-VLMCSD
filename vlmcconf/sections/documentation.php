@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.2
+// ВЕРСИЯ: 6.0.3
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -3076,19 +3076,19 @@ renderDocumentation();
     min-height: 0;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 8px;
+    padding: 24px;
     background: <?= $themeCSS['input'] ?>;
-    border: 1px solid <?= $themeCSS['border'] ?>;
+    border: 2px solid <?= $themeCSS['border'] ?>;
     border-radius: 12px;
 }
 
 /* Карточки внутри содержимого */
 .doc-content .section-card {
-    background: <?= $themeCSS['input'] ?>;
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 25px;
-    border: 2px solid <?= $themeCSS['border'] ?>;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
 }
 .doc-content .section-title {
     justify-content: flex-start;
