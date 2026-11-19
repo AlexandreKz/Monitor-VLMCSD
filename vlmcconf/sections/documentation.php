@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.6.1
+// ВЕРСИЯ: 5.6.2
 // ДАТА: 2026-11-19
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -447,9 +447,6 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 20px;">├── 📄 audit.log — журнал событий</div>
             <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — каналы, правила и история уведомлений, ключ шифрования</div>
             <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — состояние проверки обновлений, токен GitHub</div>
-            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — API keys (hashes only) and rate counters</div>
-            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — background task state and history</div>
-            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — AD/LDAP state and log, webhook state</div>
             <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — ключи API (только хеши) и счётчики лимитов</div>
             <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — состояние и история фоновых задач</div>
             <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — состояние и журнал AD/LDAP, состояние вебхуков</div>
@@ -896,6 +893,9 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
             <div style="margin-left: 20px;">├── 📄 audit.log — event log</div>
             <div style="margin-left: 20px;">├── 📄 notify.json, notify.key, notify_state.json, notify_history.jsonl — notification channels, rules, history and encryption key</div>
             <div style="margin-left: 20px;">├── 📄 update_state.json, github_token.json — update check state, GitHub token</div>
+            <div style="margin-left: 20px;">├── 📄 api_keys.json, api_rate.json — API keys (hashes only) and rate counters</div>
+            <div style="margin-left: 20px;">├── 📄 scheduler.json, scheduler_log.json — background task state and history</div>
+            <div style="margin-left: 20px;">├── 📄 ldap_status.json, ldap_log.json, webhook_state.json — AD/LDAP state and log, webhook state</div>
             <div style="margin-left: 20px;">├── 📄 config_changes.log, users_changes.log, *.lock — change logs and service locks</div>
             <div style="margin-left: 20px;">└── 📁 backups/ — backups of settings, users and updates</div>
         </div>
