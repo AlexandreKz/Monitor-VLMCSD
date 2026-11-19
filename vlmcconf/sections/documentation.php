@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 6.0.5
+// ВЕРСИЯ: 6.0.6
 // ДАТА: 2026-11-19
 // @description: Секция "Документация": вкладки «Установка» (инструкция) и «Описание» (разделы и опции), поиск, RU/EN
 // ============================================
@@ -2702,8 +2702,7 @@ function docDescPartHtml($lang) {
     if (!$items) {
         return '';
     }
-    $head = $lang === 'en' ? 'Panel sections and options' : 'Разделы и опции панели';
-    $out = '<div class="section-title" style="margin: 40px 0 20px;"><span>📖</span> ' . $head . '</div>';
+    $out = '';
     foreach ($items as $d) {
         $out .= '<div class="section-card"><div class="section-title"><span>' . $d['icon'] . '</span> '
             . htmlspecialchars($d['title'], ENT_QUOTES, 'UTF-8') . '</div><div class="doc-desc">' . $d['html'] . '</div></div>';
@@ -2714,8 +2713,10 @@ function docDescPartHtml($lang) {
 function getFullDownloadHtml() {
     global $docWebRu, $docWebEn;
     
-    $webRuJson = json_encode($docWebRu . docDescPartHtml('ru'));
-    $webEnJson = json_encode($docWebEn . docDescPartHtml('en'));
+    $webJson = json_encode([
+        'ru' => ['inst' => $docWebRu, 'desc' => docDescPartHtml('ru')],
+        'en' => ['inst' => $docWebEn, 'desc' => docDescPartHtml('en')],
+    ]);
     
     return '<!DOCTYPE html>
 <html lang="ru">
@@ -2755,12 +2756,15 @@ function getFullDownloadHtml() {
         .header {
             padding: 12px 20px;
             flex-shrink: 0;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             gap: 16px;
-            flex-wrap: wrap;
         }
+        
+        .head-mid { display: flex; align-items: center; gap: 18px; }
+        .head-sep { color: #5b7389; font-size: 26px; font-weight: 300; line-height: 1; }
+        .head-right { justify-self: end; }
         
         h1 {
             font-size: 20px;
@@ -2794,12 +2798,24 @@ function getFullDownloadHtml() {
             transition: all 0.2s;
         }
         
-        .lang-btn.active {
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #8aa0bb;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active, .lang-btn.active {
             background: #3b82f6;
             color: white;
         }
         
-        .lang-btn:hover:not(.active) {
+        .lang-btn:hover:not(.active), .tab-btn:hover:not(.active) {
             background: #2d3f52;
             color: #e1e9f0;
         }
@@ -2926,7 +2942,8 @@ function getFullDownloadHtml() {
         
         @media (max-width: 768px) {
             body { padding: 10px; }
-            .header { padding: 10px 14px; }
+            .header { padding: 10px 14px; grid-template-columns: 1fr; justify-items: start; gap: 8px; }
+            .head-right { justify-self: start; }
             .doc-content { margin: 0 6px 6px 6px; padding: 16px; }
             footer { padding: 12px 20px; }
             .code-block { font-size: 11px; }
@@ -2941,7 +2958,15 @@ function getFullDownloadHtml() {
         <h1>📦 KMS Monitor</h1>
         <div class="version">Версия ' . VLMC_VERSION . ' | Полное руководство по развёртыванию | ' . VLMC_DATE . '</div>
       </div>
-        <div class="lang-tabs">
+        <div class="head-mid">
+            <span class="head-sep">|</span>
+            <div class="lang-tabs">
+                <button class="tab-btn active" data-tab="inst"></button>
+                <button class="tab-btn" data-tab="desc"></button>
+            </div>
+            <span class="head-sep">|</span>
+        </div>
+        <div class="lang-tabs head-right">
             <button class="lang-btn active" data-lang="ru">🇷🇺 Русский</button>
             <button class="lang-btn" data-lang="en">🇬🇧 English</button>
         </div>
@@ -2956,18 +2981,25 @@ function getFullDownloadHtml() {
 </div>
 
 <script>
-const contentMap = {
-    ru: ' . $webRuJson . ',
-    en: ' . $webEnJson . '
+const contentMap = ' . $webJson . ';
+const tabNames = {
+    ru: { inst: "🚀 Установка", desc: "📖 Описание" },
+    en: { inst: "🚀 Installation", desc: "📖 Description" }
 };
 
 let currentLang = "ru";
+let currentTab = "inst";
 
 function renderDocumentation() {
     const container = document.getElementById("docContent");
     if (container) {
-        container.innerHTML = contentMap[currentLang];
+        container.innerHTML = contentMap[currentLang][currentTab];
+        container.scrollTop = 0;
     }
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.textContent = tabNames[currentLang][btn.dataset.tab];
+        btn.classList.toggle("active", btn.dataset.tab === currentTab);
+    });
     
     document.querySelectorAll(".lang-btn").forEach(btn => {
         btn.classList.remove("active");
@@ -2978,6 +3010,13 @@ function renderDocumentation() {
 document.querySelectorAll(".lang-btn").forEach(btn => {
     btn.addEventListener("click", function() {
         currentLang = this.dataset.lang;
+        renderDocumentation();
+    });
+});
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+        currentTab = this.dataset.tab;
         renderDocumentation();
     });
 });
