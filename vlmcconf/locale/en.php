@@ -1809,7 +1809,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_ev_login_success' => 'Successful panel sign-in',
     'notify_ev_firewall_changed' => 'Firewall changed (IP block, settings)',
     'notify_ev_whitelist_changed' => 'Allowed IP list changed',
-    'notify_ev_settings_changed' => 'Panel settings changed (sessions, privacy, journal, updates, API, notifications)',
+    'notify_ev_settings_changed' => 'Panel settings changed',
     'notify_ev_group_created' => 'Group created',
     'notify_ev_device_edited' => 'Device edited',
     'notify_ev_log_path_changed' => 'KMS log path changed',

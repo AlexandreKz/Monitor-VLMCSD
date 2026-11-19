@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.5.1
+// ВЕРСИЯ: 3.6.0
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -136,19 +136,22 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-num { -moz-appearance: textfield; appearance: textfield; }
 .ntf-num::-webkit-outer-spin-button, .ntf-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ntf-ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.ntf-mod { background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: 720px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.ntf-mod { background: <?= $themeCSS['card'] ?>; color: <?= $themeCSS['text'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 10px; width: 880px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
 .ntf-mh { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid <?= $themeCSS['border'] ?>; font-size: 15px; font-weight: 600; }
 .ntf-x { background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; opacity: .7; }
 .ntf-x:hover { opacity: 1; }
-.ntf-mb { padding: 16px 18px; overflow-y: auto; }
+.ntf-mb { padding: 10px 16px; overflow-y: auto; }
 .ntf-mf { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid <?= $themeCSS['border'] ?>; flex-wrap: wrap; }
 .ntf-mf .ntf-msg { flex: 1 1 160px; min-width: 0; }
 .ntf-mod .form-control { background: <?= $themeCSS['field'] ?>; border: 1px solid <?= $themeCSS['border'] ?>; }
-.ntf-mb .ntf-hint { margin: 4px 0 12px; }
+.ntf-mb .ntf-hint { margin: 4px 0 8px; }
 .ntf-mod .form-control:focus { border-color: <?= $themeCSS['primary'] ?>; outline: none; }
-.ntf-sec { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
-.ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
-.ntf-f { margin-bottom: 14px; }
+.ntf-sec { border: 1px solid <?= $themeCSS['border'] ?>; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; }
+.ntf-sec > .ntf-st { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+.ntf-f { margin-bottom: 8px; }
+.ntf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+.ntf-row > .ntf-sec { margin-bottom: 0; }
+@media (max-width: 760px) { .ntf-row { grid-template-columns: 1fr; } }
 .ntf-sec .ntf-f:last-child { margin-bottom: 0; }
 .ntf-l { display: block; font-size: 12px; color: <?= $ntfMuted ?>; margin-bottom: 5px; }
 .ntf-gh { font-size: 12px; font-weight: 600; margin: 8px 0 4px; color: <?= $ntfMuted ?>; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
@@ -159,9 +162,9 @@ $ntfT['saveError'] = __('msg_save_error');
 .ntf-mb.ntf-fit { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
 .ntf-mb.ntf-fit > div { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
 .ntf-mb.ntf-fit > div > * { flex: 0 0 auto; }
-.ntf-mb.ntf-fit > div > .ntf-evsec { flex: 1 1 auto; min-height: 150px; display: flex; flex-direction: column; overflow: hidden; }
+.ntf-mb.ntf-fit > div > .ntf-evsec { flex: 1 1 auto; min-height: 200px; display: flex; flex-direction: column; overflow: hidden; }
 .ntf-evh { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.ntf-evh > .ntf-st { margin: 0 !important; }
+.ntf-evh > .ntf-st { margin: 0 !important; font-size: 13px; font-weight: 600; }
 .ntf-evq { width: 240px; max-width: 55%; height: 28px; padding: 0 10px; font-size: 12px; }
 .ntf-evsec > .ntf-evlist { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; }
 .ntf-evg { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 14px; }
@@ -357,7 +360,8 @@ $ntfT['saveError'] = __('msg_save_error');
 
         evQ.oninput = function () { query = evQ.value.trim().toLowerCase(); evGroups.forEach(function (f) { f(); }); evBox.scrollTop = 0; };
 
-        // каналы
+        // каналы и частота — в одну строку
+        const row = el('div', 'ntf-row'); body.appendChild(row);
         const chBox = el('div', 'ntf-box');
         const chSec = el('div', 'ntf-sec');
         if (!D.channels.length) { chBox.appendChild(el('span', 'ntf-hint', T.f_channels_none)); }
@@ -370,7 +374,7 @@ $ntfT['saveError'] = __('msg_save_error');
             };
             chBox.appendChild(k.label);
         });
-        chSec.appendChild(el('div', 'ntf-st', T.f_channels)); chSec.appendChild(chBox); body.appendChild(chSec);
+        chSec.appendChild(el('div', 'ntf-st', T.f_channels)); chSec.appendChild(chBox); row.appendChild(chSec);
 
         // фильтр и пороги — зависят от выбранных событий
         const dynBox = el('div'); body.appendChild(dynBox);
@@ -418,7 +422,7 @@ $ntfT['saveError'] = __('msg_save_error');
         // частота, тихие часы, активность
         const thr = input('number', st.throttle, 'ntf-num ntf-w'); thr.min = 0; thr.max = 1440;
         const tw = el('div', 'ntf-inl'); tw.appendChild(thr); tw.appendChild(el('span', 'ntf-hint', T.f_throttle_hint));
-        const schSec = el('div', 'ntf-sec'); schSec.appendChild(el('div', 'ntf-st', T.f_schedule)); schSec.appendChild(field(T.f_throttle, tw)); body.appendChild(schSec);
+        const schSec = el('div', 'ntf-sec'); schSec.appendChild(el('div', 'ntf-st', T.f_schedule)); schSec.appendChild(field(T.f_throttle, tw)); row.appendChild(schSec);
         const qk = check(T.f_quiet, st.quiet_enabled);
         const qf = timeSelect(st.quiet_from), qt = timeSelect(st.quiet_to);
         const qw = el('div', 'ntf-inl'); qw.appendChild(qk.label); qw.appendChild(el('span', '', T.f_quiet_from)); qw.appendChild(qf); qw.appendChild(el('span', '', T.f_quiet_to)); qw.appendChild(qt);

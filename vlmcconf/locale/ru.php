@@ -1811,7 +1811,7 @@ return [
     'notify_ev_login_success' => 'Успешный вход в панель',
     'notify_ev_firewall_changed' => 'Изменён файрвол (блокировка IP, настройки)',
     'notify_ev_whitelist_changed' => 'Изменён список разрешённых IP',
-    'notify_ev_settings_changed' => 'Изменены настройки панели (сессии, приватность, журнал, обновления, API, уведомления)',
+    'notify_ev_settings_changed' => 'Изменены настройки панели',
     'notify_ev_group_created' => 'Создана группа',
     'notify_ev_device_edited' => 'Изменено устройство',
     'notify_ev_log_path_changed' => 'Изменён путь к журналу KMS',
