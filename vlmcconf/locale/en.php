@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.29
+// ВЕРСИЯ: 5.15.30
 // ДАТА: 2026-11-19
 // @description: English translations
 // ============================================
@@ -75,7 +75,7 @@ return [
     'groups_existing' => 'Existing Groups',
     'groups_name_placeholder' => 'Group name',
     'groups_devices_count' => 'devices',
-    'groups_delete_confirm' => 'Delete group? Devices in this group will also be deleted.',
+    'groups_delete_confirm' => 'Delete group? Its devices are not deleted but moved to a hidden group.',
     'msg_group_saved' => 'Group saved',
 	'edit_group' => 'Edit group',
 	

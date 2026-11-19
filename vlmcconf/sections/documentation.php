@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/documentation.php
-// ВЕРСИЯ: 5.6.0
+// ВЕРСИЯ: 5.6.1
 // ДАТА: 2026-11-19
 // @description: Секция "Документация" с полной инструкцией по установке
 // ============================================
@@ -402,7 +402,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p>Панель сама выполняет периодические задачи: проверку обновлений, проверку подключения к AD/LDAP (раз в 12 часов), проверки для уведомлений (раз в 5 минут: новые устройства, состояние службы KMS, лог, место на диске) и удаление старых записей журнала событий (раз в сутки). Без настройки они выполняются только когда кто-то открывает панель, поэтому уведомления могут приходить с задержкой.</p>
         <p>Чтобы задачи шли без захода в панель, добавьте запуск по расписанию. Готовая команда для вашего сервера показана в «Журнал событий → Фоновые задачи → Запуск по расписанию ОС». Для Ubuntu это задание в <code>/etc/cron.d</code>, вида:</p>
         <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>В том же блоке видно, когда задача запускалась последний раз, чем закончилась, и есть кнопка «Запустить сейчас». Установщик создаёт только проверку обновлений (<code>update_check.php</code>), задание для <code>cron.php</code> добавляется отдельно.</p>
+        <p>В том же блоке видно, когда задача запускалась последний раз, чем закончилась, и есть кнопка «Запустить сейчас». Установщик создаёт только проверку обновлений (<code>update_check.php</code>), задание для <code>cron.php</code> добавляется отдельно. Команда в панели записывает тот же файл <code>/etc/cron.d/kms-monitor</code>, что и установщик, и заменяет его: это нормально, потому что <code>cron.php</code> сам выполняет и проверку обновлений.</p>
     </div>
 
     <!-- Журнал событий -->
@@ -851,7 +851,7 @@ openssl.cafile = "C:\php\extras\ssl\cacert.pem"</pre></div>
         <p>The panel runs periodic tasks itself: update check, AD/LDAP connection check (every 12 hours), notification checks (every 5 minutes: new devices, KMS service state, log, disk space) and removal of old event log entries (daily). Without setup they run only when someone opens the panel, so notifications may be delayed.</p>
         <p>To run tasks without opening the panel, add a scheduled job. A ready command for your server is shown in “Event log → Background tasks → Run by OS scheduler”. On Ubuntu it is a job in <code>/etc/cron.d</code>, like:</p>
         <div class="code-block"><pre>*/15 * * * * www-data php /var/www/html/vlmcconf/cron.php &gt;/dev/null 2&gt;&amp;1</pre></div>
-        <p>The same block shows when each task last ran and how it ended, with a “Run now” button. The installer creates only the update check (<code>update_check.php</code>); the job for <code>cron.php</code> is added separately.</p>
+        <p>The same block shows when each task last ran and how it ended, with a “Run now” button. The installer creates only the update check (<code>update_check.php</code>); the job for <code>cron.php</code> is added separately. The panel command writes the same <code>/etc/cron.d/kms-monitor</code> file as the installer and replaces it; this is fine because <code>cron.php</code> runs the update check itself.</p>
     </div>
 
     <!-- Event log -->
