@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/notify.php
-// ВЕРСИЯ: 3.5.0
+// ВЕРСИЯ: 3.6.0
 // ДАТА: 2026-11-19
 // @description: Уведомления (пункт 27): общие каналы (Email/SMTP, Telegram, Битрикс24) и правила «событие → каналы» с фильтром по группе/устройству, частотой и тихими часами; секреты зашифрованы; история отправок
 // ============================================
@@ -191,7 +191,7 @@ function notifyChannelPublic(array $c) {
         $out['bitrix24'] = ['dialog' => $b['dialog'] ?? '', 'has_hook' => ($b['hook'] ?? '') !== '', 'host' => parse_url(notifyDecrypt($b['hook'] ?? ''), PHP_URL_HOST) ?: ''];
     } else {
         $t = $c['telegram'] ?? [];
-        $out['telegram'] = ['chat' => $t['chat'] ?? '', 'has_token' => ($t['token'] ?? '') !== ''];
+        $out['telegram'] = ['chat' => $t['chat'] ?? '', 'has_token' => ($t['token'] ?? '') !== '', 'proxy' => $t['proxy'] ?? ''];
     }
     return $out;
 }
@@ -303,6 +303,9 @@ function notifyChannelBuild(array $in, $old) {
         $t['chat'] = trim((string)($data['chat'] ?? ''));
         if (($t['token'] ?? '') === '') { return [null, 'notify_err_token']; }
         if (!preg_match('/^(-?\d{1,20}|@[A-Za-z0-9_]{3,64})$/', $t['chat'])) { return [null, 'notify_err_chat']; }
+        $px = trim((string)($data['proxy'] ?? ''));
+        if ($px !== '' && !preg_match('#^(socks5h?|https?)://[A-Za-z0-9.\-\[\]:]+(:\d{1,5})?$#', $px)) { return [null, 'notify_err_proxy']; }
+        $t['proxy'] = $px;
         $c['telegram'] = $t;
         unset($c['email'], $c['bitrix24']);
     }
@@ -446,7 +449,7 @@ function notifySendTelegram(array $c, $text) {
     $url = 'https://api.telegram.org/bot' . notifyDecrypt($c['token']) . '/sendMessage?' . http_build_query([
         'chat_id' => $c['chat'], 'text' => mb_substr($text, 0, 3500), 'disable_web_page_preview' => 'true'
     ]);
-    $r = vlmcHttpRequest($url, ['timeout' => 10, 'connect_timeout' => 5]);
+    $r = vlmcHttpRequest($url, ['timeout' => 10, 'connect_timeout' => 5, 'proxy' => $c['proxy'] ?? '']);
     if ($r['ok']) {
         return [true, ''];
     }

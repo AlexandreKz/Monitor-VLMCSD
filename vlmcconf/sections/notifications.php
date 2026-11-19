@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: sections/notifications.php
-// ВЕРСИЯ: 3.6.1
+// ВЕРСИЯ: 3.7.1
 // ДАТА: 2026-11-19
 // @description: Раздел «Уведомления» (пункт 27): вкладки «Правила», «Каналы», «История»; правила (события, каналы, фильтр по группе/устройству, пороги, частота, тихие часы) и общие каналы доставки (Email/SMTP, Telegram) создаются в модальных окнах; доступ — право «Уведомления: изменение»
 // ============================================
@@ -62,7 +62,7 @@ $ntfKeys = ['rule_new', 'channel_new', 'rules_empty', 'channels_empty', 'col_nam
     'rule_title_new', 'rule_title_edit', 'ch_title_new', 'ch_title_edit', 'f_name', 'f_events', 'ev_search', 'f_channels', 'f_channels_none', 'f_filter', 'f_filter_groups',
     'f_filter_devices', 'f_filter_hint', 'f_params', 'f_throttle', 'f_throttle_hint', 'f_quiet', 'f_quiet_from', 'f_quiet_to', 'f_active', 'soon',
     'f_type', 'f_host', 'f_port', 'f_secure', 'f_secure_tls', 'f_secure_ssl', 'f_secure_none', 'f_user', 'f_pass', 'f_from', 'f_to', 'f_to_hint',
-    'f_token', 'f_chat', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'err_no_channels', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
+    'f_token', 'f_chat', 'f_proxy', 'f_webhook', 'f_webhook_hint', 'f_dialog', 'f_dialog_hint', 'f_schedule', 'err_no_channels', 'f_chat_hint', 'f_ch_enabled', 'secret_set', 'btn_save', 'btn_cancel', 'btn_delete', 'btn_test', 'confirm_delete_rule',
     'confirm_delete_channel', 'hist_empty', 'hist_ok', 'hist_fail', 'hist_quiet', 'sev_high', 'sev_mid', 'sev_low', 'ch_off', 'more'];
 $ntfT = [];
 foreach ($ntfKeys as $k) {
@@ -455,7 +455,7 @@ $ntfT['saveError'] = __('msg_save_error');
     // ---------- канал ----------
     function openChannel(ch) {
         const isNew = !ch;
-        const c = ch || { name: '', type: 'email', enabled: true, email: { host: '', port: 587, secure: 'tls', user: '', from: '', to: '', has_pass: false }, telegram: { chat: '', has_token: false } };
+        const c = ch || { name: '', type: 'email', enabled: true, email: { host: '', port: 587, secure: 'tls', user: '', from: '', to: '', has_pass: false }, telegram: { chat: '', has_token: false, proxy: '' } };
         const body = el('div');
         const name = input('text', c.name); name.maxLength = 60;
         body.appendChild(field(T.f_name, name));
@@ -478,10 +478,11 @@ $ntfT['saveError'] = __('msg_save_error');
         const to = input('text', e.to); to.placeholder = 'name@example.com, other@example.com';
         em.appendChild(g1); em.appendChild(g2); em.appendChild(field(T.f_from, from)); em.appendChild(field(T.f_to, to)); em.appendChild(el('div', 'ntf-hint', T.f_to_hint));
 
-        const t = c.telegram || { chat: '', has_token: false };
+        const t = c.telegram || { chat: '', has_token: false, proxy: '' };
         const token = input('password', ''); token.placeholder = t.has_token ? T.secret_set : '123456:ABC…';
         const chat = input('text', t.chat); chat.placeholder = '123456789';
-        tg.appendChild(field(T.f_token, token)); tg.appendChild(field(T.f_chat, chat)); tg.appendChild(el('div', 'ntf-hint', T.f_chat_hint));
+        const proxy = input('text', t.proxy || ''); proxy.placeholder = 'socks5h://127.0.0.1:40000';
+        tg.appendChild(field(T.f_token, token)); tg.appendChild(field(T.f_chat, chat)); tg.appendChild(el('div', 'ntf-hint', T.f_chat_hint)); tg.appendChild(field(T.f_proxy, proxy));
         const bt = c.bitrix24 || { dialog: '', has_hook: false };
         const hook = input('password', ''); hook.placeholder = bt.has_hook ? T.secret_set : 'https://portal.bitrix24.ru/rest/1/xxxxxxxxxxxxxxxx/';
         const dialog = input('text', bt.dialog); dialog.placeholder = '1  /  chat123';
@@ -494,7 +495,7 @@ $ntfT['saveError'] = __('msg_save_error');
         function form() {
             const data = type.value === 'email'
                 ? { host: host.value, port: port.value, secure: sec.value, user: user.value, pass: pass.value, from: from.value, to: to.value, enabled: en.box.checked }
-                : (type.value === 'bitrix24' ? { hook: hook.value, dialog: dialog.value, enabled: en.box.checked } : { token: token.value, chat: chat.value, enabled: en.box.checked });
+                : (type.value === 'bitrix24' ? { hook: hook.value, dialog: dialog.value, enabled: en.box.checked } : { token: token.value, chat: chat.value, proxy: proxy.value, enabled: en.box.checked });
             return { id: isNew ? '' : ch.id, name: name.value, type: type.value, data: JSON.stringify(data) };
         }
         const msg = el('span', 'ntf-msg');

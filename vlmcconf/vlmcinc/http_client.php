@@ -1,8 +1,8 @@
 <?php
 // ============================================
 // ФАЙЛ: vlmcinc/http_client.php
-// ВЕРСИЯ: 1.1.0
-// ДАТА: 2026-11-17
+// ВЕРСИЯ: 1.2.0
+// ДАТА: 2026-11-19
 // @description: HTTPS-запросы с обязательной проверкой SSL-сертификата (curl или потоки PHP), диагностика для Windows
 // ============================================
 
@@ -60,6 +60,8 @@ function vlmcHttpRequest($url, array $opts = []) {
     $headers        = $opts['headers'] ?? [];
     $userAgent      = $opts['user_agent'] ?? 'KMS-Monitor/1.0';
 
+    $proxy          = trim((string)($opts['proxy'] ?? ''));
+
     $result = ['ok' => false, 'status' => 0, 'body' => '', 'error' => '', 'detail' => '', 'headers' => []];
 
     $parts = parse_url($url);
@@ -95,6 +97,9 @@ function vlmcHttpRequest($url, array $opts = []) {
             $options[CURLOPT_REDIR_PROTOCOLS] = CURLPROTO_HTTPS;
         }
 
+        if ($proxy !== '') {
+            $options[CURLOPT_PROXY] = $proxy; // socks5h:// — имя хоста разрешает прокси
+        }
         $ch = curl_init();
         curl_setopt_array($ch, $options);
         $body = curl_exec($ch);
@@ -112,6 +117,11 @@ function vlmcHttpRequest($url, array $opts = []) {
         $result['body'] = (string)$body;
         $result['headers'] = $responseHeaders;
         $result['ok'] = $status >= 200 && $status < 300;
+        return $result;
+    }
+
+    if ($proxy !== '') { // прокси поддерживается только через curl
+        $result['error'] = 'no_transport';
         return $result;
     }
 

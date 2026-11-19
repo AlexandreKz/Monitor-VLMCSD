@@ -1,7 +1,7 @@
 <?php
 // ============================================
 // ФАЙЛ: locale/en.php
-// ВЕРСИЯ: 5.15.28
+// ВЕРСИЯ: 5.15.29
 // ДАТА: 2026-11-19
 // @description: English translations
 // ============================================
@@ -1817,5 +1817,7 @@ If php.ini sets curl.cainfo or openssl.cafile to a file that does not exist, fix
     'notify_ev_integration_changed' => 'Integration changed (webhook, cloud, server)',
     'notify_ev_ldap_settings_changed' => 'AD/LDAP settings changed',
     'notify_ev_search' => 'Search events',
+    'notify_f_proxy' => 'Proxy (optional)',
+    'notify_err_proxy' => 'Invalid proxy address',
 ];
 ?>
